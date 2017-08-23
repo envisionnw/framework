@@ -186,7 +186,7 @@ Public Enum SyntaxType
     [_First] = 97
     T_SQL = 97
     Jet_SQL = 98
-    Text = 99
+    text = 99
     [_Last] = 99
 End Enum
 

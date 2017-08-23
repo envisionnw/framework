@@ -169,17 +169,17 @@ Public Property Get WYspecies() As String
     WYspecies = m_Species.WYspecies
 End Property
 
-Public Property Let LUcode(Value As String)
+Public Property Let LUCode(Value As String)
     'valid length varchar(25) but 6-letter lookup
     If Not IsNull(Value) And IsBetween(Len(Value), 1, 6, True) Then
-        m_Species.LUcode = Value
+        m_Species.LUCode = Value
     Else
         RaiseEvent InvalidLUCode(Value)
     End If
 End Property
 
-Public Property Get LUcode() As String
-    LUcode = m_Species.LUcode
+Public Property Get LUCode() As String
+    LUCode = m_Species.LUCode
 End Property
 
 Public Property Let MasterFamily(Value As String)
@@ -394,10 +394,10 @@ End Sub
 ' Revisions:
 '   BLC, 4/19/2016 - initial version
 '---------------------------------------------------------------------------------------
-Public Sub Init(LUcode As String)
+Public Sub Init(LUCode As String)
 On Error GoTo Err_Handler
     
-            m_Species.Init (LUcode)
+            m_Species.Init (LUCode)
 
 Exit_Handler:
     Exit Sub

@@ -55,33 +55,33 @@ On Error GoTo Err_Handler
     ' appropriate extension.
     '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     Dim Extension As String
-    Dim fName As String
+    Dim FName As String
     Extension = GetFileExtension(VBComp:=VBComp)
     If Trim(FileName) = vbNullString Then
-        fName = VBComp.Name & Extension
+        FName = VBComp.Name & Extension
     Else
-        fName = FileName
-        If InStr(1, fName, ".", vbBinaryCompare) = 0 Then
-            fName = fName & Extension
+        FName = FileName
+        If InStr(1, FName, ".", vbBinaryCompare) = 0 Then
+            FName = FName & Extension
         End If
     End If
     
     If StrComp(Right(FolderName, 1), "\", vbBinaryCompare) = 0 Then
-        fName = FolderName & fName
+        FName = FolderName & FName
     Else
-        fName = FolderName & "\" & fName
+        FName = FolderName & "\" & FName
     End If
     
-    If dir(fName, vbNormal + vbHidden + vbSystem) <> vbNullString Then
+    If Dir(FName, vbNormal + vbHidden + vbSystem) <> vbNullString Then
         If OverwriteExisting = True Then
-            Kill fName
+            Kill FName
         Else
             ExportVBComponent = False
             Exit Function
         End If
     End If
     
-    VBComp.Export FileName:=fName
+    VBComp.Export FileName:=FName
     ExportVBComponent = True
 
 Exit_Handler:
@@ -217,7 +217,7 @@ On Error GoTo Err_Handler
          FileName = Path & "\Queries(SQL)\" & dbs.QueryDefs(i).Name & ".txt"
          intfile = FreeFile()
          Open FileName For Output As #intfile
-         Print #intfile, dbs.QueryDefs(i).sql
+         Print #intfile, dbs.QueryDefs(i).SQL
          Close #intfile
     Next i
 
@@ -257,14 +257,14 @@ Public Sub RecreateDatabase()
 On Error GoTo Err_Handler
     Dim myFile As Object '??
     Dim folder As Object '??
-    Dim fso As Object '??
+    Dim FSO As Object '??
     Dim objecttype As String, objectname As String
     Dim WScript As Object '??
     Dim oApplication As Object '??
     
     For Each myFile In folder.Files
-        objecttype = fso.GetExtensionName(myFile.Name)
-        objectname = fso.GetBaseName(myFile.Name)
+        objecttype = FSO.GetExtensionName(myFile.Name)
+        objectname = FSO.GetBaseName(myFile.Name)
         WScript.Echo "  " & objectname & " (" & objecttype & ")"
     
         If (objecttype = "form") Then

@@ -64,7 +64,7 @@ End Property
 Public Function GetSQL(strQuery As String) As String
 On Error GoTo Err_Handler:
 
-   GetSQL = dbCurrent.QueryDefs(strQuery).sql
+   GetSQL = dbCurrent.QueryDefs(strQuery).SQL
    
 Exit_Function:
     Exit Function
@@ -98,7 +98,7 @@ End Function
 ' Revisions:    BLC, 8/11/2014 - initial version
 '               BLC, 6/30/2015 - rename from get... to Get...
 ' ---------------------------------
-Public Function GetWhereSQL(strWhere As String, Params As Variant) As String
+Public Function GetWhereSQL(strWHERE As String, Params As Variant) As String
 On Error GoTo Err_Handler:
 Dim blnCheck As Boolean
 Dim strParam As String
@@ -113,7 +113,7 @@ Dim i As Integer
         If Len(Params(i, 2)) > 0 Then
     
             'handle when param isn't the only parameter (need ' AND ' in SQL WHERE clause)
-            If Len(strWhere) > 0 Then strWhere = strWhere & " AND"
+            If Len(strWHERE) > 0 Then strWHERE = strWHERE & " AND"
     
             'check if parameter is is non-empty (string) or non-zero (integer)
             Select Case Params(i, 1)
@@ -127,7 +127,7 @@ Dim i As Integer
         
             'prepare SQL
             If Not IsNull(Params(i, 0)) And blnCheck Then
-             strWhere = strWhere & " " & Params(i, 2) & " = " & strParam
+             strWHERE = strWHERE & " " & Params(i, 2) & " = " & strParam
             End If
         
         Else
@@ -135,7 +135,7 @@ Dim i As Integer
         End If
     Next
     
-   GetWhereSQL = strWhere
+   GetWhereSQL = strWHERE
    
 Exit_Function:
     Exit Function
@@ -177,7 +177,7 @@ Dim qdf As DAO.QueryDef
     Set qdf = CurrentDb.QueryDefs(strQueryName)
     
     'return SQL
-    GetQuerySQL = qdf.sql
+    GetQuerySQL = qdf.SQL
  
 Exit_Function:
     Exit Function
@@ -402,7 +402,7 @@ End Function
 ' ---------------------------------
 Public Function ConcatRelated(strField As String, _
     strTable As String, _
-    Optional strWhere As String, _
+    Optional strWHERE As String, _
     Optional strOrderBy As String, _
     Optional strSeparator = ", ") As Variant
 On Error GoTo Err_Handler
@@ -418,8 +418,8 @@ On Error GoTo Err_Handler
     
     'Build SQL string, and get the records.
     strSQL = "SELECT " & strField & " FROM " & strTable
-    If strWhere <> vbNullString Then
-        strSQL = strSQL & " WHERE " & strWhere
+    If strWHERE <> vbNullString Then
+        strSQL = strSQL & " WHERE " & strWHERE
     End If
     If strOrderBy <> vbNullString Then
         strSQL = strSQL & " ORDER BY " & strOrderBy
@@ -544,29 +544,29 @@ End Function
 Public Function PrepareWhereClause(Params() As String)
 On Error GoTo Err_Handler
     
-    Dim strWhere As String
+    Dim strWHERE As String
     Dim i As Integer
     
     'default
-    strWhere = ""
+    strWHERE = ""
 
     'check all params for length, then insert an " AND " if there's a new non-empty clause
     For i = 0 To UBound(Params)
         
         'add to clause
-        If Len(strWhere) > 0 And Len(Params(i)) > 0 Then
-            strWhere = strWhere & " AND "
+        If Len(strWHERE) > 0 And Len(Params(i)) > 0 Then
+            strWHERE = strWHERE & " AND "
         End If
         
         'add param to where clause
         If Len(Params(i)) > 0 Then
-            strWhere = strWhere & Params(i)
+            strWHERE = strWHERE & Params(i)
         End If
     Next
     
 
 Exit_Handler:
-    PrepareWhereClause = strWhere
+    PrepareWhereClause = strWHERE
     Exit Function
 
 Err_Handler:

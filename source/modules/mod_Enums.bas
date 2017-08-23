@@ -200,7 +200,7 @@ On Error GoTo Err_Handler
     'ShowAndCloseVBE
     
     'hide the vbe
-    Application.VBE.MainWindow.Visible = False
+    Application.VBE.MainWindow.visible = False
     
 Exit_Handler:
     Exit Function

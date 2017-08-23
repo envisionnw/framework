@@ -53,7 +53,7 @@ On Error GoTo Err_Handler
     Set tdf = db.TableDefs(strTable) 'TableName)
 
     'Change the connect value
-    tdf.Connect = strConn '"ODBC;DATABASE=pubs;UID=sa;PWD=;DSN=Publishers"
+    tdf.connect = strConn '"ODBC;DATABASE=pubs;UID=sa;PWD=;DSN=Publishers"
     
 Exit_Handler:
     Set tdf = Nothing
@@ -97,7 +97,7 @@ On Error GoTo Err_Handler
     Set tdf = db.TableDefs(strTable)
 
     'Change the database value
-    tdf.Connect = ";DATABASE=" & strDbPath
+    tdf.connect = ";DATABASE=" & strDbPath
     
     tdf.RefreshLink
     
@@ -351,7 +351,7 @@ On Error GoTo Err_Handler
 
     Set vbCom = Application.VBE.ActiveVBProject.VBComponents
 
-    vbCom.Remove VBComponent:=vbCom.item(strModule)
+    vbCom.Remove VBComponent:=vbCom.Item(strModule)
 
 Exit_Handler:
     Exit Sub
@@ -452,7 +452,7 @@ On Error GoTo Err_Handler
 
     Dim ModuleFilePath As String, ModuleFile As String
    
-    ModuleFile = dir(strPath, vbNormal)
+    ModuleFile = Dir(strPath, vbNormal)
     
     While ModuleFile <> ""
     
@@ -464,7 +464,7 @@ On Error GoTo Err_Handler
         End If
         
         'call Dir without params to get the next file in strPath
-        ModuleFile = dir
+        ModuleFile = Dir
     Wend
 
 Exit_Handler:
@@ -1254,9 +1254,9 @@ Public Sub DoIt2()
         With qdf
         
             'check if record exists in site
-            .sql = GetTemplate(Template)
+            .SQL = GetTemplate(Template)
         
-            Debug.Print .sql
+            Debug.Print .SQL
         End With
     End With
 End Sub
@@ -1363,7 +1363,7 @@ Dim strSQL As String
                      & "([vers],[sflag],[contxt],[syntx],[tname],[prms],[tmpl],[rmks],[effdate]," _
                      & "NULL, NOW, [CID],NOW, [LMID]);"
     'Debug.Print strSQL
-            .sql = strSQL
+            .SQL = strSQL
         End With
 
     End With

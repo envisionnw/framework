@@ -324,13 +324,13 @@ Option Explicit
 '   BLC - 2/19/2015  - initial version
 '   BLC - 6/28/2016  - revised to uppercase GetParkState vs getParkState
 ' ---------------------------------
-Public Function GetParkState(ParkCode As String) As String
+Public Function getParkState(ParkCode As String) As String
 
 On Error GoTo Err_Handler
     
     Dim db As DAO.Database
     Dim rs As DAO.Recordset
-    Dim State As String, strSQL As String
+    Dim state As String, strSQL As String
    
     'handle only appropriate park codes
     If Len(ParkCode) <> 4 Then
@@ -346,11 +346,11 @@ On Error GoTo Err_Handler
     
     'assume only 1 record returned
     If rs.RecordCount > 0 Then
-        State = rs.Fields("ParkState").Value
+        state = rs.Fields("ParkState").Value
     End If
    
     'return value
-    GetParkState = State
+    getParkState = state
     
 Exit_Handler:
     Exit Function
@@ -587,21 +587,21 @@ On Error GoTo Err_Handler
     
     Dim db As DAO.Database
     Dim rs As DAO.Recordset
-    Dim strSQL As String, strWhere As String
+    Dim strSQL As String, strWHERE As String
     Dim Count As Integer
     Dim metadata() As Variant
    
     'handle only appropriate park codes
     If blnAllVersions Then
-        strWhere = ""
+        strWHERE = ""
     Else
-        strWhere = "WHERE RetireDate IS NULL"
+        strWHERE = "WHERE RetireDate IS NULL"
     End If
     
     'generate SQL
 '    strSQL = "SELECT ProtocolName, Version, EffectiveDate, RetireDate, LastModified FROM Protocol " _
 '                & strWHERE & ";"
-    strSQL = GetTemplate("s_protocol_info", "strWHERE" & PARAM_SEPARATOR & strWhere)
+    strSQL = GetTemplate("s_protocol_info", "strWHERE" & PARAM_SEPARATOR & strWHERE)
     
     'fetch data
     Set db = CurrentDb
@@ -811,7 +811,7 @@ On Error GoTo Err_Handler
     
     Params(0) = Template
     Params(1) = ID
-    Params(2) = IIf(InStr(Template, "wentworth") > 0, Year(Date), IsActive)
+    Params(2) = IIf(InStr(Template, "wentworth") > 0, year(Date), IsActive)
         
     SetRecord Template, Params
     
@@ -924,7 +924,7 @@ On Error GoTo Err_Handler
         With qdf
         
             'check if record exists in site
-            .sql = GetTemplate(Template)
+            .SQL = GetTemplate(Template)
         
             Select Case Template
                         
@@ -1041,7 +1041,7 @@ On Error GoTo Err_Handler
         With qdf
         
             'check if record exists in site
-            .sql = GetTemplate(Template)
+            .SQL = GetTemplate(Template)
             
             '-------------------
             ' set SQL parameters --> .Parameters("") = params()
@@ -1123,7 +1123,7 @@ On Error GoTo Err_Handler
             End If
             
             'set record action
-            .sql = GetTemplate("i_record_action")
+            .SQL = GetTemplate("i_record_action")
                                             
             '-- required parameters --
             .Parameters("RefTable") = Params(0)
@@ -1289,8 +1289,8 @@ On Error GoTo Err_Handler
             
             If rs.NoMatch Then
                 ' --- INSERT ---
-                frm!lblMsg.ForeColor = lngLime
-                frm!lblMsgIcon.ForeColor = lngLime
+                frm!lblMsg.forecolor = lngLime
+                frm!lblMsgIcon.forecolor = lngLime
                 frm!lblMsgIcon.Caption = StringFromCodepoint(uDoubleTriangleBlkR)
                 frm!lblMsg.Caption = IIf(DoAction = "i", "Inserting new record...", "Updating record...")
             Else
@@ -1300,14 +1300,14 @@ On Error GoTo Err_Handler
                 'retrieve ID
                 If frm!tbxID.Value = rs("ID") Then 'rs("Contact.ID") Then
                     'IDs are equivalent, just change the data
-                    frm!lblMsg.ForeColor = lngLime
-                    frm!lblMsgIcon.ForeColor = lngLime
+                    frm!lblMsg.forecolor = lngLime
+                    frm!lblMsgIcon.forecolor = lngLime
                     frm!lblMsgIcon.Caption = StringFromCodepoint(uDoubleTriangleBlkR)
                     frm!lblMsg.Caption = "Updating record..."
                 Else
                     'prevent duplicate record entries
-                    frm!lblMsg.ForeColor = lngYellow
-                    frm!lblMsgIcon.ForeColor = lngYellow
+                    frm!lblMsg.forecolor = lngYellow
+                    frm!lblMsgIcon.forecolor = lngYellow
                     frm!lblMsgIcon.Caption = StringFromCodepoint(uDoubleTriangleBlkR)
                     frm!lblMsg.Caption = "Oops, record already exists."
                     GoTo Exit_Handler
@@ -1342,8 +1342,8 @@ On Error GoTo Err_Handler
         Debug.Print "UpsertRecord " & frm.Name & " DIRTY"
         'frm.Dirty = False
         
-        frm!lblMsg.ForeColor = lngYellow
-        frm!lblMsgIcon.ForeColor = lngYellow
+        frm!lblMsg.forecolor = lngYellow
+        frm!lblMsgIcon.forecolor = lngYellow
         frm!lblMsgIcon.Caption = StringFromCodepoint(uDoubleTriangleBlkR)
         frm!lblMsg.Caption = "** DIRTY **" 'UNSAVED CHANGES! **"
         
@@ -1532,7 +1532,7 @@ On Error GoTo Err_Handler
             strSQL = "SELECT " & strFields & " FROM " & tbl & " WHERE ID = " & ID & ";"
             
             'update the query SQL
-            .sql = strSQL
+            .SQL = strSQL
             
             Dim rs As DAO.Recordset
 
@@ -1627,7 +1627,7 @@ Public Function RunPlotCheck()
 On Error GoTo Err_Handler
 
     Dim strTemplate As String
-    Dim X As Variant
+    Dim x As Variant
 
     'clear num records
     ClearTable "NumRecords"
@@ -1638,14 +1638,14 @@ On Error GoTo Err_Handler
     'use g_AppTemplates scripting dictionary vs. recordset to avoid missing dependencies
     'iterate through queries
  '   For i = 0 To g_AppTemplates.Count - 2
-    For Each X In g_AppTemplates
+    For Each x In g_AppTemplates
     
-        With g_AppTemplates.item(X) 'g_AppTemplates.Items()(i)
-            strTemplate = .item("TemplateName")
+        With g_AppTemplates.Item(x) 'g_AppTemplates.Items()(i)
+            strTemplate = .Item("TemplateName")
             
             Debug.Print strTemplate
             
-            If Len(.item("FieldOK")) > 0 And .item("FieldCheck") Then _
+            If Len(.Item("FieldOK")) > 0 And .Item("FieldCheck") Then _
                 SetPlotCheckResult strTemplate, "insert"
 '            iTemplate = .Item("ID")
 '            strDeps = .Item("Dependencies")
@@ -1702,10 +1702,10 @@ On Error GoTo Err_Handler
 'Debug.Print strTemplate
         
     With g_AppTemplates(strTemplate)
-        iTemplate = .item("ID")
-        strDeps = .item("Dependencies")
-        strFieldOK = .item("FieldOK")
-        blnFieldCheck = .item("FieldCheck")
+        iTemplate = .Item("ID")
+        strDeps = .Item("Dependencies")
+        strFieldOK = .Item("FieldOK")
+        blnFieldCheck = .Item("FieldCheck")
     End With
         
     'handle dependencies first
@@ -1847,12 +1847,12 @@ On Error GoTo Err_Handler
     
     Screen.MousePointer = 11 'Hour Glass
 
-    Dim strFilter As String, strWhere As String, strParkWhere As String, strPlotWhere As String, strYrWhere As String, strSpeciesYear As String
+    Dim strFilter As String, strWHERE As String, strParkWhere As String, strPlotWhere As String, strYrWhere As String, strSpeciesYear As String
     Dim stDocName As String
 
     'defaults
     strFilter = ""
-    strWhere = ""
+    strWHERE = ""
     strParkWhere = ""
     strPlotWhere = ""
     strYrWhere = ""
@@ -1899,7 +1899,7 @@ On Error GoTo Err_Handler
       'prepare where using string array & PrepareWhereClause
       Dim ary() As String
       ary = Split(strParkWhere & ";" & strPlotWhere & ";" & strYrWhere, ";")
-      strWhere = PrepareWhereClause(ary)
+      strWHERE = PrepareWhereClause(ary)
       
 '      If Not IsNull(Me!Park_Code) Then
 '        strWhere = "Unit_Code = '" & Me!Park_Code & "'"
@@ -1925,7 +1925,7 @@ On Error GoTo Err_Handler
     Dim strSQL As String
     
     Set qdf = CurrentDb.QueryDefs("qry_Sp_Rpt_by_Park_Complete_Create_Table")
-    strSQL = qdf.sql
+    strSQL = qdf.SQL
 
 'SELECT DISTINCT
 'qry_Sp_Rpt_All.Unit_Code,
@@ -1942,13 +1942,13 @@ On Error GoTo Err_Handler
 'ORDER BY qry_Sp_Rpt_All.Unit_Code, qry_Sp_Rpt_All.Plot_ID, qry_Sp_Rpt_All.Master_Family, qry_Sp_Rpt_All.Utah_Species;
 
     'update the SQL if parameters exist
-    If Len(strWhere) > 0 Then
+    If Len(strWHERE) > 0 Then
         Dim iOrderBy As Integer
         Dim strSQLNew As String
         
         'replace ORDER with WHERE clause + ORDER
-        strSQLNew = Replace(strSQL, "ORDER", " WHERE " & strWhere & " ORDER")
-        qdf.sql = strSQLNew 'was strSQL
+        strSQLNew = Replace(strSQL, "ORDER", " WHERE " & strWHERE & " ORDER")
+        qdf.SQL = strSQLNew 'was strSQL
     End If
     
     'update underlying table (temp_Sp_Rpt_by_Park_Complete is used in report's underlying table temp_Sp_Rpt_by_Park_Rollup)
@@ -1970,7 +1970,7 @@ On Error GoTo Err_Handler
     DoCmd.SetWarnings True
     
     'reset qdf SQL
-    qdf.sql = strSQL
+    qdf.SQL = strSQL
     
     'update underlying table (temp_Sp_Rpt_by_Park_Rollup)
     DoCmd.SetWarnings False
@@ -1999,11 +1999,11 @@ Debug.Print strSQL
     'translate SQL Where for rollup --> SpeciesYear = SpeciesYears, ,qry_Sp_Rpt_All.Year = SpeciesYears, qry_Sp_Rpt_All.Utah_species = "Utah.species"
     Dim aryText() As String
     aryText = Split("SpeciesYear|SpeciesYears||qry_Sp_Rpt_All.Year|SpeciesYears||qry_Sp_Rpt_All.Utah_species|Utah_species", "||")
-    strWhere = ReplaceMulti(strWhere, aryText)
+    strWHERE = ReplaceMulti(strWHERE, aryText)
     'strWhere = Replace(strWhere, Replace(strSpeciesYear, "SpeciesYear", "SpeciesYears"), "SpeciesYears")
     
     'open report --> strWhere = WHERE clause filter, strFilter = display for filter if present
-    DoCmd.OpenReport stDocName, acViewPreview, , strWhere, acWindowNormal, strFilter
+    DoCmd.OpenReport stDocName, acViewPreview, , strWHERE, acWindowNormal, strFilter
     
     SysCmd acSysCmdSetStatus, "Report complete."
     

@@ -52,7 +52,7 @@ On Error GoTo Err_Handler
     Set tdf = db.TableDefs(strTable)
 
     'Change the connect value
-    tdf.Connect = strConn '"ODBC;DATABASE=pubs;UID=sa;PWD=;DSN=Publishers"
+    tdf.connect = strConn '"ODBC;DATABASE=pubs;UID=sa;PWD=;DSN=Publishers"
     
 Exit_Sub:
     Set tdf = Nothing
@@ -96,7 +96,7 @@ On Error GoTo Err_Handler
     Set tdf = db.TableDefs(strTable)
 
     'Change the database value
-    tdf.Connect = ";DATABASE=" & strDbPath
+    tdf.connect = ";DATABASE=" & strDbPath
     
     tdf.RefreshLink
     
@@ -343,9 +343,9 @@ On Error GoTo Err_Handler
 
     For Each QDef In CurrentDb.QueryDefs
         If QDef.Name Like QryName Then
-            If InStr(QDef.sql, SearchText) > 0 Then
+            If InStr(QDef.SQL, SearchText) > 0 Then
                 Debug.Print QDef.Name
-                If ShowSQL Then Debug.Print QDef.sql & vbCrLf
+                If ShowSQL Then Debug.Print QDef.SQL & vbCrLf
             End If
         End If
     Next QDef
@@ -381,13 +381,13 @@ End Sub
 '   BLC - 4/6/2017   - initial version for NCPN tools, added casing
 ' ---------------------------------
 Sub SearchDB(SearchText As String, _
-             Optional objType As AcObjectType = acDefault, _
+             Optional ObjType As AcObjectType = acDefault, _
              Optional ObjName As String = "*")
 On Error GoTo Err_Handler
 
     Dim db As Database, obj As AccessObject, ctl As Control, prop As Property
     Dim frm As Form, rpt As Report, mdl As Module
-    Dim oLoaded As Boolean, Found As Boolean, instances As Long
+    Dim oLoaded As Boolean, found As Boolean, instances As Long
     Dim sline As Long, scol As Long, eline As Long, ecol As Long
     Dim ary() As Variant, oType As Variant
 
@@ -399,7 +399,7 @@ On Error GoTo Err_Handler
         'do for all
         ary = Array(acQuery, acForm, acMacro, acModule, acReport)
     Else
-        ary = Array(objType)
+        ary = Array(ObjType)
     End If
     
     'iterate
@@ -434,11 +434,11 @@ On Error GoTo Err_Handler
                         Next prop
                         If frm.HasModule Then
                             sline = 0: scol = 0: eline = 0: ecol = 0: instances = 0
-                            Found = frm.Module.Find(SearchText, sline, scol, eline, ecol)
-                            Do Until Not Found
+                            found = frm.Module.Find(SearchText, sline, scol, eline, ecol)
+                            Do Until Not found
                                 instances = instances + 1
                                 sline = eline + 1: scol = 0: eline = 0: ecol = 0
-                                Found = frm.Module.Find(SearchText, sline, scol, eline, ecol)
+                                found = frm.Module.Find(SearchText, sline, scol, eline, ecol)
                             Loop
                             If instances > 0 Then Debug.Print "Form: " & frm.Name & _
                                "  Module: " & instances & " instances"
@@ -474,11 +474,11 @@ On Error GoTo Err_Handler
                         If Not oLoaded Then DoCmd.OpenModule obj.Name
                         Set mdl = Application.Modules(obj.Name)
                         sline = 0: scol = 0: eline = 0: ecol = 0: instances = 0
-                        Found = mdl.Find(SearchText, sline, scol, eline, ecol)
-                        Do Until Not Found
+                        found = mdl.Find(SearchText, sline, scol, eline, ecol)
+                        Do Until Not found
                             instances = instances + 1
                             sline = eline + 1: scol = 0: eline = 0: ecol = 0
-                            Found = mdl.Find(SearchText, sline, scol, eline, ecol)
+                            found = mdl.Find(SearchText, sline, scol, eline, ecol)
                         Loop
                         If instances > 0 Then Debug.Print obj.Name & ": " & instances & " instances"
                         Set mdl = Nothing
@@ -513,11 +513,11 @@ On Error GoTo Err_Handler
                         Next prop
                         If rpt.HasModule Then
                             sline = 0: scol = 0: eline = 0: ecol = 0: instances = 0
-                            Found = rpt.Module.Find(SearchText, sline, scol, eline, ecol)
-                            Do Until Not Found
+                            found = rpt.Module.Find(SearchText, sline, scol, eline, ecol)
+                            Do Until Not found
                                 instances = instances + 1
                                 sline = eline + 1: scol = 0: eline = 0: ecol = 0
-                                Found = rpt.Module.Find(SearchText, sline, scol, eline, ecol)
+                                found = rpt.Module.Find(SearchText, sline, scol, eline, ecol)
                             Loop
                             If instances > 0 Then Debug.Print "Report: " & rpt.Name & _
                                "  Module: " & instances & " instances"

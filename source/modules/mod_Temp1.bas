@@ -35,13 +35,13 @@ Option Explicit
 ' Revisions:
 '   BLC - 1/9/2017 - initial version
 ' ---------------------------------
-Public Sub SetTempVar(strVar As String, Val As Variant)
+Public Sub SetTempVar(strVar As String, val As Variant)
 On Error GoTo Err_Handler
 
     If Not TempVars(strVar) Is Nothing Then
-        TempVars(strVar) = Val
+        TempVars(strVar) = val
     Else
-        TempVars.Add strVar, Val
+        TempVars.Add strVar, val
     End If
     
 Exit_Handler:
@@ -69,13 +69,13 @@ End Sub
 ' Revisions:    BLC, 9/1/2014 - initial version
 '               BLC, 4/30/2015 - moved from mod_Utilities to mod_Db
 ' ---------------------------------
-Public Function GetTempVarIndex(strItem) As String
+Public Function GetTempVarIndex(stritem) As String
 On Error GoTo Err_Handler
 
 Dim i As Integer
 
     For i = 0 To [TempVars].Count - 1
-        If [TempVars].item(i).Name = strItem Then
+        If [TempVars].Item(i).Name = stritem Then
             'fetch the index and exit
             GetTempVarIndex = i
             Exit Function
@@ -125,7 +125,7 @@ On Error GoTo Err_Handler
     Dim db As DAO.Database
     Dim tdf As DAO.TableDef
     Dim fld As DAO.field
-    Dim item As Variant, fldDef As Variant
+    Dim Item As Variant, fldDef As Variant
     Dim i As Integer
 
     Set db = CurrentDb()
@@ -136,10 +136,10 @@ On Error GoTo Err_Handler
     Set tdf = db.CreateTableDef(tblName)
     
     'prepare array
-    For Each item In aryFields
+    For Each Item In aryFields
     
         'fldDef(0) = name, fldDef(1) = type, fldDef(2) = length (as applicable)
-        fldDef = Split(item, "|")
+        fldDef = Split(Item, "|")
         
         'establish field w/ name & type
         Set fld = tdf.CreateField(fldDef(0), CLng(fldDef(1)))
@@ -478,7 +478,7 @@ Public Function UpdateTempTable(tbl As String, TableQueryOrSQL As String, _
         strError = "Linking table to the current database"
         
         Set tdf = CurrentDb.CreateTableDef(tbl)
-        tdf.Connect = ";DATABASE=" & strTempFile
+        tdf.connect = ";DATABASE=" & strTempFile
         tdf.SourceTableName = tbl
         CurrentDb.TableDefs.Append tdf
         'DisplayNavPane (False)

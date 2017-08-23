@@ -78,7 +78,7 @@ On Error GoTo Err_Handler
         With qdf
         
             'check if record exists in site
-            .sql = GetTemplate(Template)
+            .SQL = GetTemplate(Template)
             
             '-------------------
             ' set SQL parameters --> .Parameters("") = params()
@@ -210,7 +210,7 @@ On Error GoTo Err_Handler
                                 
                                 'adjust node font weight/color for incomplete data
                                 If Template = "s_usys_temp_photo_data" Then
-                                    nodeX.ForeColor = lngRed
+                                    nodeX.forecolor = lngRed
                                     nodeX.Bold = True
                                 End If
                                 
@@ -432,7 +432,7 @@ Public Function IsDuplicateKey(strKey As String, tvw As MSComctlLib.Treeview) As
 On Error GoTo Err_Handler
 
     Dim tvwNode As Node
-    Dim item As Variant
+    Dim Item As Variant
     Dim blnIsDupe As Boolean
     
     blnIsDupe = False
@@ -521,10 +521,10 @@ On Error GoTo Err_Handler
     Dim colTreeNodes As Collection
     
     If blnNodeSelected Then
-        If Node.BackColor = vbHighlight Then
+        If Node.backcolor = vbHighlight Then
             If colTreeNodes.Count > 1 Then
-                Node.BackColor = vbWindowBackground
-                Node.ForeColor = vbWindowText
+                Node.backcolor = vbWindowBackground
+                Node.forecolor = vbWindowText
                 Node.Selected = False
                 colTreeNodes.Remove Node.key
             End If
@@ -532,16 +532,16 @@ On Error GoTo Err_Handler
         End If
     Else
         For i = 0 To colTreeNodes.Count - 1
-            Set SelectedNode = colTreeNodes.item(i) 'colTreeNodes.Remove(, 0)
-            SelectedNode.BackColor = vbWindowBackground
-            SelectedNode.ForeColor = vbWindowText
+            Set SelectedNode = colTreeNodes.Item(i) 'colTreeNodes.Remove(, 0)
+            SelectedNode.backcolor = vbWindowBackground
+            SelectedNode.forecolor = vbWindowText
             colTreeNodes.Remove i
         Next i
     End If
     
     If Not Node Is Nothing Then
-        Node.BackColor = vbHighlight
-        Node.ForeColor = vbHighlightText
+        Node.backcolor = vbHighlight
+        Node.forecolor = vbHighlightText
         colTreeNodes.Add Node, Node.key
     End If
     

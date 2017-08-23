@@ -169,7 +169,7 @@ If IsNull(varFile) Then
     FileExists = False
     Exit Function
 End If
-FileExists = (Len(dir(varFile)) > 0)
+FileExists = (Len(Dir(varFile)) > 0)
 
 Exit_FileExists:
     Exit Function
@@ -285,7 +285,7 @@ End Function
 
 Public Function ReplaceListItem(strList As String, strFind As String, strReplace As String, strDelimiter As String, booCaseSensitive As Boolean, booTrim As Boolean) As String
 
-Dim strItem As String
+Dim stritem As String
 Dim intCompare As Integer
 Dim strResult As String
 Dim strChar As String
@@ -301,19 +301,19 @@ If booTrim Then strFind = Trim(strFind)
 Do Until InStr(strList, strDelimiter) = 0
     'Get each item in the list
     If booTrim Then
-        strItem = Trim(Left(strList, InStr(strList, strDelimiter) - 1))
+        stritem = Trim(Left(strList, InStr(strList, strDelimiter) - 1))
     Else
-        strItem = Left(strList, InStr(strList, strDelimiter) - 1)
+        stritem = Left(strList, InStr(strList, strDelimiter) - 1)
     End If
         
     strList = Mid(strList, InStr(strList, strDelimiter) + 1)
 
     'Compare the item to the string we wish to replace
-    If StrComp(strItem, strFind, intCompare) = 0 Then
+    If StrComp(stritem, strFind, intCompare) = 0 Then
         'If they're the same, then replace the item
         strResult = strResult & strReplace & strDelimiter
     Else
-        strResult = strResult & strItem & strDelimiter
+        strResult = strResult & stritem & strDelimiter
     End If
 Loop
 
@@ -365,9 +365,9 @@ For Each ctl In frm.Controls
     If ctl.Tag = strTag Then
         Select Case strOperation
             Case "Hide"
-                ctl.Visible = False
+                ctl.visible = False
             Case "Unhide"
-                ctl.Visible = True
+                ctl.visible = True
             Case "Disable"
                 ctl.Enabled = False
             Case "Enable"
@@ -460,10 +460,10 @@ Loop
 GetFileName = strFilePath
 End Function
 
-Public Function FileIsReadOnly(strFilename As String) As Boolean
+Public Function FileIsReadOnly(strFileName As String) As Boolean
 On Error GoTo Err_FileIsReadOnly
 
-FileIsReadOnly = ((GetAttr(strFilename) And vbReadOnly) <> 0)
+FileIsReadOnly = ((GetAttr(strFileName) And vbReadOnly) <> 0)
 
 Exit_FileIsReadOnly:
     Exit Function
@@ -471,7 +471,7 @@ Exit_FileIsReadOnly:
 Err_FileIsReadOnly:
     Select Case Err.Number
         Case 76  'file not found
-            MsgBox "Unable to locate file " & strFilename & "."
+            MsgBox "Unable to locate file " & strFileName & "."
         Case Else
             MsgBox Err.Number & " - " & Err.Description
             Resume Exit_FileIsReadOnly
@@ -481,7 +481,7 @@ End Function
 
 Public Function ListCompareRemove(strListMain As String, ByVal strListToKeep As String, strDelimiter As String) As String
 
-Dim strItem As String
+Dim stritem As String
 Dim intI As Integer
 Dim strNewList As String
 
@@ -498,11 +498,11 @@ If Not Right(strListMain, 1) = strDelimiter Then
 End If
 
 Do Until InStr(strListMain, strDelimiter) = 0
-    strItem = strDelimiter & Trim(Left(strListMain, InStr(strListMain, strDelimiter)))
+    stritem = strDelimiter & Trim(Left(strListMain, InStr(strListMain, strDelimiter)))
     strListMain = Mid(strListMain, InStr(strListMain, strDelimiter) + 1)
 
-    If InStr(strListToKeep, strItem) > 0 Then
-        strNewList = strNewList & Mid(strItem, 2)
+    If InStr(strListToKeep, stritem) > 0 Then
+        strNewList = strNewList & Mid(stritem, 2)
     End If
 Loop
 
@@ -548,16 +548,16 @@ End Function
 Public Function ListCompare(strListMain As String, ByVal strListToRemove As String, strDelimiter As String) As String
 
 'Compares two semicolon-delimited lists and eliminates items from strListMain that are in strListToRemove
-Dim strItem As String
+Dim stritem As String
 Dim intI As Integer
 Dim strNewList As String
 
 Do Until InStr(strListToRemove, strDelimiter) = 0
-    strItem = Trim(Left(strListToRemove, InStr(strListToRemove, strDelimiter) - 1))
+    stritem = Trim(Left(strListToRemove, InStr(strListToRemove, strDelimiter) - 1))
     strListToRemove = Mid(strListToRemove, InStr(strListToRemove, strDelimiter) + 1)
 
     'Remove the item from inside the body of the Main List
-    strListMain = ReplaceListItem(strListMain, strItem, "", strDelimiter, False, True)
+    strListMain = ReplaceListItem(strListMain, stritem, "", strDelimiter, False, True)
 Loop
 
     'Do the last item in the list
@@ -569,12 +569,12 @@ strNewList = DelimiterCleanup(strListMain, strDelimiter)
 ListCompare = strNewList
 End Function
 
-Public Function UnrecognizedDatabaseFormat(strFilename As String) As Boolean
+Public Function UnrecognizedDatabaseFormat(strFileName As String) As Boolean
 Dim db As Database
 
 On Error GoTo Err_UnrecognizedDatabaseFormat
 
-Set db = OpenDatabase(strFilename)
+Set db = OpenDatabase(strFileName)
 
 UnrecognizedDatabaseFormat = False
 
@@ -613,7 +613,7 @@ End Function
 Public Function FiscalYear(datDate As Date) As Integer
 Dim intYear As Integer
 
-intYear = Year(datDate)
+intYear = year(datDate)
 If Month(datDate) >= 10 Then
     intYear = intYear + 1
 End If
@@ -959,7 +959,7 @@ Function DeleteObject_TSB(intType As Integer, strName As String) As Boolean
 
 End Function
 
-Public Function fPathParsing(FullPath As String, PathFormat As String) As String
+Public Function fPathParsing(fullPath As String, PathFormat As String) As String
 ' Edited by: Alan Williams 11/5/2002
 ' Parses fullpath into Dir, filename, and extension.
 ' Example calls:
@@ -973,70 +973,70 @@ Public Function fPathParsing(FullPath As String, PathFormat As String) As String
             'Seasonals
             '? fPathParsing("C:\work\Seasonals.xls", "E")
             '.xls
-Dim i As Integer, f As String, Found As Integer
-Dim DirName As String, fName As String, Ext As String
+Dim i As Integer, f As String, found As Integer
+Dim DirName As String, FName As String, Ext As String
   
-  FullPath = Trim$(FullPath)
+  fullPath = Trim$(fullPath)
 '
 ' Get directory name
 '
   f = ""
-  Found = False
-  For i = Len(FullPath) To 1 Step -1
-    If Mid$(FullPath, i, 1) = "\" Then
-      f = Mid$(FullPath, i + 1)
-      DirName = Left$(FullPath, i)
-      Found = True
+  found = False
+  For i = Len(fullPath) To 1 Step -1
+    If Mid$(fullPath, i, 1) = "\" Then
+      f = Mid$(fullPath, i + 1)
+      DirName = Left$(fullPath, i)
+      found = True
       Exit For
     End If
   Next i
-  If Not Found Then
-    f = FullPath
+  If Not found Then
+    f = fullPath
   End If
 '
 ' Get File name and extension
 '
   If f = "." Or f = ".." Then
-    fName = f
+    FName = f
   Else
     i = InStr(f, ".")
     If i > 0 Then
-      fName = Left$(f, i - 1)
+      FName = Left$(f, i - 1)
       Ext = Mid$(f, i)
     Else
-      fName = f
+      FName = f
     End If
   End If
 Select Case PathFormat
     Case "D"
         fPathParsing = DirName
     Case "N"
-        fPathParsing = fName
+        fPathParsing = FName
     Case "E"
         fPathParsing = Ext
     Case "DN"
-        fPathParsing = DirName & fName
+        fPathParsing = DirName & FName
     Case "NE"
-        fPathParsing = fName & Ext
+        fPathParsing = FName & Ext
     Case "DNE"
-        fPathParsing = DirName & fName & Ext
+        fPathParsing = DirName & FName & Ext
     Case Else
-        fPathParsing = FullPath
+        fPathParsing = fullPath
 
 End Select
 
 End Function
 
-Public Sub Create_File(strFullFileName As String, Text As String)
-  Dim fso, txtfile
+Public Sub Create_File(strFullFileName As String, text As String)
+  Dim FSO, txtFile
   
-  Set fso = CreateObject("Scripting.FileSystemObject")
-  Set txtfile = fso.CreateTextFile(strFullFileName, True)
-  txtfile.Write (Text)
-  txtfile.Close
+  Set FSO = CreateObject("Scripting.FileSystemObject")
+  Set txtFile = FSO.CreateTextFile(strFullFileName, True)
+  txtFile.Write (text)
+  txtFile.Close
   
-  Set txtfile = Nothing
-  Set fso = Nothing
+  Set txtFile = Nothing
+  Set FSO = Nothing
 End Sub
 
 Public Function XML_Tag(strTag As String, strValue As String) As String

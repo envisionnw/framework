@@ -484,7 +484,7 @@ End Function
 ' Revisions:
 '   BLC - 3/30/2017 - initial version
 ' ---------------------------------
-Sub SetQueryProperty(qdf As DAO.QueryDef, prop As String, Val As Variant) 'qry As String, prop As String, val As Variant)
+Sub SetQueryProperty(qdf As DAO.QueryDef, prop As String, val As Variant) 'qry As String, prop As String, val As Variant)
 On Error Resume Next
 '    Dim db As Database
 '    Dim qdf As QueryDef
@@ -496,10 +496,10 @@ On Error Resume Next
     With qdf
         Set prp = qdf.Properties(prop)
         If Err Then
-            Set prp = .CreateProperty(prop, dbText, Val)
+            Set prp = .CreateProperty(prop, dbText, val)
             .Properties.Append prp
         Else
-            prp.Value = Val
+            prp.Value = val
         End If
     End With
     
@@ -1133,7 +1133,7 @@ On Error GoTo Err_Handler
         If Len(tdf.Name) > Len(Replace(tdf.Name, "usys", "")) And ShowMSysTables = False Then GoTo Continue
         
         'handle linked tables
-        If Len(tdf.Connect) > 0 And ShowLinkedTables = False Then GoTo Continue
+        If Len(tdf.connect) > 0 And ShowLinkedTables = False Then GoTo Continue
         
         tbls = tbls & "|" & tdf.Name
         
@@ -1466,7 +1466,7 @@ On Error GoTo Err_Handler
                     .Update
                 Next
                 
-                .Index = "RecCount"
+                .index = "RecCount"
                 '.Close
             End With
         End With
@@ -1656,7 +1656,7 @@ End Sub
 '   BLC - 6/27/2016- revised to match
 '   BLC - 3/30/2017- added displayMsg to enable silent deletes
 ' ---------------------------------
-Public Sub DeleteRecord(tbl As String, ID As Long, Optional DisplayMsg As Boolean = True)
+Public Sub DeleteRecord(tbl As String, ID As Long, Optional displayMsg As Boolean = True)
 On Error GoTo Err_Handler
     Dim strSQL As String
 
@@ -1669,7 +1669,7 @@ Debug.Print strSQL
     DoCmd.RunSQL strSQL
     DoCmd.SetWarnings True
     
-    If DisplayMsg Then
+    If displayMsg Then
         'show deleted record message & clear
         DoCmd.OpenForm "MsgOverlay", acNormal, , , , acDialog, _
             tbl & PARAM_SEPARATOR & ID & _
@@ -1936,7 +1936,7 @@ Err_Handler:
                 Set qdf = CurrentDb.QueryDefs("UsysTempQuery")
             End If
             
-            qdf.sql = strErrorSQL
+            qdf.SQL = strErrorSQL
             
             DoCmd.OpenQuery "USysTempQuery", acViewNormal
 
@@ -1978,7 +1978,7 @@ On Error GoTo Err_Handler
     
     Dim d As Scripting.Dictionary, tIDs As Scripting.Dictionary
     Dim i As Integer
-    Dim X As Variant
+    Dim x As Variant
     
     Set d = g_AppTemplates
     
@@ -1986,14 +1986,14 @@ On Error GoTo Err_Handler
     
     'iterate through the global template dictionary
     'For i = 0 To d.Count - 1
-    For Each X In d
+    For Each x In d
     
         'add @ template to the dictionary
         '--------------------------------------------------------------
         ' Note: @ of the global template dictionary's items is itself a dictionary
         '       so reference them via d.Items()(i).Item("keyname")
         '--------------------------------------------------------------
-        tIDs.Add d.item(X).item("ID"), d.item(X).item("TemplateName")
+        tIDs.Add d.Item(x).Item("ID"), d.Item(x).Item("TemplateName")
         'tIDs.Add d.Items()(x).Item("ID"), d.Items()(x).Item("TemplateName")
         'tIDs.Add d.Items()(i).Item("ID"), d.Items()(i).Item("TemplateName")
         'tIDs.Add d.Items()(i).Item("ID"), d.Keys()(i)
@@ -2048,7 +2048,7 @@ Debug.Print strTemplate
     'initialize AppTemplates if not populated
     If g_AppTemplates Is Nothing Then GetTemplates
 
-    Template = g_AppTemplates(strTemplate).item("Template")
+    Template = g_AppTemplates(strTemplate).Item("Template")
     
     If Len(Params) > 0 Then
     
@@ -2077,7 +2077,7 @@ Debug.Print strTemplate
                 ary2 = Split(ary(i), ":")
             End If
             'compare datatype to aryParams value
-            If IsTypeMatch(ary2(1), g_AppTemplates(strTemplate).item("Params").item(ary2(0))) Then
+            If IsTypeMatch(ary2(1), g_AppTemplates(strTemplate).Item("Params").Item(ary2(0))) Then
                 
                 'prepare replaced value
                 swap = "[" & ary2(0) & "]"
@@ -2125,7 +2125,7 @@ Err_Handler:
                 Set qdf = CurrentDb.QueryDefs("UsysTempQuery")
             End If
             
-            qdf.sql = strErrorSQL
+            qdf.SQL = strErrorSQL
             
             DoCmd.OpenQuery "USysTempQuery", acViewNormal
 
@@ -2197,18 +2197,18 @@ End If
             
             iTemplate = ids(tID)
             
-            strTemplate = g_AppTemplates(iTemplate).item("TemplateName")
+            strTemplate = g_AppTemplates(iTemplate).Item("TemplateName")
             
             Select Case LCase(action)
                 Case "run"  'generates dep queries
                     
                     'handle dependencies of dependencies first
-                    deps2 = g_AppTemplates(strTemplate).item("Dependencies")
+                    deps2 = g_AppTemplates(strTemplate).Item("Dependencies")
 
                     If Len(deps2) > 0 Then HandleDependentQueries deps2, "run"
                 
                     'retrieve template SQL
-                    strSQL = g_AppTemplates(strTemplate).item("Template")
+                    strSQL = g_AppTemplates(strTemplate).Item("Template")
                 
                     'create & run query
                     'qdf.Name = strTemplate 'rs("TemplateName")
@@ -2291,8 +2291,8 @@ On Error GoTo Err_Handler
         Dim strTemplate As String
         Dim iTemplate As Integer
          
-        strTemplate = g_AppTemplates.items()(i).item("TemplateName")
-        iTemplate = g_AppTemplates.items()(i).item("ID")
+        strTemplate = g_AppTemplates.Items()(i).Item("TemplateName")
+        iTemplate = g_AppTemplates.Items()(i).Item("ID")
                     
         If QueryExists(strTemplate) Then
             'close & remove

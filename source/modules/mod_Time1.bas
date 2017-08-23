@@ -46,7 +46,7 @@ Public Function FiscalYear(ByVal datDate As Date, _
     Dim intYear As Integer
     Dim strYear As String
 
-    intYear = Year(datDate)
+    intYear = year(datDate)
     If Month(datDate) >= 10 Then intYear = intYear + 1
 
     ' Year string depending on 2 or 4 characters

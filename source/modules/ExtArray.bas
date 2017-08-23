@@ -176,7 +176,7 @@ End Sub
 ' Revisions:
 '   BLC - 8/1/2016 - initial version
 ' ---------------------------------
-Public Sub AddItem(item As Variant)
+Public Sub AddItem(Item As Variant)
 On Error GoTo Err_Handler
 
 '    Public Sub Add(Of T)(ByRef arr As T(), item As T)

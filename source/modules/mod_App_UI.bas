@@ -50,16 +50,16 @@ Public NoData As Scripting.Dictionary
 
 ' -- Functions --
 Private Declare Function GetWindowLong Lib "user32" Alias "GetWindowLongA" _
-  (ByVal hWnd As Long, _
+  (ByVal hwnd As Long, _
    ByVal nIndex As Long) As Long
  
 Private Declare Function SetWindowLong Lib "user32" Alias "SetWindowLongA" _
-  (ByVal hWnd As Long, _
+  (ByVal hwnd As Long, _
    ByVal nIndex As Long, _
    ByVal dwNewLong As Long) As Long
  
 Private Declare Function SetLayeredWindowAttributes Lib "user32" _
-  (ByVal hWnd As Long, _
+  (ByVal hwnd As Long, _
    ByVal crKey As Long, _
    ByVal bAlpha As Byte, _
    ByVal dwFlags As Long) As Long
@@ -146,7 +146,7 @@ On Error GoTo Err_Handler
                 !Plot_ID = intPlotID
                 !Master_Family = strFamily
                 !Utah_Species = strUtah_Species
-                !SpeciesYears = IIf(Len(strSpeciesYears) > 0, strSpeciesYears, rs!Year)
+                !SpeciesYears = IIf(Len(strSpeciesYears) > 0, strSpeciesYears, rs!year)
                 !PlotParkSpecies = strParkPlotSpecies
                 !ParkPlot = strParkPlot
                 'update when rs!ParkPlotSpecies <> strParkPlotSpecies
@@ -235,7 +235,7 @@ End Sub
 Public Function GetNoDataCollected(levelID As String, level As String) As Scripting.Dictionary
 On Error GoTo Err_Handler
 
-    Dim strSQL As String, strItem As String
+    Dim strSQL As String, stritem As String
     Dim rs As DAO.Recordset
     
     Set NoData = New Scripting.Dictionary 'publicly set
@@ -267,8 +267,8 @@ On Error GoTo Err_Handler
     
         Do Until rs.EOF
     
-            strItem = rs("SampleType") 'cannot use directly in NoData.item(rs("SampleType")) -> adds new item
-            NoData.item(strItem) = 1
+            stritem = rs("SampleType") 'cannot use directly in NoData.item(rs("SampleType")) -> adds new item
+            NoData.Item(stritem) = 1
             
             rs.MoveNext
             
@@ -311,13 +311,13 @@ End Function
 Public Function SetNoDataCollected(levelID As String, level As String, SampleType As String, cbxValue As Integer) As Scripting.Dictionary
 On Error GoTo Err_Handler
     
-    Dim strSQL As String, strItem As String
+    Dim strSQL As String, stritem As String
     Dim rs As DAO.Recordset
     
     Set NoData = New Scripting.Dictionary 'publicly set
     Set NoData = GetNoDataCollected(levelID, level)
     
-    NoData.item(SampleType) = cbxValue
+    NoData.Item(SampleType) = cbxValue
     
     'update the table appropriately
     If cbxValue = 1 Then
@@ -375,12 +375,12 @@ On Error GoTo Err_Handler
     resetcolor = False
     
     'change the backcolor --> revert to default only if the conditions aren't met
-    ctrl.BackColor = color
+    ctrl.backcolor = color
     
     'null
     If checkNULL Then
         'reset backcolor if null
-        If IsNull(Trim(ctrl.Text)) Then
+        If IsNull(Trim(ctrl.text)) Then
             resetcolor = True
             GoTo Exit_Handler
         End If
@@ -389,34 +389,34 @@ On Error GoTo Err_Handler
     'empty
     If checkEmpty Then
         'reset backcolor if empty
-        If Len(Trim(ctrl.Text)) = 0 Then
+        If Len(Trim(ctrl.text)) = 0 Then
             resetcolor = True
             GoTo Exit_Handler
         End If
     End If
     
     'threshold
-    If Not IsNull(threshold) And IsNumeric(ctrl.Text) Then
+    If Not IsNull(threshold) And IsNumeric(ctrl.text) Then
         'set value base on compareType & threshold
         Select Case compareType
             Case "gt"
-                If Not CDbl(ctrl.Text) > threshold Then
+                If Not CDbl(ctrl.text) > threshold Then
                     resetcolor = True
                 End If
             Case "gteq"
-                If Not CDbl(ctrl.Text) >= threshold Then
+                If Not CDbl(ctrl.text) >= threshold Then
                     resetcolor = True
                 End If
             Case "lt"
-                If Not CDbl(ctrl.Text) < threshold Then
+                If Not CDbl(ctrl.text) < threshold Then
                     resetcolor = True
                 End If
             Case "lteq"
-                If Not CDbl(ctrl.Text) <= threshold Then
+                If Not CDbl(ctrl.text) <= threshold Then
                     resetcolor = True
                 End If
             Case "eq"
-                If Not CDbl(ctrl.Text) = threshold Then
+                If Not CDbl(ctrl.text) = threshold Then
                     resetcolor = True
                 End If
         End Select
@@ -425,7 +425,7 @@ On Error GoTo Err_Handler
 Exit_Handler:
     'reset to default backcolor
     If resetcolor Then
-        ctrl.BackColor = CTRL_DEFAULT_BACKCOLOR
+        ctrl.backcolor = CTRL_DEFAULT_BACKCOLOR
     End If
     
     Exit Sub
@@ -511,19 +511,19 @@ On Error GoTo Err_Handler
             'update A, B, C, D transect 1000hr fuels as well
             .Controls("cbxNo1000hrA") = 0
             .Controls("cbxNo1000hrA").Enabled = True
-            .Controls("rctNo1000hrA").Visible = True
+            .Controls("rctNo1000hrA").visible = True
             
             .Controls("cbxNo1000hrB") = 0
             .Controls("cbxNo1000hrB").Enabled = True
-            .Controls("rctNo1000hrB").Visible = True
+            .Controls("rctNo1000hrB").visible = True
             
             .Controls("cbxNo1000hrC") = 0
             .Controls("cbxNo1000hrC").Enabled = True
-            .Controls("rctNo1000hrC").Visible = True
+            .Controls("rctNo1000hrC").visible = True
         
             .Controls("cbxNo1000hrD") = 0
             .Controls("cbxNo1000hrD").Enabled = True
-            .Controls("rctNo1000hrD").Visible = True
+            .Controls("rctNo1000hrD").visible = True
         End With
     
         'check for A, B, C, D transect 1000hr fuels
@@ -543,7 +543,7 @@ On Error GoTo Err_Handler
                         'update checkbox/rectangle
                         .Controls("cbxNo1000hrA") = 0
                         .Controls("cbxNo1000hrA").Enabled = False
-                        .Controls("rctNo1000hrA").Visible = False
+                        .Controls("rctNo1000hrA").visible = False
                     End With
                     
                 Case "B"
@@ -554,7 +554,7 @@ On Error GoTo Err_Handler
                         'update checkbox/rectangle
                         .Controls("cbxNo1000hrB") = 0
                         .Controls("cbxNo1000hrB").Enabled = False
-                        .Controls("rctNo1000hrB").Visible = False
+                        .Controls("rctNo1000hrB").visible = False
                     End With
                     
                 Case "C"
@@ -565,7 +565,7 @@ On Error GoTo Err_Handler
                         'update checkbox/rectangle
                         .Controls("cbxNo1000hrC") = 0
                         .Controls("cbxNo1000hrC").Enabled = False
-                        .Controls("rctNo1000hrC").Visible = False
+                        .Controls("rctNo1000hrC").visible = False
                     End With
                     
                 Case "D"
@@ -576,7 +576,7 @@ On Error GoTo Err_Handler
                         'update checkbox/rectangle
                         .Controls("cbxNo1000hrD") = 0
                         .Controls("cbxNo1000hrD").Enabled = False
-                        .Controls("rctNo1000hrD").Visible = False
+                        .Controls("rctNo1000hrD").visible = False
                     End With
             End Select
             .MoveNext
@@ -588,10 +588,10 @@ On Error GoTo Err_Handler
         Set dNoDataEvent = GetNoDataCollected(frm.Parent.Form.Controls("Event_ID"), "E")
         
         With dNoDataEvent
-            frm.Parent.Form.Controls("cbxNo1000hrA") = .item("Fuel-1000hr-A")
-            frm.Parent.Form.Controls("cbxNo1000hrB") = .item("Fuel-1000hr-B")
-            frm.Parent.Form.Controls("cbxNo1000hrC") = .item("Fuel-1000hr-C")
-            frm.Parent.Form.Controls("cbxNo1000hrD") = .item("Fuel-1000hr-D")
+            frm.Parent.Form.Controls("cbxNo1000hrA") = .Item("Fuel-1000hr-A")
+            frm.Parent.Form.Controls("cbxNo1000hrB") = .Item("Fuel-1000hr-B")
+            frm.Parent.Form.Controls("cbxNo1000hrC") = .Item("Fuel-1000hr-C")
+            frm.Parent.Form.Controls("cbxNo1000hrD") = .Item("Fuel-1000hr-D")
         End With
     End If
 
@@ -838,7 +838,7 @@ On Error GoTo Err_Handler
             Case "Contact"
                 'requires Contact & Contact_Access data
                 Dim qdf As DAO.QueryDef
-                CurrentDb.QueryDefs("usys_temp_qdf").sql = GetTemplate("s_contact_access")
+                CurrentDb.QueryDefs("usys_temp_qdf").SQL = GetTemplate("s_contact_access")
                 
                 strTable = "usys_temp_qdf"
                 'set form fields to record fields as datasource

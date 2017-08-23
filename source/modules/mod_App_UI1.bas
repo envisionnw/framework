@@ -103,7 +103,7 @@ On Error GoTo Err_Handler
     If ctrl.ControlType = acLabel Then
         ctrl.Caption = strTitle
         If strContext <> "DbAdmin" Then
-            ctrl.Visible = True
+            ctrl.visible = True
         End If
     End If
     
@@ -182,7 +182,7 @@ On Error GoTo Err_Handler
     If ctrl.ControlType = acLabel Then
         ctrl.Caption = strInstructions
         If strContext <> "DbAdmin" Then
-            ctrl.Visible = True
+            ctrl.visible = True
         End If
     End If
     
@@ -427,56 +427,56 @@ End Function
 Public Sub ClickAction(action As String)
 On Error GoTo Err_Handler
 
-    Dim fName As String, rName As String, oArgs As String
+    Dim FName As String, rName As String, oArgs As String
     Dim StartFolder As String, strPics As String, strPath As String
     
     action = LCase(Nz(Trim(action), ""))
     
     'defaults
-    fName = ""
+    FName = ""
     rName = ""
     oArgs = ""
     
     Select Case Trim(action)
         'Where?
         Case "site"
-            fName = "Site"
+            FName = "Site"
         Case "feature"
-            fName = "Feature"
+            FName = "Feature"
         Case "transect"
-            fName = "VegTransect"
+            FName = "VegTransect"
             oArgs = ""
         Case "plot"
-            fName = "VegPlot"
+            FName = "VegPlot"
         Case "location"
-            fName = "Location"
+            FName = "Location"
         'Sampling
         Case "event"
-            fName = "Events"
+            FName = "Events"
             oArgs = "" 'site & protocol IDs
         Case "vegplots"
-            fName = "VegPlot"
+            FName = "VegPlot"
             oArgs = "" 'site & protocol IDs
         Case "locations"
-            fName = "Location"
+            FName = "Location"
             oArgs = "" 'collection source name - feature (A-G), transect #(1-8) &
         Case "people"
-            fName = "Contact"
+            FName = "Contact"
             oArgs = "Main"
         'VegetationS
         Case "veg plots"
-            fName = "VegPlot"
+            FName = "VegPlot"
         Case "woody canopy cover"
-            fName = "VegWalk" '"WoodyCanopyCover"
+            FName = "VegWalk" '"WoodyCanopyCover"
             oArgs = "" '"1|2016|WCC"
         Case "understory cover"
         Case "vegetation walk"
-            fName = "VegWalk"
+            FName = "VegWalk"
         Case "species"
         Case "unknowns"
-            fName = "Unknown"
+            FName = "Unknown"
         Case "species search"
-            fName = "SpeciesSearch"
+            FName = "SpeciesSearch"
             oArgs = "Main"
             'disable double click events
             SetTempVar "originForm", "DisableDoubleClick"
@@ -487,15 +487,15 @@ On Error GoTo Err_Handler
 '            End If
         'Observations
         Case "photos"
-            fName = "Photo" '"Tree"
+            FName = "Photo" '"Tree"
         Case "transducers"
-            fName = "Transducer"
+            FName = "Transducer"
             oArgs = ""
         Case "Survey Files"
-            fName = "SurveyFile"
+            FName = "SurveyFile"
             oArgs = ""
         Case "Upload Survey File"
-            fName = ""
+            FName = ""
             oArgs = ""
             
             'handle upload
@@ -516,7 +516,7 @@ On Error GoTo Err_Handler
 '            ToggleForm "Main", 0
             
         Case "batch upload photos"
-            fName = ""
+            FName = ""
             oArgs = ""
             
             'handle upload
@@ -547,13 +547,13 @@ On Error GoTo Err_Handler
             rName = "Photo"
             oArgs = ""
         Case "sediment class settings"
-            fName = "ModWentworth"
+            FName = "ModWentworth"
         Case "sheet settings"
-            fName = "SetDatasheetDefaults"
+            FName = "SetDatasheetDefaults"
         Case "transducer"
             rName = "Transducer"
         Case "tasks"
-            fName = "Task"
+            FName = "Task"
         'Reports
         Case "# Plots"
             rName = "NumPlots"
@@ -566,12 +566,12 @@ On Error GoTo Err_Handler
         Case "VegWalk - Species"
             rName = "SpeciesUnique"
         Case "More..."
-            fName = "AppReport"
+            FName = "AppReport"
     End Select
 
-    If Len(fName) > 0 Then
-        Forms("Main").Visible = False
-        DoCmd.OpenForm fName, acNormal, OpenArgs:=oArgs
+    If Len(FName) > 0 Then
+        Forms("Main").visible = False
+        DoCmd.OpenForm FName, acNormal, OpenArgs:=oArgs
     ElseIf Len(rName) > 0 Then
         'print preview mode - acViewPreview
         DoCmd.OpenReport rName, acViewPreview
@@ -653,7 +653,7 @@ On Error GoTo Err_Handler
             Case "Contact"
                 'requires Contact & Contact_Access data
                 Dim qdf As DAO.QueryDef
-                CurrentDb.QueryDefs("usys_temp_qdf").sql = GetTemplate("s_contact_access")
+                CurrentDb.QueryDefs("usys_temp_qdf").SQL = GetTemplate("s_contact_access")
                 
                 strTable = "usys_temp_qdf"
                 'set form fields to record fields as datasource

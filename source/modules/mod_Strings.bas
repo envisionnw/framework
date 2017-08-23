@@ -683,17 +683,17 @@ End Function
 Public Function ParseString(str As String, idx As Integer, Optional delimiter As String = "|") As String
 On Error GoTo Err_Handler
 
-    Dim items() As String
-    Dim item As String
+    Dim Items() As String
+    Dim Item As String
         
-    items() = Split(str, delimiter)
+    Items() = Split(str, delimiter)
     
-    If UBound(items) + 1 > idx Then
-        item = items(idx)
+    If UBound(Items) + 1 > idx Then
+        Item = Items(idx)
     End If
     
 Exit_Handler:
-    ParseString = item
+    ParseString = Item
     Exit Function
     
 Err_Handler:

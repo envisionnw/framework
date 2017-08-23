@@ -943,13 +943,13 @@ End Function
 ' Revisions:    BLC, 9/1/2014 - initial version
 '               BLC, 4/30/2015 - moved from mod_Utilities to mod_Db
 ' ---------------------------------
-Public Function GetTempVarIndex(strItem) As String
+Public Function GetTempVarIndex(stritem) As String
 On Error GoTo Err_Handler
 
 Dim i As Integer
 
     For i = 0 To [TempVars].Count - 1
-        If [TempVars].item(i).Name = strItem Then
+        If [TempVars].Item(i).Name = stritem Then
             'fetch the index and exit
             GetTempVarIndex = i
             Exit Function
@@ -1195,7 +1195,7 @@ Err_Handler:
                 Set qdf = CurrentDb.QueryDefs("UsysTempQuery")
             End If
             
-            qdf.sql = strErrorSQL
+            qdf.SQL = strErrorSQL
             
             DoCmd.OpenQuery "USysTempQuery", acViewNormal
 
@@ -1242,7 +1242,7 @@ Debug.Print strTemplate
     'initialize AppTemplates if not populated
     If g_AppTemplates Is Nothing Then GetTemplates
 
-    Template = g_AppTemplates(strTemplate).item("Template")
+    Template = g_AppTemplates(strTemplate).Item("Template")
     
     If Len(Params) > 0 Then
     
@@ -1271,7 +1271,7 @@ Debug.Print strTemplate
                 ary2 = Split(ary(i), ":")
             End If
             'compare datatype to aryParams value
-            If IsTypeMatch(ary2(1), g_AppTemplates(strTemplate).item("Params").item(ary2(0))) Then
+            If IsTypeMatch(ary2(1), g_AppTemplates(strTemplate).Item("Params").Item(ary2(0))) Then
                 
                 'prepare replaced value
                 swap = "[" & ary2(0) & "]"
@@ -1319,7 +1319,7 @@ Err_Handler:
                 Set qdf = CurrentDb.QueryDefs("UsysTempQuery")
             End If
             
-            qdf.sql = strErrorSQL
+            qdf.SQL = strErrorSQL
             
             DoCmd.OpenQuery "USysTempQuery", acViewNormal
 
@@ -1371,7 +1371,7 @@ On Error GoTo Err_Handler
                     .Update
                 Next
                 
-                .Index = "RecCount"
+                .index = "RecCount"
                 '.Close
             End With
         End With
@@ -1658,7 +1658,7 @@ On Error GoTo Err_Handler
     Dim db As DAO.Database
     Dim tdf As DAO.TableDef
     Dim fld As DAO.field
-    Dim item As Variant, fldDef As Variant
+    Dim Item As Variant, fldDef As Variant
     Dim i As Integer
 
     Set db = CurrentDb()
@@ -1669,10 +1669,10 @@ On Error GoTo Err_Handler
     Set tdf = db.CreateTableDef(tblName)
     
     'prepare array
-    For Each item In aryFields
+    For Each Item In aryFields
     
         'fldDef(0) = name, fldDef(1) = type, fldDef(2) = length (as applicable)
-        fldDef = Split(item, "|")
+        fldDef = Split(Item, "|")
         
         'establish field w/ name & type
         Set fld = tdf.CreateField(fldDef(0), CLng(fldDef(1)))
@@ -1825,7 +1825,7 @@ End Sub
 ' Source/date:  Bonnie Campbell, September 20 2016
 ' Revisions:    BLC, 9/20/2016 - initial version
 ' ---------------------------------
-Public Function GetParamsFromSQL(sql As String) As String
+Public Function GetParamsFromSQL(SQL As String) As String
 On Error GoTo Err_Handler
 
     Dim Params As String
@@ -1833,11 +1833,11 @@ On Error GoTo Err_Handler
     'default
     Params = ""
     
-    If Len(sql) > 0 Then
-        If InStr(sql, "PARAMETERS ") Then
+    If Len(SQL) > 0 Then
+        If InStr(SQL, "PARAMETERS ") Then
             Dim delimPos As Integer
             
-            Params = Replace(sql, "PARAMETERS ", "")
+            Params = Replace(SQL, "PARAMETERS ", "")
             delimPos = InStr(Params, ";")
             Params = Left(Params, delimPos - 1)
             Params = Replace(Params, ", ", "|")
@@ -1911,7 +1911,7 @@ On Error GoTo Err_Handler
         If Len(tdf.Name) > Len(Replace(tdf.Name, "usys", "")) And ShowMSysTables = False Then GoTo Continue
         
         'handle linked tables
-        If Len(tdf.Connect) > 0 And ShowLinkedTables = False Then GoTo Continue
+        If Len(tdf.connect) > 0 And ShowLinkedTables = False Then GoTo Continue
         
         tbls = tbls & "|" & tdf.Name
         
@@ -2120,13 +2120,13 @@ End Function
 ' Revisions:
 '   BLC - 1/9/2017 - initial version
 ' ---------------------------------
-Public Sub SetTempVar(strVar As String, Val As Variant)
+Public Sub SetTempVar(strVar As String, val As Variant)
 On Error GoTo Err_Handler
 
     If Not TempVars(strVar) Is Nothing Then
-        TempVars(strVar) = Val
+        TempVars(strVar) = val
     Else
-        TempVars.Add strVar, Val
+        TempVars.Add strVar, val
     End If
     
 Exit_Handler:

@@ -38,7 +38,7 @@ Public Sub lvwPopulateFromQuery(ctrl As MSComctlLib.ListView, strSQL As String, 
 On Error GoTo Err_Handler
     Dim dbs As Database
     Dim rs As Recordset
-    Dim item As ListItem
+    Dim Item As ListItem
     Dim i As Integer
     
     On Error Resume Next
@@ -51,13 +51,13 @@ On Error GoTo Err_Handler
     If rs.RecordCount > 0 Then
         rs.MoveFirst
         Do Until rs.EOF
-            Set item = ctrl.ListItems.Add(, , rs(aryFields(i)))
+            Set Item = ctrl.ListItems.Add(, , rs(aryFields(i)))
             For i = 1 To UBound(aryFields)
-              item.SubItems(i) = rs(aryFields(i))
+              Item.SubItems(i) = rs(aryFields(i))
             Next
             On Error Resume Next 'continue even in error
             rs.MoveNext
-            Set item = Nothing
+            Set Item = Nothing
         Loop
     End If
 
@@ -98,7 +98,7 @@ On Error GoTo Err_Handler
 
     Dim rows As Integer, cols As Integer, i As Integer, j As Integer, matches As Integer
     Dim frm As Form
-    Dim strItem As String, strColHeads As String, aryColWidths() As String
+    Dim stritem As String, strColHeads As String, aryColWidths() As String
 
     'exit if subform control (hdrs are static & present on sfrm)
     If ctrl.ControlType = 112 Then
@@ -179,11 +179,11 @@ On Error GoTo Err_Handler
         With ctrl
             If CStr(.Column(tgtCol, Counter)) = normVal Then
                 For col = 0 To .ColumnCount - 1
-                    .Column(col, Counter).ForeColor = normColor
+                    .Column(col, Counter).forecolor = normColor
                 Next col
             ElseIf CStr(.Column(tgtCol, Counter)) = altVal Then
                 For col = 0 To .ColumnCount - 1
-                    .Column(col, Counter).ForeColor = altColor
+                    .Column(col, Counter).forecolor = altColor
                 Next col
             End If
         End With
@@ -221,7 +221,7 @@ End Sub
 '   BLC - 5/10/2015 - moved to mod_List from mod_Lists
 '   BLC - 5/22/2015 - updated documentation
 ' ---------------------------------
-Public Function IsListDuplicate(lbx As ListBox, col As Integer, item As String) As Boolean
+Public Function IsListDuplicate(lbx As ListBox, col As Integer, Item As String) As Boolean
 On Error GoTo Err_Handler
     
     Dim isDupe As Boolean
@@ -233,7 +233,7 @@ On Error GoTo Err_Handler
     'iterate through listbox (use .Column(col,i) vs .ListIndex(i) which results in error 451 property let not defined, property get...)
     For i = 0 To lbx.ListCount
         'check if item exists in listbox
-        If lbx.Column(col, i) = item Then
+        If lbx.Column(col, i) = Item Then
             'duplicate, so exit
             isDupe = True
             GoTo Exit_Handler
@@ -283,7 +283,7 @@ On Error GoTo Err_Handler
   
   'skip first row if lbx has headers
   iHdr = 0
-  If Len(TempVars.item("lbxHdr")) > 0 Then
+  If Len(TempVars.Item("lbxHdr")) > 0 Then
     iHdr = 1
   End If
   
@@ -325,7 +325,7 @@ End Sub
 ' Revisions:
 '   BLC - 5/10/2015 - initial version
 ' ---------------------------------
-Public Function GetListCount(lbx As ListBox, HasHeaders As Boolean) As Integer
+Public Function GetListCount(lbx As ListBox, hasHeaders As Boolean) As Integer
 On Error GoTo Err_Handler
 
 Dim i As Integer
@@ -365,7 +365,7 @@ End Function
 '   BLC - 2/7/2015  - initial version
 '   BLC - 5/10/2015 - moved to mod_List from mod_Lists
 ' ---------------------------------
-Public Function CountArrayValues(ary As Variant, Val As Variant) As Integer
+Public Function CountArrayValues(ary As Variant, val As Variant) As Integer
 
 On Error GoTo Err_Handler
     
@@ -377,7 +377,7 @@ On Error GoTo Err_Handler
     If IsArray(ary) Then
     
         For i = LBound(ary) To UBound(ary)
-            If ary(i) = Val Then
+            If ary(i) = val Then
                 numItems = numItems + 1
             End If
         Next
@@ -801,7 +801,7 @@ Public Sub MoveSingleItem(frm As Form, strSourceControl As String, strTargetCont
     
 On Error GoTo Err_Handler
     
-    Dim strItem As String
+    Dim stritem As String
     Dim intColumnCount As Integer
     
     'if source = target, just remove the item
@@ -830,18 +830,18 @@ On Error GoTo Err_Handler
     End If
     
     For intColumnCount = 0 To frm.Controls(strSourceControl).ColumnCount - 1
-        strItem = strItem & frm.Controls(strSourceControl).Column(intColumnCount) & ";"
+        stritem = stritem & frm.Controls(strSourceControl).Column(intColumnCount) & ";"
     Next
     
     'remove extra semi-colon (;)
-    strItem = Left(strItem, Len(strItem) - 1)
+    stritem = Left(stritem, Len(stritem) - 1)
 
     'Check the length to make sure something is selected
     ' -------------------------------------------------------------------------
     '  NOTE: ListIndex is zero based, so add 1 to remove proper item
     ' -------------------------------------------------------------------------
-    If Len(strItem) > 0 Then
-        frm.Controls(strTargetControl).AddItem strItem
+    If Len(stritem) > 0 Then
+        frm.Controls(strTargetControl).AddItem stritem
         frm.Controls(strSourceControl).RemoveItem frm.Controls(strSourceControl).ListIndex + 1
     Else
         MsgBox "Please select an item to move."
@@ -882,8 +882,8 @@ Public Sub MoveAllItems(frm As Form, strSourceControl As String, strTargetContro
     
 On Error GoTo Err_Handler
     
-    Dim strItem As String
-    Dim intColumnCount As Integer, StartRow As Integer
+    Dim stritem As String
+    Dim intColumnCount As Integer, startRow As Integer
     Dim lngRowCount As Long
     
     'if source = target, just remove the items
@@ -898,19 +898,19 @@ On Error GoTo Err_Handler
         GoTo Exit_Handler
     End If
     
-    StartRow = 0 'default
+    startRow = 0 'default
     'set start row
     If frm.Controls(strSourceControl).ColumnHeads = True Then
-        StartRow = 1
+        startRow = 1
     End If
     
-    For lngRowCount = StartRow To frm.Controls(strSourceControl).ListCount - 1
+    For lngRowCount = startRow To frm.Controls(strSourceControl).ListCount - 1
         For intColumnCount = 0 To frm.Controls(strSourceControl).ColumnCount - 1
-            strItem = strItem & frm.Controls(strSourceControl).Column(intColumnCount, lngRowCount) & ";"
+            stritem = stritem & frm.Controls(strSourceControl).Column(intColumnCount, lngRowCount) & ";"
         Next
-        strItem = Left(strItem, Len(strItem) - 1)
-        frm.Controls(strTargetControl).AddItem strItem
-        strItem = ""
+        stritem = Left(stritem, Len(stritem) - 1)
+        frm.Controls(strTargetControl).AddItem stritem
+        stritem = ""
     Next
         
     'clear the list
@@ -960,10 +960,10 @@ Public Sub MoveSelectedItems(frm As Form, strSourceControl As String, strTargetC
     
 On Error GoTo Err_Handler
     
-    Dim iRow As Integer, StartRow As Integer, i As Integer, X As Integer, iRemovedItems As Integer
+    Dim iRow As Integer, startRow As Integer, i As Integer, x As Integer, iRemovedItems As Integer
     Dim arySelectedItems() As Integer
     Dim blnDimensioned As Boolean
-    Dim strItem As String
+    Dim stritem As String
     
     'if source = target, just remove the items
     If strSourceControl = strTargetControl Then
@@ -977,20 +977,20 @@ On Error GoTo Err_Handler
         GoTo Exit_Handler
     End If
     
-    StartRow = 0 'default
+    startRow = 0 'default
     'set start row
     If frm.Controls(strSourceControl).ColumnHeads = True Then
-        StartRow = 1
+        startRow = 1
     End If
     
     'add back the header if it doesn't exist
     If frm.Controls(strTargetControl).ColumnHeads = True And frm.Controls(strTargetControl).ListCount = 0 Then
-       strItem = TempVars.item("lbxHdr") & strItem
-       frm.Controls(strTargetControl).AddItem strItem
+       stritem = TempVars.Item("lbxHdr") & stritem
+       frm.Controls(strTargetControl).AddItem stritem
     End If
     
     'generate array of selected items
-    For iRow = StartRow To frm.Controls(strSourceControl).ListCount - 1
+    For iRow = startRow To frm.Controls(strSourceControl).ListCount - 1
     
         'fetch array of selected items
         '--------------------------------------------------
@@ -1024,20 +1024,20 @@ On Error GoTo Err_Handler
     iRemovedItems = 0
     
     'iterate through selected items
-    For X = LBound(arySelectedItems) To UBound(arySelectedItems)
+    For x = LBound(arySelectedItems) To UBound(arySelectedItems)
                         
-        iRow = arySelectedItems(X) - iRemovedItems
+        iRow = arySelectedItems(x) - iRemovedItems
             
         'clear string
-        strItem = ""
+        stritem = ""
         
         'add all columns
         For i = 0 To frm.Controls(strSourceControl).ColumnCount
-            strItem = strItem & frm.Controls(strSourceControl).Column(i, iRow) & ";"
+            stritem = stritem & frm.Controls(strSourceControl).Column(i, iRow) & ";"
         Next i
         
         'add to target
-        frm.Controls(strTargetControl).AddItem strItem
+        frm.Controls(strTargetControl).AddItem stritem
         
         'remove from source
         frm.Controls(strSourceControl).RemoveItem iRow
@@ -1047,7 +1047,7 @@ On Error GoTo Err_Handler
             iRemovedItems = iRemovedItems + 1
         End If
     
-    Next X
+    Next x
 
 Exit_Handler:
     Exit Sub
@@ -1135,7 +1135,7 @@ Public Sub RemoveListDupes(lbx As ListBox)
 
 On Error GoTo Err_Handler
 
-    Dim Index As Integer, Count As Integer
+    Dim index As Integer, Count As Integer
     Dim lastItem As String
     
     'sort listbox
@@ -1148,12 +1148,12 @@ On Error GoTo Err_Handler
     
         lastItem = lbx.ItemData(Count - 1)
 
-        For Index = Count - 2 To 0 Step -1
-            If lbx.ItemData(Index) = lastItem And Len(lbx.ItemData(Index)) > 0 Then
+        For index = Count - 2 To 0 Step -1
+            If lbx.ItemData(index) = lastItem And Len(lbx.ItemData(index)) > 0 Then
                 'duplicate
-                lbx.RemoveItem (Index)
+                lbx.RemoveItem (index)
             Else
-                lastItem = lbx.ItemData(Index)
+                lastItem = lbx.ItemData(index)
             End If
         Next
     End If

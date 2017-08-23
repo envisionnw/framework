@@ -71,11 +71,11 @@ On Error GoTo Err_Handler
     
         Case "lbxDataSheets", "sfrmDatasheets" 'Datasheets
             strQuery = "qry_Active_Datasheets"
-            strSQL = CurrentDb.QueryDefs(strQuery).sql
+            strSQL = CurrentDb.QueryDefs(strQuery).SQL
             
         Case "lbxSpecies", "lbxTgtSpecies", "fsub_Species_Listbox" 'Species
             strQuery = "qry_Plant_Species"
-            strSQL = CurrentDb.QueryDefs(strQuery).sql
+            strSQL = CurrentDb.QueryDefs(strQuery).SQL
             
     End Select
 
@@ -132,7 +132,7 @@ On Error GoTo Err_Handler
 
     Dim frm As Form
     Dim rows As Integer, cols As Integer, i As Integer, j As Integer, matches As Integer, iZeroes As Integer
-    Dim strItem As String, strColHeads As String, aryColWidths() As String
+    Dim stritem As String, strColHeads As String, aryColWidths() As String
 
     Set frm = ctrlSource.Parent
     
@@ -196,24 +196,24 @@ On Error GoTo Err_Handler
             Do Until rs.EOF
             
                 'initialize item
-                strItem = ""
+                stritem = ""
                     
                 'generate item
                 For j = 0 To cols - 1
                     'check if column is displayed width > 0
                     If CInt(aryColWidths(j)) > 0 Then
                     
-                        strItem = strItem & rs.Fields(j).Value & ";"
+                        stritem = stritem & rs.Fields(j).Value & ";"
                     
                         'determine how many separators there are (";") --> should equal # cols
-                        matches = (Len(strItem) - Len(Replace$(strItem, ";", ""))) / Len(";")
+                        matches = (Len(stritem) - Len(Replace$(stritem, ";", ""))) / Len(";")
                         
                         'add item if not already in list --> # of ; should equal cols - 1
                         'but # in list should only be # of non-zero columns --> cols - iZeroes
                         If matches = cols - iZeroes Then
-                            ctrlSource.AddItem strItem
+                            ctrlSource.AddItem stritem
                             'reset the string
-                            strItem = ""
+                            stritem = ""
                         End If
                     
                     End If
@@ -314,13 +314,13 @@ End Sub
 '   BLC - 2/19/2015  - initial version
 '   BLC - 6/28/2016  - revised to uppercase GetParkState vs getParkState
 ' ---------------------------------
-Public Function GetParkState(ParkCode As String) As String
+Public Function getParkState(ParkCode As String) As String
 
 On Error GoTo Err_Handler
     
     Dim db As DAO.Database
     Dim rs As DAO.Recordset
-    Dim State As String, strSQL As String
+    Dim state As String, strSQL As String
    
     'handle only appropriate park codes
     If Len(ParkCode) <> 4 Then
@@ -336,11 +336,11 @@ On Error GoTo Err_Handler
     
     'assume only 1 record returned
     If rs.RecordCount > 0 Then
-        State = rs.Fields("ParkState").Value
+        state = rs.Fields("ParkState").Value
     End If
    
     'return value
-    GetParkState = State
+    getParkState = state
     
 Exit_Handler:
     Exit Function
@@ -579,21 +579,21 @@ On Error GoTo Err_Handler
     
     Dim db As DAO.Database
     Dim rs As DAO.Recordset
-    Dim strSQL As String, strWhere As String
+    Dim strSQL As String, strWHERE As String
     Dim Count As Integer
     Dim metadata() As Variant
    
     'handle only appropriate park codes
     If blnAllVersions Then
-        strWhere = ""
+        strWHERE = ""
     Else
-        strWhere = "WHERE RetireDate IS NULL"
+        strWHERE = "WHERE RetireDate IS NULL"
     End If
     
     'generate SQL
 '    strSQL = "SELECT ProtocolName, Version, EffectiveDate, RetireDate, LastModified FROM Protocol " _
 '                & strWHERE & ";"
-    strSQL = GetTemplate("s_protocol_info", "strWHERE" & PARAM_SEPARATOR & strWhere)
+    strSQL = GetTemplate("s_protocol_info", "strWHERE" & PARAM_SEPARATOR & strWHERE)
     
     'fetch data
     Set db = CurrentDb
@@ -1051,7 +1051,7 @@ On Error GoTo Err_Handler
     
     Params(0) = Template
     Params(1) = ID
-    Params(2) = IIf(InStr(Template, "wentworth") > 0, Year(Date), IsActive)
+    Params(2) = IIf(InStr(Template, "wentworth") > 0, year(Date), IsActive)
         
     SetRecord Template, Params
     
@@ -1160,7 +1160,7 @@ On Error GoTo Err_Handler
         With qdf
         
             'check if record exists in site
-            .sql = GetTemplate(Template)
+            .SQL = GetTemplate(Template)
         
             Select Case Template
                         
@@ -1260,7 +1260,7 @@ On Error GoTo Err_Handler
                 Case "s_mod_wentworth_for_eventyr"
                     '-- required parameters --
                     'default event year to current year if not passed in
-                    .Parameters("eventyr") = Nz(TempVars("EventYear"), Year(Now))
+                    .Parameters("eventyr") = Nz(TempVars("EventYear"), year(Now))
                 
                 Case "s_park_id"
                     '-- required parameters --
@@ -1309,7 +1309,7 @@ On Error GoTo Err_Handler
     
                     'revise TOP X --> 99 is replaced by # species to return (from datasheet defaults)
                     '             -->  8 is replaced by # blanks to return (")
-                    .sql = Replace(Replace(.sql, 99, TempVars("TopSpecies")), 8, TempVars("TopBlanks"))
+                    .SQL = Replace(Replace(.SQL, 99, TempVars("TopSpecies")), 8, TempVars("TopBlanks"))
                     
                 Case "s_top_rooted_species_last_year_by_river"
                     '-- required parameters --
@@ -1318,7 +1318,7 @@ On Error GoTo Err_Handler
     
                     'revise TOP X --> 99 is replaced by # species to return (from datasheet defaults)
                     '             -->  8 is replaced by # blanks to return (")
-                    .sql = Replace(Replace(.sql, 99, TempVars("TopSpecies")), 8, TempVars("TopBlanks"))
+                    .SQL = Replace(Replace(.SQL, 99, TempVars("TopSpecies")), 8, TempVars("TopBlanks"))
                     
                 Case "s_top_understory_species_last_year_by_park"
                     '-- required parameters --
@@ -1326,7 +1326,7 @@ On Error GoTo Err_Handler
     
                     'revise TOP X --> 99 is replaced by # species to return (from datasheet defaults)
                     '             -->  8 is replaced by # blanks to return (")
-                    .sql = Replace(Replace(.sql, 99, TempVars("TopSpecies")), 8, TempVars("TopBlanks"))
+                    .SQL = Replace(Replace(.SQL, 99, TempVars("TopSpecies")), 8, TempVars("TopBlanks"))
                     
                 Case "s_top_understory_species_last_year_by_river"
                     '-- required parameters --
@@ -1335,7 +1335,7 @@ On Error GoTo Err_Handler
     
                     'revise TOP X --> 99 is replaced by # species to return (from datasheet defaults)
                     '             -->  8 is replaced by # blanks to return (")
-                    .sql = Replace(Replace(.sql, 99, TempVars("TopSpecies")), 8, TempVars("TopBlanks"))
+                    .SQL = Replace(Replace(.SQL, 99, TempVars("TopSpecies")), 8, TempVars("TopBlanks"))
                     
                 Case "s_top_woody_species_last_year_by_park"
                     '-- required parameters --
@@ -1343,7 +1343,7 @@ On Error GoTo Err_Handler
     
                     'revise TOP X --> 99 is replaced by # species to return (from datasheet defaults)
                     '             -->  8 is replaced by # blanks to return (")
-                    .sql = Replace(Replace(.sql, 99, TempVars("TopSpecies")), 8, TempVars("TopBlanks"))
+                    .SQL = Replace(Replace(.SQL, 99, TempVars("TopSpecies")), 8, TempVars("TopBlanks"))
                     
                 Case "s_top_woody_species_last_year_by_river"
                     '-- required parameters --
@@ -1352,14 +1352,14 @@ On Error GoTo Err_Handler
     
                     'revise TOP X --> 99 is replaced by # species to return (from datasheet defaults)
                     '             -->  8 is replaced by # blanks to return (")
-                    .sql = Replace(Replace(.sql, 99, TempVars("TopSpecies")), 8, TempVars("TopBlanks"))
+                    .SQL = Replace(Replace(.SQL, 99, TempVars("TopSpecies")), 8, TempVars("TopBlanks"))
                     
                 Case "s_veg_walk_species_last_year_by_park"
                     '-- required parameters --
                     .Parameters("pkcode") = TempVars("ParkCode")
                     
                     'revise TOP X --> 8 is replaced by # blanks to return (from # rows remaining)
-                    .sql = Replace(.sql, 8, TempVars("Blanks"))
+                    .SQL = Replace(.SQL, 8, TempVars("Blanks"))
                 
                 Case "s_veg_walk_species_last_year_by_river"
                     '-- required parameters --
@@ -1367,7 +1367,7 @@ On Error GoTo Err_Handler
                     .Parameters("waterway") = TempVars("River")
                     
                     'revise TOP X --> 8 is replaced by # blanks to return (from # rows remaining)
-                    .sql = Replace(.sql, 8, TempVars("Blanks"))
+                    .SQL = Replace(.SQL, 8, TempVars("Blanks"))
                     
                     '-- optional parameters --
         
@@ -1465,7 +1465,7 @@ On Error GoTo Err_Handler
         With qdf
         
             'check if record exists in site
-            .sql = GetTemplate(Template)
+            .SQL = GetTemplate(Template)
             
             '-------------------
             ' set SQL parameters --> .Parameters("") = params()
@@ -1517,7 +1517,7 @@ On Error GoTo Err_Handler
                 
                 Case "i_cover_species"
                     'set the table name in the template --> handles WCC, URC, ARC species
-                    .sql = Replace(.sql, "INTO tbl ", "INTO " & Params(0) & " ")
+                    .SQL = Replace(.SQL, "INTO tbl ", "INTO " & Params(0) & " ")
                                     
                     '-- required parameters --
                     .Parameters("VegPlotID") = Params(1)
@@ -1817,7 +1817,7 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                 
                 Case "u_cover_species"
                     'set the table name in the template --> handles WCC, URC, ARC species
-                    .sql = Replace(.sql, " tbl ", " " & Params(0) & " ")
+                    .SQL = Replace(.SQL, " tbl ", " " & Params(0) & " ")
                                     
                     '-- required parameters --
                     .Parameters("VegPlot_ID") = Params(1)
@@ -2009,7 +2009,7 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
             End If
             
             'set record action
-            .sql = GetTemplate("i_record_action")
+            .SQL = GetTemplate("i_record_action")
                                             
             '-- required parameters --
             .Parameters("RefTable") = Params(0)
@@ -2112,7 +2112,7 @@ On Error GoTo Err_Handler
                     If Not IsNull(frm!tbxMI.Value) Then p.MiddleInitial = frm!tbxMI.Value  'FIX EMPTY STRING
                     .Email = frm!tbxEmail.Value
                     '.Username = frm!tbxUsername.Value
-                    If Not IsNull(frm!tbxUsername.Value) Then p.Username = frm!tbxUsername.Value
+                    If Not IsNull(frm!tbxUsername.Value) Then p.UserName = frm!tbxUsername.Value
                     If Not IsNull(frm!tbxOrganization.Value) Then p.Organization = frm!tbxOrganization.Value
                     If Not IsNull(frm!tbxPosition.Value) Then .PosTitle = frm!tbxPosition.Value
                     If Not IsNull(frm!tbxPhone.Value) And Len(frm!tbxPhone.Value) > 0 Then
@@ -2588,8 +2588,8 @@ On Error GoTo Err_Handler
             
             If rs.NoMatch Then
                 ' --- INSERT ---
-                frm!lblMsg.ForeColor = lngLime
-                frm!lblMsgIcon.ForeColor = lngLime
+                frm!lblMsg.forecolor = lngLime
+                frm!lblMsgIcon.forecolor = lngLime
                 frm!lblMsgIcon.Caption = StringFromCodepoint(uDoubleTriangleBlkR)
                 frm!lblMsg.Caption = IIf(DoAction = "i", "Inserting new record...", "Updating record...")
             Else
@@ -2599,14 +2599,14 @@ On Error GoTo Err_Handler
                 'retrieve ID
                 If frm!tbxID.Value = rs("ID") Then 'rs("Contact.ID") Then
                     'IDs are equivalent, just change the data
-                    frm!lblMsg.ForeColor = lngLime
-                    frm!lblMsgIcon.ForeColor = lngLime
+                    frm!lblMsg.forecolor = lngLime
+                    frm!lblMsgIcon.forecolor = lngLime
                     frm!lblMsgIcon.Caption = StringFromCodepoint(uDoubleTriangleBlkR)
                     frm!lblMsg.Caption = "Updating record..."
                 Else
                     'prevent duplicate record entries
-                    frm!lblMsg.ForeColor = lngYellow
-                    frm!lblMsgIcon.ForeColor = lngYellow
+                    frm!lblMsg.forecolor = lngYellow
+                    frm!lblMsgIcon.forecolor = lngYellow
                     frm!lblMsgIcon.Caption = StringFromCodepoint(uDoubleTriangleBlkR)
                     frm!lblMsg.Caption = "Oops, record already exists."
                     GoTo Exit_Handler
@@ -2641,8 +2641,8 @@ On Error GoTo Err_Handler
         Debug.Print "UpsertRecord " & frm.Name & " DIRTY"
         'frm.Dirty = False
         
-        frm!lblMsg.ForeColor = lngYellow
-        frm!lblMsgIcon.ForeColor = lngYellow
+        frm!lblMsg.forecolor = lngYellow
+        frm!lblMsgIcon.forecolor = lngYellow
         frm!lblMsgIcon.Caption = StringFromCodepoint(uDoubleTriangleBlkR)
         frm!lblMsg.Caption = "** DIRTY **" 'UNSAVED CHANGES! **"
         
@@ -2753,11 +2753,11 @@ End Sub
 '   BLC - 9/1/2016 - initial version
 '   BLC - 10/19/2016 - renamed to UploadCSVFile from UploadSurveyFile to genericize
 ' ---------------------------------
-Public Sub UploadCSVFile(strFilename As String)
+Public Sub UploadCSVFile(strFileName As String)
 On Error GoTo Err_Handler
     
     'import to table
-    ImportCSV strFilename, "usys_temp_csv", True, True
+    ImportCSV strFileName, "usys_temp_csv", True, True
 
 Exit_Handler:
     Exit Sub
@@ -2832,7 +2832,7 @@ On Error GoTo Err_Handler
             strSQL = "SELECT " & strFields & " FROM " & tbl & " WHERE ID = " & ID & ";"
             
             'update the query SQL
-            .sql = strSQL
+            .SQL = strSQL
             
             Dim rs As DAO.Recordset
 

@@ -245,7 +245,7 @@ On Error GoTo Err_Handler
 
         If Len(InitialFolder) > 0 Then
             
-            If dir(InitialFolder, vbDirectory) <> vbNullString Then
+            If Dir(InitialFolder, vbDirectory) <> vbNullString Then
                 InitFolder = InitialFolder
                 If Right(InitFolder, 1) <> "\" Then
                     InitFolder = InitFolder & "\"
@@ -420,7 +420,7 @@ End Function
 '               BLC, 4/30/2015 - move from mod_Utilities to mod_File
 '               BLC, 5/18/2015 - renamed, removed fxn prefix
 ' =================================
-Public Function SaveFile(ByVal strFilename As String, ByVal strFileType As String, _
+Public Function SaveFile(ByVal strFileName As String, ByVal strFileType As String, _
     ByVal strFileExt As String, Optional ByVal strTitle As String = "Save As") As Variant
 
     On Error GoTo Err_Handler
@@ -439,7 +439,7 @@ Public Function SaveFile(ByVal strFilename As String, ByVal strFileType As Strin
         filter:=strFilter, _
         flags:=lngFlags, _
         DialogTitle:=strTitle, _
-        FileName:=strFilename)
+        FileName:=strFileName)
 
 Exit_Handler:
     Exit Function
@@ -642,7 +642,7 @@ Public Function OpenExcelFile(ByVal strPath As String)
 
     ' Open the file
     With objExcel
-        .Visible = True
+        .visible = True
         .Workbooks.Open (strPath)
     End With
     

@@ -52,7 +52,7 @@ On Error GoTo Err_Handler
     Set tdf = db.TableDefs(strTable) 'TableName)
 
     'Change the connect value
-    tdf.Connect = strConn '"ODBC;DATABASE=pubs;UID=sa;PWD=;DSN=Publishers"
+    tdf.connect = strConn '"ODBC;DATABASE=pubs;UID=sa;PWD=;DSN=Publishers"
     
 Exit_Sub:
     Set tdf = Nothing
@@ -96,7 +96,7 @@ On Error GoTo Err_Handler
     Set tdf = db.TableDefs(strTable)
 
     'Change the database value
-    tdf.Connect = ";DATABASE=" & strDbPath
+    tdf.connect = ";DATABASE=" & strDbPath
     
     tdf.RefreshLink
     
@@ -338,7 +338,7 @@ On Error GoTo Err_Handler
 
     Set vbCom = Application.VBE.ActiveVBProject.VBComponents
 
-    vbCom.Remove VBComponent:=vbCom.item(strModule)
+    vbCom.Remove VBComponent:=vbCom.Item(strModule)
 
 Exit_Sub:
     Exit Sub
@@ -439,7 +439,7 @@ On Error GoTo Err_Handler
 
     Dim ModuleFilePath As String, ModuleFile As String
    
-    ModuleFile = dir(strPath, vbNormal)
+    ModuleFile = Dir(strPath, vbNormal)
     
     While ModuleFile <> ""
     
@@ -451,7 +451,7 @@ On Error GoTo Err_Handler
         End If
         
         'call Dir without params to get the next file in strPath
-        ModuleFile = dir
+        ModuleFile = Dir
     Wend
 
 Exit_Sub:

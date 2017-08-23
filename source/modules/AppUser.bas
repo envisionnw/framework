@@ -35,12 +35,12 @@ Private m_Activity As String
 '---------------------
 ' Properties
 '---------------------
-Public Property Let Username(Value As String)
+Public Property Let UserName(Value As String)
     m_Username = Value
 End Property
 
-Public Property Get Username() As String
-    Username = m_Username
+Public Property Get UserName() As String
+    UserName = m_Username
 End Property
 
 Public Property Let Password(Value As String)
@@ -158,7 +158,7 @@ On Error GoTo Err_Handler
 
     With Me
         Params(0) = "i_login" '"tsys_Db_Templates"
-        Params(1) = .Username
+        Params(1) = .UserName
         Params(2) = .Activity
 
 '        If IsUpdate Then

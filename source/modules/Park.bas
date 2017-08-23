@@ -72,7 +72,7 @@ Public Property Get Name() As String
     Name = m_Name
 End Property
 
-Public Property Let State(Value As String)
+Public Property Let state(Value As String)
     'max length = 2
     If Len(Trim(Value)) < 3 Then
         m_State = Value
@@ -81,8 +81,8 @@ Public Property Let State(Value As String)
     End If
 End Property
 
-Public Property Get State() As String
-    State = m_State
+Public Property Get state() As String
+    state = m_State
 End Property
 
 Public Property Let IsActiveForProtocol(Value As Boolean)
@@ -200,7 +200,7 @@ On Error GoTo Err_Handler
         Params(0) = "Park"
         Params(1) = .Code
         Params(2) = .Name
-        Params(3) = .State
+        Params(3) = .state
         Params(4) = .IsActiveForProtocol
         
         If IsUpdate Then

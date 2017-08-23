@@ -157,7 +157,7 @@ Public Property Get WYspecies() As String
     WYspecies = m_WYspecies
 End Property
 
-Public Property Let LUcode(Value As String)
+Public Property Let LUCode(Value As String)
     'valid length varchar(25) but 6-letter lookup
     If Not IsNull(Value) And IsBetween(Len(Value), 1, 6, True) Then
         m_LUcode = Value
@@ -166,8 +166,8 @@ Public Property Let LUcode(Value As String)
     End If
 End Property
 
-Public Property Get LUcode() As String
-    LUcode = m_LUcode
+Public Property Get LUCode() As String
+    LUCode = m_LUcode
 End Property
 
 Public Property Let MasterFamily(Value As String)
@@ -378,7 +378,7 @@ End Sub
 '   BLC, 4/18/2016 - initial version
 '   BLC, 6/11/2016 - changed to GetTemplate()
 '---------------------------------------------------------------------------------------
-Public Sub Init(LUcode As String)
+Public Sub Init(LUCode As String)
 On Error GoTo Err_Handler
     
     Dim strSQL As String
@@ -394,7 +394,7 @@ On Error GoTo Err_Handler
 '            & "Wy_PLANT_Code, Wy_Species, Master_Common_Name, " _
 '            & "LU_Code, Lifeform, Duration, Nativity " _
 '            & "FROM tlu_NCPN_plants WHERE LU_Code = '" & LUcode & "';"
-    strSQL = GetTemplate("s_plant_species_by_LUcode", "lucode:" & LUcode)
+    strSQL = GetTemplate("s_plant_species_by_LUcode", "lucode:" & LUCode)
 
     Set rs = db.OpenRecordset(strSQL)
     If Not (rs.EOF And rs.BOF) Then
@@ -413,13 +413,13 @@ On Error GoTo Err_Handler
             Me.WYcode = Nz(.Fields("Wy_PLANT_code"), "")
             Me.WYspecies = Nz(.Fields("Wy_Species"), "")
             Me.MasterCommonName = Nz(.Fields("Master_Common_Name"), "")
-            Me.LUcode = .Fields("LU_Code")
+            Me.LUCode = .Fields("LU_Code")
             Me.Lifeform = Nz(.Fields("Lifeform"), "")
             Me.Duration = Nz(.Fields("Duration"), "")
             Me.Nativity = Nz(.Fields("Nativity"), "")
         End With
     Else
-        RaiseEvent InvalidLUCode(LUcode)
+        RaiseEvent InvalidLUCode(LUCode)
     End If
 
 Exit_Handler:

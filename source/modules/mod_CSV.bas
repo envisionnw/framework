@@ -61,7 +61,7 @@ Option Explicit
 '   BLC - 9/30/2015 - initial version
 ' ---------------------------------
 Public Sub ImportCSV(strPath As String, strTable As String, _
-                    Optional HasHeaders As Boolean = True, _
+                    Optional hasHeaders As Boolean = True, _
                     Optional DeleteExistingTable As Boolean = True)
 On Error GoTo Err_Handler
 
@@ -71,7 +71,7 @@ On Error GoTo Err_Handler
             DoCmd.DeleteObject acTable, strTable
     End If
 
-    DoCmd.TransferText acImportDelim, , strTable, strPath, HasHeaders
+    DoCmd.TransferText acImportDelim, , strTable, strPath, hasHeaders
 
 Exit_Handler:
     'cleanup

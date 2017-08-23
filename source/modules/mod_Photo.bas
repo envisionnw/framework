@@ -38,7 +38,7 @@ Option Explicit
 Public Sub IngestPhotos(strPath As String, category As String)
 On Error GoTo Err_Handler
 
-    Dim fso As FileSystemObject
+    Dim FSO As FileSystemObject
     Dim iFile As File
     Dim NumFiles As Integer, i As Integer, iProg As Integer
     Dim ListFiles As Files
@@ -55,12 +55,12 @@ On Error GoTo Err_Handler
     'determine if directory exists
     If DirExists(strPath) Then
      
-        Set fso = CreateObject("Scripting.FileSystemObject")
+        Set FSO = CreateObject("Scripting.FileSystemObject")
     
-        NumFiles = fso.GetFolder(strPath).Files.Count
+        NumFiles = FSO.GetFolder(strPath).Files.Count
         
         'retrieve files
-        Set ListFiles = fso.GetFolder(strPath).Files
+        Set ListFiles = FSO.GetFolder(strPath).Files
         
         'present system progress bar
         varReturn = SysCmd(acSysCmdInitMeter, "Uploading photos", NumFiles)

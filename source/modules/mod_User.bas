@@ -78,7 +78,7 @@ Dim rs As DAO.Recordset
             Set qdf = .QueryDefs("usys_temp_qdf")
                     
             With qdf
-                .sql = GetTemplate("s_user_access")
+                .SQL = GetTemplate("s_user_access")
                 
                 '-- required parameters --
                 .Parameters("appuser") = Environ("Username")
@@ -304,7 +304,7 @@ Debug.Print "useraccesslvl=" & TempVars("UserAccessLevel")
                         .optgScheduledMode.Enabled = True     ' user can enter data for unscheduled locs
                         .cmbYearFilter.Locked = True          ' current year only to minimize confusion
                         .togFilterByYear.Enabled = False
-                        .txtLoc_code.ForeColor = 0            ' black - no direct link to data browser
+                        .txtLoc_code.forecolor = 0            ' black - no direct link to data browser
                         .btnDeleteRec.Enabled = True
                         .btnNewLoc.Enabled = True
                         .btnNewRareObs.Enabled = True
@@ -323,7 +323,7 @@ Debug.Print "useraccesslvl=" & TempVars("UserAccessLevel")
                         .optgFormMode.Enabled = True
                         .subLookupTables.Locked = True
                     Case "frm_QA_Tools"
-                        .pgDataTables.Visible = False
+                        .pgDataTables.visible = False
                         .btnDesignView.Enabled = False
                         .optgScope.Enabled = False
                         .cmbTimeframe.Enabled = True
@@ -419,7 +419,7 @@ Debug.Print "useraccesslvl=" & TempVars("UserAccessLevel")
                         .optgScheduledMode.Enabled = False
                         .cmbYearFilter.Locked = False         ' enable seeing multiple years
                         .togFilterByYear.Enabled = True
-                        .txtLoc_code.ForeColor = 0            ' black - no direct link to data browser
+                        .txtLoc_code.forecolor = 0            ' black - no direct link to data browser
                         .btnDeleteRec.Enabled = False
                         .btnNewLoc.Enabled = False
                         .btnNewRareObs.Enabled = False
@@ -440,7 +440,7 @@ Debug.Print "useraccesslvl=" & TempVars("UserAccessLevel")
                     Case "fsub_Events_Browser"
                         .btnEdit.Caption = "View"               ' Set button caption
                     Case "frm_QA_Tools"
-                        .pgDataTables.Visible = False
+                        .pgDataTables.visible = False
                         .btnDesignView.Enabled = False
                         .optgScope.Enabled = False
                         .cmbTimeframe.Enabled = True
@@ -506,7 +506,7 @@ Admin_PowerUser:
                 .optgScheduledMode.Enabled = True
                 .cmbYearFilter.Locked = False
                 .togFilterByYear.Enabled = True
-                .txtLoc_code.ForeColor = 16711680     ' blue to indicate link to data browser
+                .txtLoc_code.forecolor = 16711680     ' blue to indicate link to data browser
                 .btnDeleteRec.Enabled = True
                 .btnNewLoc.Enabled = True
                 .btnNewRareObs.Enabled = True
@@ -531,7 +531,7 @@ Admin_PowerUser:
                 .subSchedule.Form.AllowEdits = True
                 .btnAutoPopulate.Enabled = True
             Case "frm_QA_Tool"
-                .pgDataTables.Visible = True
+                .pgDataTables.visible = True
                 .btnDesignView.Enabled = True
                 .optgScope.Enabled = True
                 .cmbTimeframe.Enabled = True
@@ -678,7 +678,7 @@ Dim strSQL As String
                         Set qdf = .QueryDefs("usys_temp_qdf")
                                 
                         With qdf
-                            .sql = GetTemplate("tsys_login_action")
+                            .SQL = GetTemplate("tsys_login_action")
                             
                             '-- required parameters --
                             .Parameters("environ_username") = Environ("Username")
@@ -730,11 +730,11 @@ End Sub
 '               BLC, 5/18/2015 - renamed, removed fxn prefix
 '               BLC, 4/4/2016  - changed Exit_Function > Exit_Handler
 ' =================================
-Public Function Username() As String
+Public Function UserName() As String
     On Error GoTo Err_Handler
 
-    Username = "Unknown"
-    Username = Environ("Username")
+    UserName = "Unknown"
+    UserName = Environ("Username")
 
 Exit_Handler:
     Exit Function
@@ -777,7 +777,7 @@ On Error GoTo Err_Handler
  
     Set ADSI = CreateObject("ADSystemInfo")
     
-    tmp = Split(ADSI.Username, ",")
+    tmp = Split(ADSI.UserName, ",")
  
     'retrieve first & last name
     GetADCommonName = Right(tmp(0), Len(tmp(0)) - 3)

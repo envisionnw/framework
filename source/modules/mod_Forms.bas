@@ -91,9 +91,9 @@ Public Const aDistribute = 4
 '=================================================================
 '  Declarations
 '=================================================================
-Declare Function IsZoomed Lib "user32" (ByVal hWnd As Long) As _
+Declare Function IsZoomed Lib "user32" (ByVal hwnd As Long) As _
      Integer
-Declare Function IsIconic Lib "user32" (ByVal hWnd As Long) As _
+Declare Function IsIconic Lib "user32" (ByVal hwnd As Long) As _
      Integer
 
 ' -- Constants --
@@ -108,16 +108,16 @@ Public NoData As Scripting.Dictionary
 
 ' -- Functions --
 Private Declare Function GetWindowLong Lib "user32" Alias "GetWindowLongA" _
-  (ByVal hWnd As Long, _
+  (ByVal hwnd As Long, _
    ByVal nIndex As Long) As Long
  
 Private Declare Function SetWindowLong Lib "user32" Alias "SetWindowLongA" _
-  (ByVal hWnd As Long, _
+  (ByVal hwnd As Long, _
    ByVal nIndex As Long, _
    ByVal dwNewLong As Long) As Long
  
 Private Declare Function SetLayeredWindowAttributes Lib "user32" _
-  (ByVal hWnd As Long, _
+  (ByVal hwnd As Long, _
    ByVal crKey As Long, _
    ByVal bAlpha As Byte, _
    ByVal dwFlags As Long) As Long
@@ -475,9 +475,9 @@ On Error GoTo Err_Handler
     Dim lngStyle As Long
     
     ' get the current window style, then set transparency
-    lngStyle = GetWindowLong(frm.hWnd, GWL_EXSTYLE)
-    SetWindowLong frm.hWnd, GWL_EXSTYLE, lngStyle Or WS_EX_LAYERED
-    SetLayeredWindowAttributes frm.hWnd, TColor, (sngOpacity * 255), LWA_ALPHA
+    lngStyle = GetWindowLong(frm.hwnd, GWL_EXSTYLE)
+    SetWindowLong frm.hwnd, GWL_EXSTYLE, lngStyle Or WS_EX_LAYERED
+    SetLayeredWindowAttributes frm.hwnd, TColor, (sngOpacity * 255), LWA_ALPHA
     
 Exit_Handler:
     Exit Sub
@@ -627,11 +627,11 @@ On Error GoTo Err_Handler
         Next
         
         .Controls("tbxIcon") = StringFromCodepoint(uBullet)
-        .Controls("tbxIcon").ForeColor = lngRed
+        .Controls("tbxIcon").forecolor = lngRed
         .Controls("tbxID") = 0
         .Controls("lblMsgIcon").Caption = ""
         .Controls("lblMsg").Caption = ""
-        .Controls("lblMsgIcon").ForeColor = lngRobinEgg
+        .Controls("lblMsgIcon").forecolor = lngRobinEgg
         
         .Controls("btnSave").Enabled = False
         
@@ -675,7 +675,7 @@ Public Sub LimitKeyPress(ctrl As Control, iMaxLen As Integer, KeyAscii As Intege
 On Error GoTo Err_Handler
     
     With ctrl
-        If Len(.Text) - .SelLength >= iMaxLen Then
+        If Len(.text) - .SelLength >= iMaxLen Then
             If KeyAscii <> vbKeyBack Then
                 KeyAscii = 0
                 Beep
@@ -716,14 +716,14 @@ On Error GoTo Err_Handler
     Dim msg As String
     
     With ctrl
-        If Len(.Text) > iMaxLen Then
+        If Len(.text) > iMaxLen Then
             msg = "Oops! " & .Name & " field too long. Truncated to " & iMaxLen & " characters."
         
             DoCmd.OpenForm "MsgOverlay", acNormal, , , , acDialog, _
                 "msg" & PARAM_SEPARATOR & msg & _
                 "|Type" & PARAM_SEPARATOR & "caution"
             
-            .Text = Left(.Text, iMaxLen)
+            .text = Left(.text, iMaxLen)
             .SelStart = iMaxLen
         End If
     End With

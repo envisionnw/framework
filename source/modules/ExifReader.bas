@@ -504,8 +504,8 @@ On Error GoTo Err_Handler
             ExifTemp(Offset_to_APP1 + 2) * 256& + _
             ExifTemp(Offset_to_APP1 + 3)
         
-        If Chr(ExifTemp(Offset_to_APP1 + 4)) & Chr(ExifTemp(Offset_to_APP1 + 5)) & _
-            Chr(ExifTemp(Offset_to_APP1 + 6)) & Chr(ExifTemp(Offset_to_APP1 + 7)) <> "Exif" Then
+        If chr(ExifTemp(Offset_to_APP1 + 4)) & chr(ExifTemp(Offset_to_APP1 + 5)) & _
+            chr(ExifTemp(Offset_to_APP1 + 6)) & chr(ExifTemp(Offset_to_APP1 + 7)) <> "Exif" Then
             InspectJPGFile = False
             Exit Function
         End If
@@ -648,10 +648,10 @@ On Error GoTo Err_Handler
                             BytesPerComponent = 1
                             If .Components * BytesPerComponent <= 4 Then
                                 .Value = _
-                                    Chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 11)) & _
-                                    Chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 10)) & _
-                                    Chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 9)) & _
-                                    Chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 8))
+                                    chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 11)) & _
+                                    chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 10)) & _
+                                    chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 9)) & _
+                                    chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 8))
                             Else
                                 .Offset_To_Value = _
                                     ExifTemp((Offset + 2) + ((i - 1) * 12) + 11) * 256& * 256& * 256& + _
@@ -659,7 +659,7 @@ On Error GoTo Err_Handler
                                     ExifTemp((Offset + 2) + ((i - 1) * 12) + 9) * 256& + _
                                     ExifTemp((Offset + 2) + ((i - 1) * 12) + 8)
                                 For j = 0 To .Components - 2
-                                    .Value = .Value & Chr(ExifTemp(Offset_to_TIFF + .Offset_To_Value + j))
+                                    .Value = .Value & chr(ExifTemp(Offset_to_TIFF + .Offset_To_Value + j))
                                 Next
                             End If
                             
@@ -767,10 +767,10 @@ On Error GoTo Err_Handler
                             BytesPerComponent = 1
                             If .Components * BytesPerComponent <= 4 Then
                                 .Value = _
-                                    Chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 8)) & _
-                                    Chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 9)) & _
-                                    Chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 10)) & _
-                                    Chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 11))
+                                    chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 8)) & _
+                                    chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 9)) & _
+                                    chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 10)) & _
+                                    chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 11))
                             Else
                                 .Offset_To_Value = _
                                     ExifTemp((Offset + 2) + ((i - 1) * 12) + 8) * 256& * 256& * 256& + _
@@ -778,7 +778,7 @@ On Error GoTo Err_Handler
                                     ExifTemp((Offset + 2) + ((i - 1) * 12) + 10) * 256& + _
                                     ExifTemp((Offset + 2) + ((i - 1) * 12) + 11)
                                 For j = 0 To .Components - 1
-                                    .Value = .Value & Chr(ExifTemp(Offset_to_TIFF + .Offset_To_Value + j))
+                                    .Value = .Value & chr(ExifTemp(Offset_to_TIFF + .Offset_To_Value + j))
                                 Next
                             End If
                             
@@ -995,10 +995,10 @@ On Error GoTo Err_Handler
                         BytesPerComponent = 1
                         If .Components * BytesPerComponent <= 4 Then
                             .Value = _
-                                Chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 11)) & _
-                                Chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 10)) & _
-                                Chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 9)) & _
-                                Chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 8))
+                                chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 11)) & _
+                                chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 10)) & _
+                                chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 9)) & _
+                                chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 8))
                         Else
                             .Offset_To_Value = _
                                 ExifTemp((Offset + 2) + ((i - 1) * 12) + 11) * 256& * 256& * 256& + _
@@ -1006,7 +1006,7 @@ On Error GoTo Err_Handler
                                 ExifTemp((Offset + 2) + ((i - 1) * 12) + 9) * 256& + _
                                 ExifTemp((Offset + 2) + ((i - 1) * 12) + 8)
                             For j = 0 To .Components - 2
-                                .Value = .Value & Chr(ExifTemp(Offset_to_TIFF + .Offset_To_Value + j))
+                                .Value = .Value & chr(ExifTemp(Offset_to_TIFF + .Offset_To_Value + j))
                             Next
                         End If
                         
@@ -1114,10 +1114,10 @@ On Error GoTo Err_Handler
                         BytesPerComponent = 1
                         If .Components * BytesPerComponent <= 4 Then
                             .Value = _
-                                Chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 8)) & _
-                                Chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 9)) & _
-                                Chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 10)) & _
-                                Chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 11))
+                                chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 8)) & _
+                                chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 9)) & _
+                                chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 10)) & _
+                                chr(ExifTemp((Offset + 2) + ((i - 1) * 12) + 11))
                         Else
                             .Offset_To_Value = _
                                 ExifTemp((Offset + 2) + ((i - 1) * 12) + 8) * 256& * 256& * 256& + _
@@ -1125,7 +1125,7 @@ On Error GoTo Err_Handler
                                 ExifTemp((Offset + 2) + ((i - 1) * 12) + 10) * 256& + _
                                 ExifTemp((Offset + 2) + ((i - 1) * 12) + 11)
                             For j = 0 To .Components - 1
-                                .Value = .Value & Chr(ExifTemp(Offset_to_TIFF + .Offset_To_Value + j))
+                                .Value = .Value & chr(ExifTemp(Offset_to_TIFF + .Offset_To_Value + j))
                             Next
                         End If
                         

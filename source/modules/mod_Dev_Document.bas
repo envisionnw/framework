@@ -105,7 +105,7 @@ On Error GoTo Err_Handler
     Dim db As DAO.Database
     Dim tdf As DAO.TableDef
     Dim fld As DAO.field
-    Dim idx As DAO.Index
+    Dim idx As DAO.index
     
     Set db = CurrentDb()
     Set tdf = db.TableDefs(tbl)
@@ -298,17 +298,17 @@ On Error GoTo Err_Handler
         End If
     Next
     
-    Dim fso As Object
-    Set fso = CreateObject("Scripting.FileSystemObject")
+    Dim FSO As Object
+    Set FSO = CreateObject("Scripting.FileSystemObject")
     Dim oFile As Object
     
     strPath = CurrentProject.Path & "\db_doc_" & strPath & Format(Now(), "YYYYmmDD_HHMMss") & ".txt"
     
-    Set oFile = fso.CreateTextFile(strPath)
+    Set oFile = FSO.CreateTextFile(strPath)
     oFile.WriteLine strText
     oFile.Close
     
-    Set fso = Nothing
+    Set FSO = Nothing
     Set oFile = Nothing
     
     

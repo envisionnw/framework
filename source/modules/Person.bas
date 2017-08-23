@@ -161,12 +161,12 @@ Public Property Get PosTitle() As String
     PosTitle = m_PosTitle
 End Property
 
-Public Property Let Username(Value As String)
+Public Property Let UserName(Value As String)
     m_Username = Value
 End Property
 
-Public Property Get Username() As String
-    Username = m_Username
+Public Property Get UserName() As String
+    UserName = m_Username
 End Property
 
 Public Property Let IsActive(Value As Byte)
@@ -325,7 +325,7 @@ On Error GoTo Err_Handler
         Params(2) = .LastName
         Params(3) = .Email
         
-        Params(4) = IIf(Len(.Username) > 0, .Username, Null)
+        Params(4) = IIf(Len(.UserName) > 0, .UserName, Null)
         Params(5) = IIf(Len(.Organization) > 0, .Organization, Null)
         Params(6) = IIf(Len(.MiddleInitial) > 0, .MiddleInitial, Null)
         Params(7) = IIf(Len(.PosTitle) > 0, .PosTitle, Null)
