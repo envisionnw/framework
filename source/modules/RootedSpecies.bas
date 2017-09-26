@@ -1,16 +1,22 @@
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
-Attribute VB_Exposed = False
+Attribute VB_Exposed = True
 Option Compare Database
 Option Explicit
 
 ' =================================
 ' CLASS:        RootedSpecies
 ' Level:        Framework class
-' Version:      1.03
+' Version:      1.04
 '
 ' Description:  Rooted species object related properties, events, functions & procedures for UI display
+'
+' Instancing:   PublicNotCreatable
+'               Class is accessible w/in enclosing project & projects that reference it
+'               Instances of class can only be created by modules w/in the enclosing project.
+'               Modules in other projects may reference class name as a declared type
+'               but may not instantiate class using new or the CreateObject function.
 '
 ' Source/date:  Bonnie Campbell, 4/19/2016
 ' References:   -
@@ -19,6 +25,9 @@ Option Explicit
 '               BLC - 6/11/2016 - 1.02 - updated to use GetTemplate()
 '               BLC - 8/8/2016  - 1.03 - SaveToDb() added update parameter to identify if
 '                                        this is an update vs. an insert
+'               --------------- Reference Library ------------------
+'               BLC - 9/21/2017  - 1.04 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
+'                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
 ' =================================
 
 '---------------------
@@ -331,12 +340,58 @@ Public Property Get Nativity() As String
     Nativity = m_CoverSpecies.Nativity
 End Property
 
-
 '---------------------
 ' Methods
 '---------------------
 
-''' ---------------------------------
+'======== Instancing Method ==========
+
+' ---------------------------------
+' SUB:          GetClass
+' Description:  Retrieve a new instance of the class
+'               --------------------------------------------------------------------------
+'               Classes in a library with PublicNotCreateable instancing cannot
+'               create items of the class in other projects (using the New keyword)
+'               Variables can be declared, but the class object isn't created
+'
+'               This function allows other projects to create new instances of the class object
+'               In referencing projects, set a reference to this project & call the GetClass()
+'               function to create the new class object:
+'                   Dim NewRootedSpecies as framework.RootedSpecies
+'                   Set NewRootedSpecies = framework.GetClass()
+'               --------------------------------------------------------------------------
+' Assumptions:  -
+' Parameters:   -
+' Returns:      New instance of the class
+' Throws:       none
+' References:
+'   Chip Pearson, November 6, 2013
+'   http://www.cpearson.com/excel/classes.aspx
+' Source/date:  -
+' Adapted:      Bonnie Campbell, September 21, 2017 - for NCPN tools
+' Revisions:
+'   BLC - 9/21/2016 - initial version
+' ---------------------------------
+Public Function GetClass() As RootedSpecies
+On Error GoTo Err_Handler
+
+    Set GetClass = New RootedSpecies
+
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+        Case Else
+            MsgBox "Error #" & Err.Description, vbCritical, _
+                "Error encounter (#" & Err.Number & " - GetClass[RootedSpecies class])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+'======== Standard Methods ==========
+
+' ---------------------------------
 ' Sub:          Class_Initialize
 ' Description:  Class initialization (starting) event
 ' Assumptions:  -
@@ -363,7 +418,7 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - Class_Initialize[cls_RootedSpecies])"
+            "Error encountered (#" & Err.Number & " - Class_Initialize[RootedSpecies class])"
     End Select
     Resume Exit_Handler
 End Sub
@@ -395,7 +450,7 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - Class_Terminate[cls_RootedSpecies])"
+            "Error encountered (#" & Err.Number & " - Class_Terminate[RootedSpecies class])"
     End Select
     Resume Exit_Handler
 End Sub
@@ -425,7 +480,7 @@ Err_Handler:
     Select Case Err.Number
         Case Else
             MsgBox "Error #" & Err.Description, vbCritical, _
-                "Error encounter (#" & Err.Number & " - Init[cls_RootedSpecies])"
+                "Error encounter (#" & Err.Number & " - Init[RootedSpecies class])"
     End Select
     Resume Exit_Handler
 End Sub
@@ -494,7 +549,7 @@ Err_Handler:
     Select Case Err.Number
         Case Else
             MsgBox "Error #" & Err.Description, vbCritical, _
-                "Error encounter (#" & Err.Number & " - Init[cls_RootedSpecies])"
+                "Error encounter (#" & Err.Number & " - Init[RootedSpecies class])"
     End Select
     Resume Exit_Handler
 End Sub

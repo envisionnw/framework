@@ -1,6 +1,9 @@
 Option Compare Database
 Option Explicit
 
+'from mod_Db - fixing
+Public FRONT_END_DB_PATH As String      'current location of front end DB
+
 ' =================================
 ' MODULE:       mod_Dev_Debug
 ' Level:        Development module
@@ -1139,26 +1142,26 @@ Public Sub Testing()
 'End With
 Dim i As Integer
 For i = 0 To 4
-Dim myVegPlot As New VegPlot
-With myVegPlot
-    .EventID = 2
-    .SiteID = 2
-    .FeatureID = 3
-    .VegTransectID = 4
-    .PlotNumber = 3
-    .PlotDistance = Int((10 - 0 + 1) * Rnd + 0)
-    .ModalSedimentSize = "S"
-    .PercentFines = Int((100 - 0 + 1) * Rnd + 0)
-    .PercentWater = Int((100 - 0 + 1) * Rnd + 0)
-    .UnderstoryRootedPctCover = Int((100 - 0 + 1) * Rnd + 0)
-    .PlotDensity = 4
-    .NoCanopyVeg = 0
-    .NoRootedVeg = 0
-    .HasSocialTrail = 0
-    .PctFilamentousAlgae = 1
-    .NoIndicatorSpecies = 0
-    .SaveToDb
-End With
+'Dim myVegPlot As New VegPlot
+'With myVegPlot
+'    .EventID = 2
+'    .SiteID = 2
+'    .FeatureID = 3
+'    .VegTransectID = 4
+'    .PlotNumber = 3
+'    .PlotDistance = Int((10 - 0 + 1) * Rnd + 0)
+'    .ModalSedimentSize = "S"
+'    .PercentFines = Int((100 - 0 + 1) * Rnd + 0)
+'    .PercentWater = Int((100 - 0 + 1) * Rnd + 0)
+'    .UnderstoryRootedPctCover = Int((100 - 0 + 1) * Rnd + 0)
+'    .PlotDensity = 4
+'    .NoCanopyVeg = 0
+'    .NoRootedVeg = 0
+'    .HasSocialTrail = 0
+'    .PctFilamentousAlgae = 1
+'    .NoIndicatorSpecies = 0
+'    .SaveToDb
+'End With
 Next
 
 ''veg transects - park required before transectnumber is set!
@@ -1881,3 +1884,195 @@ Public Function getvals() As String
     Set d = GetFileExifInfo("Z:\_____LIB\dev\git_projects\big_rivers_app\Data\P7231618.JPG")
 
 End Function
+
+'from mod_Db - fixing
+Public Sub ZGetTemplates(Optional strSyntax As String = "", Optional Params As String = "")
+
+    Dim db As DAO.Database
+    Dim rs As DAO.Recordset
+    Dim strSQL As String, strSQLWhere As String, key As String
+    Dim Value As Variant
+    
+    'access from the library
+    Dim strInFrontEnd As String
+    FRONT_END_DB_PATH = CurrentDb.Name 'CurrentProject.Path << Error #3051 can't open exclusive use...
+    strInFrontEnd = " IN '" & FRONT_END_DB_PATH & "'"
+    
+    'handle default
+    strSQLWhere = " WHERE IsSupported > 0"
+    
+    If Len(strSyntax) = 0 Then
+        strSyntax = "SQL"
+    End If
+    
+    strSQLWhere = strSQLWhere & " AND LCase(Syntax) = LCase('" & strSyntax & "')"
+    
+    'sql -> ID, Version, IsSupported, Context, Syntax, TemplateName, Params, Template, Remarks,
+    '       EffectiveDate, RetireDate, CreateDate, CreatedBy_ID, LastModified, LastModifiedBy_ID
+    strSQL = "SELECT * FROM tsys_Db_Templates" & strInFrontEnd & strSQLWhere & ";"
+    
+    Set db = CurrentDb
+'    Set db = CodeDb
+'    Dim pathDB As String
+'    pathDB = CurrentProject.FullName
+'    Set db = DBEngine.Workspaces(0).OpenDatabase(pathDB)
+    
+    
+Debug.Print "CurrentDb: " & CurrentDb.Name
+Debug.Print strSQL
+Debug.Print "CodeDb: " & CodeDb.Name
+Debug.Print "CurrentProject.FullName: " & CurrentProject.FullName
+    
+    
+    Set rs = db.OpenRecordset(strSQL)
+    
+    'handle no records
+    If rs.EOF Then
+        MsgBox "Sorry, no Templates were found for this database version.", vbExclamation, _
+            "Linked Database Templates Not Found"
+        DoCmd.CancelEvent
+        GoTo Exit_Handler
+    End If
+    
+    'prepare dictionary
+    Dim dict As New Scripting.Dictionary, dictParam As New Scripting.Dictionary
+    Dim ary(1 To 11) As String, ary2() As String, param() As String
+    Dim i As Integer, j As Integer
+    
+    'prepare the dictionary key array
+    ary(1) = "Context"
+    ary(2) = "TemplateName"
+    ary(3) = "Template" 'Template
+    ary(4) = "Params"
+    ary(5) = "Syntax"
+    ary(6) = "ID"
+    ary(7) = "FieldCheck"
+    ary(8) = "FieldOK"
+    ary(9) = "Dependencies"
+    ary(10) = "DataScope"
+    ary(11) = "Version"
+    
+    'prepare array of dictionaries
+    Dim dictTemplates As Scripting.Dictionary
+    Set dictTemplates = New Scripting.Dictionary
+    
+    rs.MoveLast
+    rs.MoveFirst
+    Do Until rs.EOF
+        'create new dictionary object
+        Set dict = New Scripting.Dictionary
+        
+        'populate the dictionary
+        For i = 1 To UBound(ary)
+            
+            key = ary(i)
+            
+            If key = "Params" Then
+                'create new dictionary for param name & data type
+                Set dictParam = New Scripting.Dictionary
+
+'Debug.Print rs.Fields(ary(i))
+
+                'separate parameters
+                ary2 = Split(Nz(rs.Fields(ary(i)), ":"), "|")
+ 
+                'prepare sets of param name & data type --> split(ary2(i), ":") yields name & data type
+                For j = 0 To UBound(ary2)
+                
+                    'split the param into name & data type
+                    param = Split(ary2(j), ":")
+                                        
+                    If Not dictParam.Exists(param(0)) And Len(param(0)) <> 0 Then
+                        
+                        'catch parameters not in paramname:type format
+                        If UBound(param) <> 1 Then
+                            DoCmd.OpenForm "MsgOverlay", acNormal, , , , acDialog, _
+                            "msg" & PARAM_SEPARATOR & "Parameter format must be name:type.  " _
+                            & "Please contact a data manager to resolve this issue.  " _
+                            & "Db says: ""I can't work this way, so I'm closing now.""" _
+                            & "|Type" & PARAM_SEPARATOR & "caution" _
+                            & "|Caption" & PARAM_SEPARATOR & "Invalid SQL Template Parameters for the '" & dict("TemplateName") & "' Template"
+                            
+                            'exit database since application won't function w/o valid Templates
+                            DoCmd.CloseDatabase
+                        End If
+                            
+                        dictParam.Add param(0), param(1)
+
+                    End If
+                
+                Next
+                
+                Set Value = dictParam
+
+            Else
+                Value = Nz(rs.Fields(ary(i)), "")
+            End If
+            
+            'add key if it isn't already there
+            If Not dict.Exists(key) Then
+                If IsNull(Value) Then MsgBox key, vbOKCancel, "is NULL"
+                'Debug.Print Nz(Value, key & "-NULL")
+                dict.Add key, Value
+            End If
+        
+        Next
+        
+        'add Template dictionary to dictionary of Templates
+        dictTemplates.Add dict("TemplateName"), dict
+        
+'        Debug.Print dict("TemplateName") & " " & dict.Item("ID")
+        rs.MoveNext
+    Loop
+    
+    'load global AppTemplates As Scripting.Dictionary of Templates
+    Set g_AppTemplates = Nothing    'clear first
+    
+    Set g_AppTemplates = dictTemplates
+    
+Exit_Handler:
+    'cleanup
+    Set rs = Nothing
+    Set dict = Nothing
+    Set dictTemplates = Nothing
+    Exit Sub
+
+Err_Handler:
+    Select Case Err.Number
+      Case 457  'Duplicate Template -- tsys_Db_Templates finds more than one w/ same name
+        MsgBox "A duplicate Template was found." & vbCrLf & vbCrLf & _
+            "When you click 'OK' a query will run to identify the problem Template." & vbCrLf & vbCrLf & _
+            "You can close the query after it runs (save it if you like)." & vbCrLf & vbCrLf & _
+            "Please contact your data manager to resolve this issue." & vbCrLf & vbCrLf & _
+            "Error #" & Err.Number & " - GetTemplates[mod_Db]:" & vbCrLf & _
+            Err.Description, vbExclamation, "Duplicate Db Template Found! [tsys_Db_Templates]"
+
+            Dim strErrorSQL As String
+            strErrorSQL = "SELECT TemplateName, Count(TemplateName) AS NumberOfDupes " & _
+                    "FROM tsys_Db_Templates " & _
+                    "GROUP By TemplateName " & _
+                    "HAVING Count(TemplateName) > 1;"
+
+            Dim qdf As DAO.QueryDef
+            
+            If Not QueryExists("UsysTempQuery") Then
+                Set qdf = CurrentDb.CreateQueryDef("UsysTempQuery")
+            Else
+                Set qdf = CurrentDb.QueryDefs("UsysTempQuery")
+            End If
+            
+            qdf.SQL = strErrorSQL
+            
+            DoCmd.OpenQuery "USysTempQuery", acViewNormal
+
+            '********** FATAL ERROR ****************
+            'terminate *ALL* VBA code to prevent other popups
+            'Exit Sub
+            Stop
+            
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - GetTemplates[mod_Dev_Debug])"
+    End Select
+    Resume Exit_Handler
+End Sub

@@ -1,21 +1,29 @@
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = False
-Attribute VB_Exposed = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
 Option Compare Database
 Option Explicit
 
 ' =================================
 ' CLASS:        AppComment
 ' Level:        Framework class
-' Version:      1.00
+' Version:      1.02
 '
 ' Description:  Comment object related properties, events, functions & procedures
+'
+' Instancing:   PublicNotCreatable
+'               Class is accessible w/in enclosing project & projects that reference it
+'               Instances of class can only be created by modules w/in the enclosing project.
+'               Modules in other projects may reference class name as a declared type but may not instantiate class using new or the CreateObject function.
 '
 ' Source/date:  Bonnie Campbell, 10/28/2015
 ' References:   -
 ' Revisions:    BLC - 10/28/2015 - 1.00 - initial version
 '               BLC - 8/9/2016   - 1.01 - added SaveToDb() revised to AppComment (Comment reserved word)
+'               --------------- Reference Library ------------------
+'               BLC - 9/19/2017  - 1.02 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
+'                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
 ' =================================
 
 '---------------------
@@ -100,6 +108,51 @@ End Property
 ' Methods
 '---------------------
 
+'======== Instancing Method ==========
+
+' ---------------------------------
+' SUB:          GetClass
+' Description:  Retrieve a new instance of the class
+'               --------------------------------------------------------------------------
+'               Classes in a library with PublicNotCreateable instancing cannot
+'               create items of the class in other projects (using the New keyword)
+'               Variables can be declared, but the class object isn't created
+'
+'               This function allows other projects to create new instances of the class object
+'               In referencing projects, set a reference to this project & call the GetClass()
+'               function to create the new class object:
+'                   Dim NewAppComment as framework.AppComment
+'                   Set NewAppComment = framework.GetClass()
+'               --------------------------------------------------------------------------
+' Assumptions:  -
+' Parameters:   -
+' Returns:      New instance of the class
+' Throws:       none
+' References:
+'   Chip Pearson, November 6, 2013
+'   http://www.cpearson.com/excel/classes.aspx
+' Source/date:  -
+' Adapted:      Bonnie Campbell, September 21, 2017 - for NCPN tools
+' Revisions:
+'   BLC - 9/21/2016 - initial version
+' ---------------------------------
+Public Function GetClass() As AppComment
+On Error GoTo Err_Handler
+
+    Set GetClass = New AppComment
+
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+        Case Else
+            MsgBox "Error #" & Err.Description, vbCritical, _
+                "Error encounter (#" & Err.Number & " - GetClass[AppComment class])"
+    End Select
+    Resume Exit_Handler
+End Function
+
 '======== Standard Methods ===========
 
 ' ---------------------------------
@@ -125,10 +178,9 @@ Err_Handler:
     Select Case Err.Number
         Case Else
             MsgBox "Error #" & Err.Description, vbCritical, _
-                "Error encounter (#" & Err.Number & " - Class_Initialize[cls_AppComment])"
+                "Error encounter (#" & Err.Number & " - Class_Initialize[AppComment class])"
     End Select
     Resume Exit_Handler
-
 End Sub
 
 '---------------------------------------------------------------------------------------
@@ -155,7 +207,7 @@ Err_Handler:
     Select Case Err.Number
         Case Else
             MsgBox "Error #" & Err.Description, vbCritical, _
-                "Error encounter (#" & Err.Number & " - Class_Terminate[cls_AppComment])"
+                "Error encounter (#" & Err.Number & " - Class_Terminate[AppComment class])"
     End Select
     Resume Exit_Handler
 End Sub
@@ -262,7 +314,7 @@ Err_Handler:
     Select Case Err.Number
         Case Else
             MsgBox "Error #" & Err.Description, vbCritical, _
-                "Error encounter (#" & Err.Number & " - SaveToDb[cls_AppComment])"
+                "Error encounter (#" & Err.Number & " - SaveToDb[AppComment class])"
     End Select
     Resume Exit_Handler
 End Sub

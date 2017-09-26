@@ -1,16 +1,22 @@
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
-Attribute VB_Exposed = False
+Attribute VB_Exposed = True
 Option Compare Database
 Option Explicit
 
 ' =================================
 ' CLASS:        Tagline
 ' Level:        Framework class
-' Version:      1.02
+' Version:      1.03
 '
 ' Description:  Record Tagline object related properties, events, functions & procedures
+'
+' Instancing:   PublicNotCreatable
+'               Class is accessible w/in enclosing project & projects that reference it
+'               Instances of class can only be created by modules w/in the enclosing project.
+'               Modules in other projects may reference class name as a declared type
+'               but may not instantiate class using new or the CreateObject function.
 '
 ' Source/date:  Bonnie Campbell, 11/3/2015
 ' References:   -
@@ -18,6 +24,9 @@ Option Explicit
 '               BLC - 6/1/2016  - 1.01 - updated to use GetTemplate() in SaveToDb()
 '               BLC - 8/8/2016  - 1.02 - SaveToDb() added update parameter to identify if
 '                                        this is an update vs. an insert
+'               --------------- Reference Library ------------------
+'               BLC - 9/21/2017  - 1.03 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
+'                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
 ' =================================
 
 '---------------------
@@ -117,12 +126,56 @@ Public Property Get Height() As Integer
     Height = m_Height
 End Property
 
-
 '---------------------
 ' Methods
 '---------------------
 
-'======== Standard Methods ===========
+'======== Instancing Method ==========
+
+' ---------------------------------
+' SUB:          GetClass
+' Description:  Retrieve a new instance of the class
+'               --------------------------------------------------------------------------
+'               Classes in a library with PublicNotCreateable instancing cannot
+'               create items of the class in other projects (using the New keyword)
+'               Variables can be declared, but the class object isn't created
+'
+'               This function allows other projects to create new instances of the class object
+'               In referencing projects, set a reference to this project & call the GetClass()
+'               function to create the new class object:
+'                   Dim NewTagline as framework.Tagline
+'                   Set NewTagline = framework.GetClass()
+'               --------------------------------------------------------------------------
+' Assumptions:  -
+' Parameters:   -
+' Returns:      New instance of the class
+' Throws:       none
+' References:
+'   Chip Pearson, November 6, 2013
+'   http://www.cpearson.com/excel/classes.aspx
+' Source/date:  -
+' Adapted:      Bonnie Campbell, September 21, 2017 - for NCPN tools
+' Revisions:
+'   BLC - 9/21/2016 - initial version
+' ---------------------------------
+Public Function GetClass() As Tagline
+On Error GoTo Err_Handler
+
+    Set GetClass = New Tagline
+
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+        Case Else
+            MsgBox "Error #" & Err.Description, vbCritical, _
+                "Error encounter (#" & Err.Number & " - GetClass[Tagline class])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+'======== Standard Methods ==========
 
 ' ---------------------------------
 ' SUB:          Class_Initialize
@@ -147,7 +200,7 @@ Err_Handler:
     Select Case Err.Number
         Case Else
             MsgBox "Error #" & Err.Description, vbCritical, _
-                "Error encounter (#" & Err.Number & " - Class_Initialize[cls_Tagline])"
+                "Error encounter (#" & Err.Number & " - Class_Initialize[Tagline class])"
     End Select
     Resume Exit_Handler
 End Sub
@@ -176,7 +229,7 @@ Err_Handler:
     Select Case Err.Number
         Case Else
             MsgBox "Error #" & Err.Description, vbCritical, _
-                "Error encounter (#" & Err.Number & " - Class_Terminate[cls_Tagline])"
+                "Error encounter (#" & Err.Number & " - Class_Terminate[Tagline class])"
     End Select
     Resume Exit_Handler
 End Sub
@@ -274,7 +327,7 @@ Err_Handler:
     Select Case Err.Number
         Case Else
             MsgBox "Error #" & Err.Description, vbCritical, _
-                "Error encounter (#" & Err.Number & " - SaveToDb[cls_Tagline])"
+                "Error encounter (#" & Err.Number & " - SaveToDb[Tagline class])"
     End Select
     Resume Exit_Handler
 End Sub

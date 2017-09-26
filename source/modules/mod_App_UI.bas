@@ -656,56 +656,56 @@ End Function
 Public Sub ClickAction(action As String)
 On Error GoTo Err_Handler
 
-    Dim FName As String, rName As String, oArgs As String
+    Dim fName As String, rName As String, oArgs As String
     Dim StartFolder As String, strPics As String, strPath As String
     
     action = LCase(Nz(Trim(action), ""))
     
     'defaults
-    FName = ""
+    fName = ""
     rName = ""
     oArgs = ""
     
     Select Case Trim(action)
         'Where?
         Case "site"
-            FName = "Site"
+            fName = "Site"
         Case "feature"
-            FName = "Feature"
+            fName = "Feature"
         Case "transect"
-            FName = "VegTransect"
+            fName = "VegTransect"
             oArgs = ""
         Case "plot"
-            FName = "VegPlot"
+            fName = "VegPlot"
         Case "location"
-            FName = "Location"
+            fName = "Location"
         'Sampling
         Case "event"
-            FName = "Events"
+            fName = "Events"
             oArgs = "" 'site & protocol IDs
         Case "vegplots"
-            FName = "VegPlot"
+            fName = "VegPlot"
             oArgs = "" 'site & protocol IDs
         Case "locations"
-            FName = "Location"
+            fName = "Location"
             oArgs = "" 'collection source name - feature (A-G), transect #(1-8) &
         Case "people"
-            FName = "Contact"
+            fName = "Contact"
             oArgs = "Main"
         'VegetationS
         Case "veg plots"
-            FName = "VegPlot"
+            fName = "VegPlot"
         Case "woody canopy cover"
-            FName = "VegWalk" '"WoodyCanopyCover"
+            fName = "VegWalk" '"WoodyCanopyCover"
             oArgs = "" '"1|2016|WCC"
         Case "understory cover"
         Case "vegetation walk"
-            FName = "VegWalk"
+            fName = "VegWalk"
         Case "species"
         Case "unknowns"
-            FName = "Unknown"
+            fName = "Unknown"
         Case "species search"
-            FName = "SpeciesSearch"
+            fName = "SpeciesSearch"
             oArgs = "Main"
             'disable double click events
             SetTempVar "originForm", "DisableDoubleClick"
@@ -716,15 +716,15 @@ On Error GoTo Err_Handler
 '            End If
         'Observations
         Case "photos"
-            FName = "Photo" '"Tree"
+            fName = "Photo" '"Tree"
         Case "transducers"
-            FName = "Transducer"
+            fName = "Transducer"
             oArgs = ""
         Case "Survey Files"
-            FName = "SurveyFile"
+            fName = "SurveyFile"
             oArgs = ""
         Case "Upload Survey File"
-            FName = ""
+            fName = ""
             oArgs = ""
             
             'handle upload
@@ -745,7 +745,7 @@ On Error GoTo Err_Handler
 '            ToggleForm "Main", 0
             
         Case "batch upload photos"
-            FName = ""
+            fName = ""
             oArgs = ""
             
             'handle upload
@@ -776,13 +776,13 @@ On Error GoTo Err_Handler
             rName = "Photo"
             oArgs = ""
         Case "sediment class settings"
-            FName = "ModWentworth"
+            fName = "ModWentworth"
         Case "sheet settings"
-            FName = "SetDatasheetDefaults"
+            fName = "SetDatasheetDefaults"
         Case "transducer"
             rName = "Transducer"
         Case "tasks"
-            FName = "Task"
+            fName = "Task"
         'Reports
         Case "# Plots"
             rName = "NumPlots"
@@ -795,12 +795,12 @@ On Error GoTo Err_Handler
         Case "VegWalk - Species"
             rName = "SpeciesUnique"
         Case "More..."
-            FName = "AppReport"
+            fName = "AppReport"
     End Select
 
-    If Len(FName) > 0 Then
+    If Len(fName) > 0 Then
         Forms("Main").visible = False
-        DoCmd.OpenForm FName, acNormal, OpenArgs:=oArgs
+        DoCmd.OpenForm fName, acNormal, OpenArgs:=oArgs
     ElseIf Len(rName) > 0 Then
         'print preview mode - acViewPreview
         DoCmd.OpenReport rName, acViewPreview

@@ -1,24 +1,32 @@
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
-Attribute VB_Exposed = False
+Attribute VB_Exposed = True
 Option Compare Database
 Option Explicit
 
 ' =================================
 ' CLASS:        CoverSpecies
 ' Level:        Framework class
-' Version:      1.04
+' Version:      1.06
 '
 ' Description:  Cover Species object related properties, events, functions & procedures for UI display
+'
+' Instancing:   PublicNotCreatable
+'               Class is accessible w/in enclosing project & projects that reference it
+'               Instances of class can only be created by modules w/in the enclosing project.
+'               Modules in other projects may reference class name as a declared type
+'               but may not instantiate class using new or the CreateObject function.
 '
 ' Source/date:  Bonnie Campbell, 4/17/2017
 ' References:   -
 ' Revisions:    BLC - 4/13/2016 - 1.00 - initial version
 '                               BLC - 6/11/2016 - 1.01 - updated to use GetTemplate()
 '                               BLC - 4/17/2017 - 1.02 - adapted from BigRivers CoverSpecies
-'               BLC - 4/24/2017 - 1.03 - revised perecent cvoer to single vs integer to match database
+'               BLC - 4/24/2017 - 1.05 - revised perecent cvoer to single vs integer to match database
 '                           BLC - 8/22/2017 - 1.04 - merged BigRivers & Invasive/Upland versions into framework version
+'               BLC - 9/21/2017  - 1.06 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
+'                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
 ' =================================
 
 '---------------------
@@ -341,10 +349,56 @@ Public Property Get Nativity() As String
     Nativity = m_Species.Nativity
 End Property
 
-
 '---------------------
 ' Methods
 '---------------------
+
+'======== Instancing Method ==========
+
+' ---------------------------------
+' SUB:          GetClass
+' Description:  Retrieve a new instance of the class
+'               --------------------------------------------------------------------------
+'               Classes in a library with PublicNotCreateable instancing cannot
+'               create items of the class in other projects (using the New keyword)
+'               Variables can be declared, but the class object isn't created
+'
+'               This function allows other projects to create new instances of the class object
+'               In referencing projects, set a reference to this project & call the GetClass()
+'               function to create the new class object:
+'                   Dim NewCoverSpecies as framework.CoverSpecies
+'                   Set NewCoverSpecies = framework.GetClass()
+'               --------------------------------------------------------------------------
+' Assumptions:  -
+' Parameters:   -
+' Returns:      New instance of the class
+' Throws:       none
+' References:
+'   Chip Pearson, November 6, 2013
+'   http://www.cpearson.com/excel/classes.aspx
+' Source/date:  -
+' Adapted:      Bonnie Campbell, September 21, 2017 - for NCPN tools
+' Revisions:
+'   BLC - 9/21/2016 - initial version
+' ---------------------------------
+Public Function GetClass() As CoverSpecies
+On Error GoTo Err_Handler
+
+    Set GetClass = New CoverSpecies
+
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+        Case Else
+            MsgBox "Error #" & Err.Description, vbCritical, _
+                "Error encounter (#" & Err.Number & " - GetClass[CoverSpecies class])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+'======== Standard Methods ==========
 
 ' ---------------------------------
 ' Sub:          Class_Initialize

@@ -1,14 +1,14 @@
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
-Attribute VB_Exposed = False
+Attribute VB_Exposed = True
 Option Compare Database
 Option Explicit
 
 ' =================================
 ' CLASS:        ExifReader
 ' Level:        Framework class
-' Version:      1.00
+' Version:      1.01
 '
 ' Description:  Exif reader object related properties, events, functions & procedures for UI display
 ' Usage:
@@ -19,13 +19,22 @@ Option Explicit
 '               txtExifInfo = oExif.Tag(DateTimeOriginal)
 '               MsgBox txtExifInfo
 '
+' Instancing:   PublicNotCreatable
+'               Class is accessible w/in enclosing project & projects that reference it
+'               Instances of class can only be created by modules w/in the enclosing project.
+'               Modules in other projects may reference class name as a declared type
+'               but may not instantiate class using new or the CreateObject function.
+'
 ' Source/date:  Bonnie Campbell, 2/21/2017
 ' References:
 '   Albert D. Kallal, November 16, 2007
 '   https://www.pcreview.co.uk/threads/exif-data-from-jpgs.3317878/
 '   Reinhold Thurner, August 19, 2015
 '   https://sourceforge.net/projects/exifclass/
-' Revisions:    BLC - 2/21/2017 - 1.00 - initial version
+' Revisions:    BLC - 2/21/2017  - 1.00 - initial version
+'               --------------- Reference Library ------------------
+'               BLC - 9/21/2017  - 1.01 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
+'                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
 ' =================================
 
 '---------------------
@@ -262,6 +271,53 @@ End Property
 ' Methods
 '---------------------
 
+'======== Instancing Method ==========
+
+' ---------------------------------
+' SUB:          GetClass
+' Description:  Retrieve a new instance of the class
+'               --------------------------------------------------------------------------
+'               Classes in a library with PublicNotCreateable instancing cannot
+'               create items of the class in other projects (using the New keyword)
+'               Variables can be declared, but the class object isn't created
+'
+'               This function allows other projects to create new instances of the class object
+'               In referencing projects, set a reference to this project & call the GetClass()
+'               function to create the new class object:
+'                   Dim NewExifReader as framework.ExifReader
+'                   Set NewExifReader = framework.GetClass()
+'               --------------------------------------------------------------------------
+' Assumptions:  -
+' Parameters:   -
+' Returns:      New instance of the class
+' Throws:       none
+' References:
+'   Chip Pearson, November 6, 2013
+'   http://www.cpearson.com/excel/classes.aspx
+' Source/date:  -
+' Adapted:      Bonnie Campbell, September 21, 2017 - for NCPN tools
+' Revisions:
+'   BLC - 9/21/2016 - initial version
+' ---------------------------------
+Public Function GetClass() As ExifReader
+On Error GoTo Err_Handler
+
+    Set GetClass = New ExifReader
+
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+        Case Else
+            MsgBox "Error #" & Err.Description, vbCritical, _
+                "Error encounter (#" & Err.Number & " - GetClass[ExifReader class])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+'======== Standard Methods ==========
+
 ' ---------------------------------
 ' Sub:          Class_Initialize
 ' Description:  Class initialization (starting) event
@@ -286,7 +342,7 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - Class_Initialize[cls_ExifReader])"
+            "Error encountered (#" & Err.Number & " - Class_Initialize[ExifReader class])"
     End Select
     Resume Exit_Handler
 End Sub
@@ -315,7 +371,7 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - Class_Terminate[cls_ExifReader])"
+            "Error encountered (#" & Err.Number & " - Class_Terminate[ExifReader class])"
     End Select
     Resume Exit_Handler
 End Sub
@@ -364,7 +420,7 @@ Err_Handler:
     Select Case Err.Number
         Case Else
             MsgBox "Error #" & Err.Description, vbCritical, _
-                "Error encounter (#" & Err.Number & " - Init[cls_ExifReader])"
+                "Error encounter (#" & Err.Number & " - Init[ExifReader class])"
     End Select
     Resume Exit_Handler
 End Sub
@@ -423,7 +479,7 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - Load[cls_ExifReader])"
+            "Error encountered (#" & Err.Number & " - Load[ExifReader class])"
     End Select
     Resume Exit_Handler
 End Sub
@@ -460,7 +516,7 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - OpenJPGFile[cls_ExifReader])"
+            "Error encountered (#" & Err.Number & " - OpenJPGFile[ExifReader class])"
     End Select
     Resume Exit_Handler
 End Function
@@ -521,7 +577,7 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - InspectJPGFile[cls_ExifReader])"
+            "Error encountered (#" & Err.Number & " - InspectJPGFile[ExifReader class])"
     End Select
     Resume Exit_Handler
 End Function
@@ -555,7 +611,7 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - IsIntel[cls_ExifReader])"
+            "Error encountered (#" & Err.Number & " - IsIntel[ExifReader class])"
     End Select
     Resume Exit_Handler
 End Function
@@ -903,7 +959,7 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - GetDirectoryEntries[cls_ExifReader])"
+            "Error encountered (#" & Err.Number & " - GetDirectoryEntries[ExifReader class])"
     End Select
     Resume Exit_Handler
 End Sub
@@ -1200,7 +1256,7 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - ProcessMakerNote[cls_ExifReader])"
+            "Error encountered (#" & Err.Number & " - ProcessMakerNote[ExifReader class])"
     End Select
     Resume Exit_Handler
 End Sub

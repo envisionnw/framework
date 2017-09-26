@@ -55,33 +55,33 @@ On Error GoTo Err_Handler
     ' appropriate extension.
     '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     Dim Extension As String
-    Dim FName As String
+    Dim fName As String
     Extension = GetFileExtension(VBComp:=VBComp)
     If Trim(FileName) = vbNullString Then
-        FName = VBComp.Name & Extension
+        fName = VBComp.Name & Extension
     Else
-        FName = FileName
-        If InStr(1, FName, ".", vbBinaryCompare) = 0 Then
-            FName = FName & Extension
+        fName = FileName
+        If InStr(1, fName, ".", vbBinaryCompare) = 0 Then
+            fName = fName & Extension
         End If
     End If
     
     If StrComp(Right(FolderName, 1), "\", vbBinaryCompare) = 0 Then
-        FName = FolderName & FName
+        fName = FolderName & fName
     Else
-        FName = FolderName & "\" & FName
+        fName = FolderName & "\" & fName
     End If
     
-    If dir(FName, vbNormal + vbHidden + vbSystem) <> vbNullString Then
+    If dir(fName, vbNormal + vbHidden + vbSystem) <> vbNullString Then
         If OverwriteExisting = True Then
-            Kill FName
+            Kill fName
         Else
             ExportVBComponent = False
             Exit Function
         End If
     End If
     
-    VBComp.Export FileName:=FName
+    VBComp.Export FileName:=fName
     ExportVBComponent = True
 
 Exit_Handler:
@@ -256,13 +256,13 @@ End Sub
 Public Sub RecreateDatabase()
 On Error GoTo Err_Handler
     Dim myFile As Object '??
-    Dim folder As Object '??
+    Dim Folder As Object '??
     Dim FSO As Object '??
     Dim objecttype As String, objectname As String
     Dim WScript As Object '??
     Dim oApplication As Object '??
     
-    For Each myFile In folder.Files
+    For Each myFile In Folder.Files
         objecttype = FSO.GetExtensionName(myFile.Name)
         objectname = FSO.GetBaseName(myFile.Name)
         WScript.Echo "  " & objectname & " (" & objecttype & ")"

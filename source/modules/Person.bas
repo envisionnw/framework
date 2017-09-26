@@ -1,16 +1,22 @@
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
-Attribute VB_Exposed = False
+Attribute VB_Exposed = True
 Option Compare Database
 Option Explicit
 
 ' =================================
 ' CLASS:        Person
 ' Level:        Framework class
-' Version:      1.04
+' Version:      1.05
 '
 ' Description:  Person object related properties, events, functions & procedures
+'
+' Instancing:   PublicNotCreatable
+'               Class is accessible w/in enclosing project & projects that reference it
+'               Instances of class can only be created by modules w/in the enclosing project.
+'               Modules in other projects may reference class name as a declared type
+'               but may not instantiate class using new or the CreateObject function.
 '
 ' Source/date:  Bonnie Campbell, 10/28/2015
 ' References:   -
@@ -20,6 +26,9 @@ Option Explicit
 '               BLC - 9/1/2016   - 1.02 - SaveToDb() code cleanup
 '               BLC - 10/15/2016 - 1.03 - adjust SaveToDb() to accommodate non-users
 '               BLC - 1/27/2017  - 1.04 - added IsNPS flag
+'               --------------- Reference Library ------------------
+'               BLC - 9/21/2017  - 1.05 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
+'                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
 ' =================================
 
 '---------------------
@@ -225,7 +234,56 @@ Public Property Get AccessLevel() As Long
     AccessLevel = m_AccessLevel
 End Property
 
-'======== Standard Methods ===========
+'---------------------
+' Methods
+'---------------------
+
+'======== Instancing Method ==========
+
+' ---------------------------------
+' SUB:          GetClass
+' Description:  Retrieve a new instance of the class
+'               --------------------------------------------------------------------------
+'               Classes in a library with PublicNotCreateable instancing cannot
+'               create items of the class in other projects (using the New keyword)
+'               Variables can be declared, but the class object isn't created
+'
+'               This function allows other projects to create new instances of the class object
+'               In referencing projects, set a reference to this project & call the GetClass()
+'               function to create the new class object:
+'                   Dim NewPerson as framework.Person
+'                   Set NewPerson = framework.GetClass()
+'               --------------------------------------------------------------------------
+' Assumptions:  -
+' Parameters:   -
+' Returns:      New instance of the class
+' Throws:       none
+' References:
+'   Chip Pearson, November 6, 2013
+'   http://www.cpearson.com/excel/classes.aspx
+' Source/date:  -
+' Adapted:      Bonnie Campbell, September 21, 2017 - for NCPN tools
+' Revisions:
+'   BLC - 9/21/2016 - initial version
+' ---------------------------------
+Public Function GetClass() As Person
+On Error GoTo Err_Handler
+
+    Set GetClass = New Person
+
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+        Case Else
+            MsgBox "Error #" & Err.Description, vbCritical, _
+                "Error encounter (#" & Err.Number & " - GetClass[Person class])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+'======== Standard Methods ==========
 
 ' ---------------------------------
 ' SUB:          Class_Initialize
@@ -250,7 +308,7 @@ Err_Handler:
     Select Case Err.Number
         Case Else
             MsgBox "Error #" & Err.Description, vbCritical, _
-                "Error encounter (#" & Err.Number & " - Class_Initialize[cls_Person])"
+                "Error encounter (#" & Err.Number & " - Class_Initialize[Person class])"
     End Select
     Resume Exit_Handler
 End Sub
@@ -279,7 +337,7 @@ Err_Handler:
     Select Case Err.Number
         Case Else
             MsgBox "Error #" & Err.Description, vbCritical, _
-                "Error encounter (#" & Err.Number & " - Class_Terminate[cls_Person])"
+                "Error encounter (#" & Err.Number & " - Class_Terminate[Person class])"
     End Select
     Resume Exit_Handler
 End Sub
@@ -368,7 +426,7 @@ Err_Handler:
     Select Case Err.Number
         Case Else
             MsgBox "Error #" & Err.Description, vbCritical, _
-                "Error encounter (#" & Err.Number & " - SaveToDb[cls_Person])"
+                "Error encounter (#" & Err.Number & " - SaveToDb[Person class])"
     End Select
     Resume Exit_Handler
 End Sub
