@@ -4,11 +4,13 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Array
 ' Level:        Framework module
-' Version:      1.00
+' Version:      1.01
 ' Description:  array functions & procedures
 '
 ' Source/date:  Bonnie Campbell, 9/19/2016
 ' Revisions:    BLC, 9/19/2016 - 1.00 - initial version
+'               BLC, 9/14/2017 - 1.01 - added from mod_Utilities: Largest(), Smallest(),
+'                                       reorganized subs/functions
 ' =================================
 
 ' ---------------------------------
@@ -19,7 +21,171 @@ Option Explicit
 '  Subroutines & Functions
 ' ---------------------------------
 
+' ---------------------------------
+'  Validation
+' ---------------------------------
+' ---------------------------------
+' FUNCTION:     IsArrayEmpty
+' Description:  tests whether the array is allocated
+' Assumptions:  -
+' Parameters:   ary - array data (variant, string or array)
+' Returns:      True or False whether array is empty (boolean)
+' Throws:       none
+' References:
+'   Chip Pearson, Unknown
+'   http://www.cpearson.com/excel/vbaarrays.htm
+' Source/date:  Bonnie Campbell, February 23, 2017 - for NCPN tools
+' Adapted:  -
+' Revisions:
+'   BLC - 2/23/2017 - initial version
+' ---------------------------------
+Public Function IsArrayEmpty(ary As Variant) As Boolean
+On Error GoTo Err_Handler
 
+    Dim LB As Long
+    Dim UB As Long
+    
+    Err.Clear
+    On Error Resume Next
+    If IsArray(ary) = False Then
+        'not an array --> return true
+        IsArrayEmpty = True
+    End If
+    
+    ' UBound check
+    UB = UBound(ary, 1)
+    
+    If (Err.Number <> 0) Then
+        'UBound leads to an error when array is unallocated --> return true
+        IsArrayEmpty = True
+    Else
+    
+        ''''''''''''''''''''''''''''''''''''''''''
+        ' Chip Pearson:
+        ' On rare occassion, under circumstances I
+        ' cannot reliably replicate, Err.Number
+        ' will be 0 for an unallocated, empty array.
+        ' On these occassions, LBound is 0 and
+        ' UBound is -1.
+        ' To accomodate the weird behavior, test to
+        ' see if LB > UB. If so, the array is not
+        ' allocated.
+        ''''''''''''''''''''''''''''''''''''''''''
+        Err.Clear
+        LB = LBound(ary)
+        If LB > UB Then
+            IsArrayEmpty = True
+        Else
+            IsArrayEmpty = False
+        End If
+    End If
+
+Exit_Handler:
+    'cleanup
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - IsEmptyArray[mod_Array])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+'  Retrieving Values
+' ---------------------------------
+
+' ---------------------------------
+' FUNCTION:     Largest
+' Description:  Inspects an array of long values of any length to find the largest value
+'               and returns its index
+' Assumptions:  -
+' Parameters:   ary() - array to inspect check (array)
+' Returns:      index of largest value (integer)
+' Throws:       none
+' References:   none
+' Source/date:  NCPN unknown
+' Adapted:      Bonnie Campbell, September 14, 2017 - for NCPN tools
+' Revisions:
+'   Unknown - unknown - initial version
+'   BLC - 4/4/2017 - revised name & moved to mod_Array
+' ---------------------------------
+Function Largest(ary() As Long) As Integer
+On Error GoTo Err_Handler
+
+    Dim lngBig As Long, intX As Integer, intI As Integer
+
+    intI = LBound(ary)
+    lngBig = ary(intI)
+    Largest = intI
+
+    For intX = intI + 1 To UBound(ary)
+        If ary(intX) > lngBig Then
+            lngBig = ary(intX)
+            Largest = intX
+        End If
+    Next intX
+
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - Largest[mod_Array])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' FUNCTION:     Smallest
+' Description:  Inspects an array of long values of any length to find the smallest value
+'               and returns its index
+' Assumptions:  -
+' Parameters:   ary() - array to inspect check (array)
+' Returns:      index of smallest value (integer)
+' Throws:       none
+' References:   none
+' Source/date:  NCPN unknown
+' Adapted:      Bonnie Campbell, September 14, 2017 - for NCPN tools
+' Revisions:
+'   Unknown - unknown - initial version
+'   BLC - 4/4/2017 - revised name & moved to mod_Array
+' ---------------------------------
+Function Smallest(ary() As Long) As Integer
+On Error GoTo Err_Handler
+
+    Dim lngSmall As Long, intX As Integer, intI As Integer
+
+    intI = LBound(ary)
+    lngSmall = ary(intI)
+    Smallest = intI
+
+    For intX = intI + 1 To UBound(ary)
+        If ary(intX) < lngSmall Then
+            lngSmall = ary(intX)
+            Smallest = intX
+        End If
+    Next intX
+    
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - Smallest[mod_Array])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+'  Creation
+' ---------------------------------
 ' ---------------------------------
 ' SUB:          StringTo2DArray
 ' Description:  array conversion to recordset actions
@@ -69,8 +235,6 @@ On Error GoTo Err_Handler
         
     Next
  
- 
- 
 Exit_Handler:
     'cleanup
     Exit Function
@@ -83,6 +247,117 @@ Err_Handler:
     End Select
     Resume Exit_Handler
 End Function
+
+' ---------------------------------
+'  Manipulation
+' ---------------------------------
+
+' ---------------------------------
+' FUNCTION:     ArrayReplace
+' Description:  iterate through array elements replacing portions of the element string
+' Assumptions:  Array to convert is a one dimensional string
+'               regex to remove
+'                   #s:     "[0-9]+-"
+'                   text:   "-([a-z]|\s|_|&|/|/.|[a-z],\s[a-z]+)+" (used for isolating SOP #s)
+' Parameters:   ary - array data (variant, string or array)
+'               UseRegEx - whether to use regex or not (boolean)
+'               Remove - item to replace (string)
+'               ReplaceWith - item to replace with (optional, string)
+'               iStart - array position to start modification (optional, integer)
+'               iEnd - array position to stop modification (optional, integer)
+' Returns:      array of items after modification (variant array)
+' Throws:       none
+' References:
+'   osknows, April 18, 2013
+'   http://stackoverflow.com/questions/16084909/vba-multiple-matches-within-one-string-using-regular-expressions-execute-method
+' Source/date:  Bonnie Campbell, January 19, 2017 - for NCPN tools
+' Adapted:  -
+' Revisions:
+'   BLC - 1/19/2017 - initial version
+' ---------------------------------
+Public Function ArrayReplace(ary As Variant, _
+            Remove As String, _
+            UseRegEx As Boolean, _
+            Optional ReplaceWith As String = "", _
+            Optional iStart As Integer = 0, _
+            Optional iEnd As Integer = 0 _
+            ) As Variant
+On Error GoTo Err_Handler
+
+    If UseRegEx Then
+        'Dim rgx As New Regex(pattern)
+      'Dim result As String = rgx.Replace(input, replacement)
+        Dim RegEx As New RegExp
+        
+        RegEx.Pattern = Remove
+        RegEx.Global = True     'replace globally!
+        RegEx.IgnoreCase = True
+        
+    End If
+    
+    If Not IsArray(ary) Then
+        Dim strNew As String
+        
+        If UseRegEx Then
+            strNew = RegEx.Replace(ary, ReplaceWith)
+        Else
+            strNew = Replace(ary, Remove, ReplaceWith)
+        End If
+        
+        ArrayReplace = strNew
+        
+    Else
+    
+        Dim aryNew As Variant '() As String
+        Dim i As Integer
+        
+        'set default end
+        If iEnd = 0 Then iEnd = UBound(ary)
+        
+        'iterate through array
+        For i = 0 To UBound(ary)
+            Select Case i
+                Case Is = iStart, _
+                     Is < iStart, _
+                     Is < iEnd, _
+                     Is = iEnd
+                     
+                        If UseRegEx Then
+                            ary(i) = RegEx.Replace(ary(i), ReplaceWith)
+                        Else
+                            ary(i) = Replace(ary(i), Remove, ReplaceWith)
+                        End If
+                
+                Case Else
+                    'do nothing
+            End Select
+        Next
+        
+        'aryNew = ary
+        
+        ArrayReplace = ary
+        
+    End If
+
+    'ArrayReplace = aryNew 'strNew
+
+Exit_Handler:
+    'cleanup
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - ArrayReplace[mod_Array])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+
+' ---------------------------------
+'  Output/Export
+' ---------------------------------
 
 ' ---------------------------------
 ' FUNCTION:     ArrayToRecordset
@@ -207,179 +482,6 @@ Err_Handler:
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - ArrayToRecordset[mod_Array])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' FUNCTION:     ArrayReplace
-' Description:  iterate through array elements replacing portions of the element string
-' Assumptions:  Array to convert is a one dimensional string
-'               regex to remove
-'                   #s:     "[0-9]+-"
-'                   text:   "-([a-z]|\s|_|&|/|/.|[a-z],\s[a-z]+)+" (used for isolating SOP #s)
-' Parameters:   ary - array data (variant, string or array)
-'               UseRegEx - whether to use regex or not (boolean)
-'               Remove - item to replace (string)
-'               ReplaceWith - item to replace with (optional, string)
-'               iStart - array position to start modification (optional, integer)
-'               iEnd - array position to stop modification (optional, integer)
-' Returns:      array of items after modification (variant array)
-' Throws:       none
-' References:
-'   osknows, April 18, 2013
-'   http://stackoverflow.com/questions/16084909/vba-multiple-matches-within-one-string-using-regular-expressions-execute-method
-' Source/date:  Bonnie Campbell, January 19, 2017 - for NCPN tools
-' Adapted:  -
-' Revisions:
-'   BLC - 1/19/2017 - initial version
-' ---------------------------------
-Public Function ArrayReplace(ary As Variant, _
-            Remove As String, _
-            UseRegEx As Boolean, _
-            Optional ReplaceWith As String = "", _
-            Optional iStart As Integer = 0, _
-            Optional iEnd As Integer = 0 _
-            ) As Variant
-On Error GoTo Err_Handler
-
-    If UseRegEx Then
-        'Dim rgx As New Regex(pattern)
-      'Dim result As String = rgx.Replace(input, replacement)
-        Dim RegEx As New RegExp
-        
-        RegEx.Pattern = Remove
-        RegEx.Global = True     'replace globally!
-        RegEx.IgnoreCase = True
-        
-    End If
-    
-    If Not IsArray(ary) Then
-        Dim strNew As String
-        
-        If UseRegEx Then
-            strNew = RegEx.Replace(ary, ReplaceWith)
-        Else
-            strNew = Replace(ary, Remove, ReplaceWith)
-        End If
-        
-        ArrayReplace = strNew
-        
-    Else
-    
-        Dim aryNew As Variant '() As String
-        Dim i As Integer
-        
-        'set default end
-        If iEnd = 0 Then iEnd = UBound(ary)
-        
-        'iterate through array
-        For i = 0 To UBound(ary)
-            Select Case i
-                Case Is = iStart, _
-                     Is < iStart, _
-                     Is < iEnd, _
-                     Is = iEnd
-                     
-                        If UseRegEx Then
-                            ary(i) = RegEx.Replace(ary(i), ReplaceWith)
-                        Else
-                            ary(i) = Replace(ary(i), Remove, ReplaceWith)
-                        End If
-                
-                Case Else
-                    'do nothing
-            End Select
-        Next
-        
-        'aryNew = ary
-        
-        ArrayReplace = ary
-        
-    End If
-
-    'ArrayReplace = aryNew 'strNew
-
-Exit_Handler:
-    'cleanup
-    Exit Function
-    
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - ArrayReplace[mod_Array])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-
-
-' ---------------------------------
-' FUNCTION:     IsArrayEmpty
-' Description:  tests whether the array is allocated
-' Assumptions:  -
-' Parameters:   ary - array data (variant, string or array)
-' Returns:      True or False whether array is empty (boolean)
-' Throws:       none
-' References:
-'   Chip Pearson, Unknown
-'   http://www.cpearson.com/excel/vbaarrays.htm
-' Source/date:  Bonnie Campbell, February 23, 2017 - for NCPN tools
-' Adapted:  -
-' Revisions:
-'   BLC - 2/23/2017 - initial version
-' ---------------------------------
-Public Function IsArrayEmpty(ary As Variant) As Boolean
-On Error GoTo Err_Handler
-
-    Dim LB As Long
-    Dim UB As Long
-    
-    Err.Clear
-    On Error Resume Next
-    If IsArray(ary) = False Then
-        'not an array --> return true
-        IsArrayEmpty = True
-    End If
-    
-    ' UBound check
-    UB = UBound(ary, 1)
-    
-    If (Err.Number <> 0) Then
-        'UBound leads to an error when array is unallocated --> return true
-        IsArrayEmpty = True
-    Else
-    
-        ''''''''''''''''''''''''''''''''''''''''''
-        ' Chip Pearson:
-        ' On rare occassion, under circumstances I
-        ' cannot reliably replicate, Err.Number
-        ' will be 0 for an unallocated, empty array.
-        ' On these occassions, LBound is 0 and
-        ' UBound is -1.
-        ' To accomodate the weird behavior, test to
-        ' see if LB > UB. If so, the array is not
-        ' allocated.
-        ''''''''''''''''''''''''''''''''''''''''''
-        Err.Clear
-        LB = LBound(ary)
-        If LB > UB Then
-            IsArrayEmpty = True
-        Else
-            IsArrayEmpty = False
-        End If
-    End If
-
-Exit_Handler:
-    'cleanup
-    Exit Function
-    
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - IsEmptyArray[mod_Array])"
     End Select
     Resume Exit_Handler
 End Function

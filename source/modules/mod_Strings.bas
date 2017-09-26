@@ -4,8 +4,9 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Strings
 ' Level:        Framework module
-' Version:      1.10
+' Version:      1.14
 ' Description:  String related functions & subroutines
+' Requires:     Microsoft VBScript Regular Expressions 5.5 library for RemoveChars() oReg
 '
 ' Source/date:  Bonnie Campbell, April 2015
 ' Revisions:    BLC, 4/30/2015 - 1.00 - initial version
@@ -21,9 +22,23 @@ Option Explicit
 '               BLC, 10/25/2016 - 1.08 - added InsertSpaceBeforeCaps()
 '               BLC, 2/21/2017 - 1.09 - added PadString()
 ' --------------------------------------------------------------------
+'               BLC, 3/8/2017          added updated version to Invasives db
+' --------------------------------------------------------------------
+'               BLC, 3/8/2017 - 1.10a - imported into invasives
+' --------------------------------------------------------------------
 '               BLC, 3/22/2017          added updated version to Upland db
 ' --------------------------------------------------------------------
 '               BLC, 3/22/2017 - 1.10 - added ReplaceMulti() from uplands & inserted missing version
+' --------------------------------------------------------------------
+'               BLC, 4/18/2017          re-added updated version to Invasives db
+' --------------------------------------------------------------------
+'               BLC, 4/18/2017 - 1.11 - added updated version to Invasives db, added Requires documentation
+'                                       for regular expressions
+'               BLC, 6/20/2017 - 1.12 - added ReplaceTextBetween()
+'               BLC, 9/13/2017 - 1.13 - documented RemoveChars requirement for Microsoft VBScript Regular Expressions 5.5 library
+'               BLC, 9/14/2017 - 1.14 - organized methods, added from removed mod_Utilities:
+'                                       ReplaceChars() which mirrors ReplaceChars_TSB(),
+'                                       TitleCaseNameSplit(), UnderscoreNameSplit(), Capitalize()
 ' =================================
 
 '---------------------
@@ -220,13 +235,65 @@ Public Const uLTriangleArrow = &H1F890      '129168 leftwards triangle arrowhead
 Public Const uHandshake = &H1F91D           '129309
 Public Const uLizard = &H1F98E              '129422
 
+' ---------------------------------
+'   Methods
+' ---------------------------------
+
+' ---------------------------------
+'   Replacements
+' ---------------------------------
+
+' =================================
+' FUNCTION:     ReplaceChars
+' Description:  Replaces characters in a string
+' Parameters:   strTextIn - string to work on
+'               strFind - character to find
+'               strReplace - character to replace with
+' Returns:      modified string
+' Throws:       none
+' References:   none
+' Source/date:  Unknown, unknown
+' Revisions:    Unknown - Unknown
+'               BLC, 9/14/2017 - added from mod_Utilities
+' =================================
+Public Function ReplaceChars(strTextIn As String, strFind As String, _
+    strReplace As String) As String
+On Error GoTo Err_Handler
+
+    Dim intCounter As Integer
+    Dim strTmp As String
+    Dim chrTmp As String * 1
+    
+    For intCounter = 1 To Len(strTextIn)
+        chrTmp = Mid$(strTextIn, intCounter)
+        If chrTmp <> strFind Then
+            strTmp = strTmp & chrTmp
+        Else
+            strTmp = strTmp & strReplace
+        End If
+    Next intCounter
+    
+    ReplaceChars = strTmp
+
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - ReplaceChars[mod_Strings])"
+    End Select
+    Resume Exit_Handler
+End Function
+
 ' =================================
 ' FUNCTION:     ReplaceString
 ' Description:  Replaces a substring in a string with another
 ' Parameters:   strTextIn - string to work on
 '               strFind - string to find
 '               strReplace - string to replace with
-'               fCaseSensitive - True for case sensitive search (default=False)
+'               CaseSensitive - True for case sensitive search (default=False)
 ' Returns:      modified string
 ' Throws:       none
 ' References:   none
@@ -234,18 +301,20 @@ Public Const uLizard = &H1F98E              '129422
 ' Revisions:    John R. Boetsch, 5/17/2006 - error trapping, documentation
 '               BLC, 4/30/2015 - moved from mod_Utilities
 '               BLC, 5/18/2015 - renamed, removed fxn prefix
+'               BLC, 9/14/2017 - ReplaceString_TSB from mod_Utilities (removed) similar
+'                                with required CaseSensitive parameter
+'                                removed f prefix from fCaseSensitive parameter
 ' =================================
 Public Function ReplaceString(strTextIn As String, strFind As String, _
-    strReplace As String, Optional fCaseSensitive As Boolean = False) As String
-
-    On Error GoTo Err_Handler
+    strReplace As String, Optional CaseSensitive As Boolean = False) As String
+On Error GoTo Err_Handler
 
     Dim strTemp As String
     Dim intPos As Integer
     Dim intCaseSensitive As Integer
 
     ' Convert the case-sensitive boolean to the comparison constant (1=binary, 2=textual)
-    intCaseSensitive = fCaseSensitive + 1
+    intCaseSensitive = CaseSensitive + 1
 
     strTemp = strTextIn
     intPos = InStr(1, strTemp, strFind, intCaseSensitive)
@@ -322,6 +391,200 @@ Err_Handler:
     Resume Exit_Handler
 End Function
 
+' ---------------------------------
+' SUB:          ReplaceTextBetween
+' Description:  Replaces text between two words (or chars) found in a string
+' Assumptions:  -
+' Parameters:   strOriginal - original string value
+'               Word1 - word or character where replacement begins
+'               Word2 - word or character where replacement ends
+'               Replacement - string replacing the original text segment (optional, default = "")
+' Returns:      original text with the text between Word1 and Word2 replaced by the Replacement
+'               text (which defaults to an empty string)
+' Throws:       none
+' References:   none
+' Source/date:  Bonnie Campbell, June 20, 2017 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 6/20/2017  - initial version
+' ---------------------------------
+Public Function ReplaceTextBetween(strOriginal As String, Word1 As String, _
+                                        Word2 As String, Optional Replacement As String = "")
+On Error GoTo Err_Handler
+
+    Dim strSegment As String, strNew As String
+    Dim posWord1 As Integer, posWord2 As Integer, origLength As Integer
+
+    'default
+    strNew = strOriginal
+
+    'find positions
+    posWord1 = InStr(strOriginal, Word1)
+    posWord2 = InStr(strOriginal, Word2)
+    origLength = Len(strOriginal)
+    
+    'find text to replace
+    strSegment = Mid(strOriginal, posWord1, posWord2 - posWord1)
+    
+    'replace
+    strNew = Replace(strOriginal, strSegment, Replacement)
+
+Exit_Handler:
+    ReplaceTextBetween = strNew
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - ReplaceTextBetween[mod_Strings])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+'   Parsing
+' ---------------------------------
+
+' ---------------------------------
+' FUNCTION:     ParseString
+' Description:  retrieve the item from string
+' Assumptions:  -
+' Parameters:   strTag - tag to check (string)
+' Returns:      item (string)
+' Throws:       none
+' References:   none
+' Source/date:  Bonnie Campbell, July 29, 2015 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 7/29/2015 - initial version
+'   BLC - 8/30/2016 - moved from Tree form
+' ---------------------------------
+Public Function ParseString(str As String, idx As Integer, Optional delimiter As String = "|") As String
+On Error GoTo Err_Handler
+
+    Dim Items() As String
+    Dim Item As String
+        
+    Items() = Split(str, delimiter)
+    
+    If UBound(Items) + 1 > idx Then
+        Item = Items(idx)
+    End If
+    
+Exit_Handler:
+    ParseString = Item
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (" & Err.Number & " - ParseString[mod_Strings])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' FUNCTION:     TitleCaseNameSplit
+' Description:  splits a string into separate words
+' Assumptions:  -
+' Parameters:   strIn - string to manipulate (string)
+' Returns:      string split by underscores
+' Throws:       none
+' References:   none
+' Source/date:  Unknown, unknown
+' Adapted:      Bonnie Campbell, September 14, 2017 - for NCPN tools
+' Revisions:
+'   Unknown - Unknown - initial version
+'   BLC - 9/14/2017 - moved from mod_Utilities (removed)
+' ---------------------------------
+Public Function TitleCaseNameSplit(strIn As String) As String
+On Error GoTo Err_Handler
+
+    Dim strOut As String
+    Dim i As Integer
+    
+    For i = 1 To Len(strIn)
+        If IsCapital(Mid(strIn, i, 1)) Then
+            Select Case i
+                Case 2 To (Len(strIn) - 1)  'middle letters
+                    'previous letter a capital letter? --> don't put a space before it
+                    '                                      unless next letter is lowercase
+                    If IsCapital(Mid(strIn, i - 1, 1)) Then
+                        If IsCapital(Mid(strIn, i + 1, 1)) Then
+                            strOut = strOut & Mid(strIn, i, 1)
+                        Else
+                            strOut = strOut & " " & Mid(strIn, i, 1)
+                        End If
+                    Else
+                        'previous letter lowercase? --> put a space
+                        strOut = strOut & " " & Mid(strIn, i, 1)
+                    End If
+                Case 1  'first letter
+                    strOut = UCase(Left(strIn, 1))
+                Case Len(strIn) 'last letter
+                    'previous letter was a capital? --> don't put a space
+                    If IsCapital(Mid(strIn, i - 1, 1)) Then
+                        strOut = strOut & Mid(strIn, i, 1)
+                    Else
+                        strOut = strOut & " " & Mid(strIn, i, 1)
+                    End If
+            End Select
+        Else
+            strOut = strOut & Mid(strIn, i, 1)
+        End If
+    Next
+    
+    TitleCaseNameSplit = Capitalize(Trim(strOut))
+    
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (" & Err.Number & " - TitleCaseNameSplit[mod_Strings])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' FUNCTION:     UnderscoreNameSplit
+' Description:  splits a string into separate
+' Assumptions:  -
+' Parameters:   strIn - string to manipulate (string)
+' Returns:      string split by capitals
+' Throws:       none
+' References:   none
+' Source/date:  Unknown, unknown
+' Adapted:      Bonnie Campbell, September 14, 2017 - for NCPN tools
+' Revisions:
+'   Unknown - Unknown - initial version
+'   BLC - 9/14/2017 - moved from mod_Utilities (removed)
+' ---------------------------------
+Public Function UnderscoreNameSplit(strIn As String) As String
+On Error GoTo Err_Handler
+
+    UnderscoreNameSplit = Capitalize(ReplaceChars(strIn, "_", " "))
+    
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (" & Err.Number & " - UnderscoreNameSplit[mod_Strings])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+'   Alterations
+' ---------------------------------
+
 ' =================================
 ' FUNCTION:     ChangeDelimiter
 ' Description:  Replaces delimiters in an input string; default is to change double-quotes
@@ -360,6 +623,67 @@ Err_Handler:
     End Select
     Resume Exit_Handler
 End Function
+
+' ---------------------------------
+' FUNCTION:     Capitalize
+' Description:  Capitalizes input text
+' Assumptions:  -
+' Parameters:   strIn - string to manipulate (string)
+' Returns:      capitalized string
+' Throws:       none
+' References:   none
+' Source/date:  Unknown, unknown
+' Adapted:      Bonnie Campbell, September 14, 2017 - for NCPN tools
+' Revisions:
+'   Unknown - Unknown - initial version
+'   BLC - 9/14/2017 - moved from mod_Utilities (removed)
+' ---------------------------------
+Public Function Capitalize(strIn As String) As String
+On Error GoTo Err_Handler
+
+    Dim strWorking As String
+    Dim strWord As String
+    Dim LastWord As Boolean
+    
+    strIn = Trim(strIn)
+    
+    Do
+        If InStr(strIn, " ") = 0 Then
+            LastWord = True
+            strWord = Trim(strIn)
+        Else
+            strWord = Left(strIn, InStr(strIn, " ") - 1)
+            strIn = Mid(strIn, InStr(strIn, " ") + 1)
+        End If
+        
+        Select Case strWord
+            Case "id", "tsn", "nps"
+                strWord = UCase(strWord)
+            Case Else
+                strWord = UCase(Left(strWord, 1)) & Mid(strWord, 2)
+        End Select
+        
+        strWorking = strWorking & " " & strWord
+    
+    Loop Until LastWord
+    
+    Capitalize = Trim(strWorking)
+    
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (" & Err.Number & " - Capitalize[mod_Strings])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+'   Insertions
+' ---------------------------------
 
 ' ---------------------------------
 ' FUNCTION:     InsertSpace
@@ -408,6 +732,92 @@ Err_Handler:
 End Function
 
 ' ---------------------------------
+' FUNCTION:     InsertSpaceBeforeCaps
+' Description:  adds a space before capitals
+' Assumptions:  -
+' Parameters:   strInspect - string to check (string)
+' Returns:      string with spaces inserted (string)
+' Throws:       none
+' References:
+'   Bleuspam, May 20, 2010
+'   http://www.utteraccess.com/forum/Split-string-capital-le-t1945127.html
+' Source/date:  Bonnie Campbell, July 29, 2015 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 10/25/2016 - initial version
+' ---------------------------------
+Function InsertSpaceBeforeCaps(strInspect As String) As String
+On Error GoTo Err_Handler
+
+    Dim strTest As String, strNew As String
+    Dim i As Integer
+
+    For i = 1 To Len(strInspect)
+        strTest = Mid(strInspect, i, 1)
+        
+        If StrComp(strTest, StrConv(strTest, vbUpperCase), vbBinaryCompare) <> 0 Then
+            strNew = strNew & strTest
+        Else:
+            strNew = strNew & " " & strTest
+        End If
+    Next i
+    
+    InsertSpaceBeforeCaps = Trim(strNew)
+
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (" & Err.Number & " - InsertSpaceBeforeCaps[mod_Strings])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' Function:     PadString
+' Description:  Class string padding function
+' Assumptions:  -
+' Parameters:   src - starting string (string)
+'               nSize - desired string length (integer)
+'               PadChar - character to use for padding (string)
+' Returns:      -
+' Throws:       none
+' References:
+'   Reinhold Thurner, August 19, 2015
+'   https://sourceforge.net/projects/exifclass/
+' Source/date:  Bonnie Campbell, February 21, 2017 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 2/21/2017 - initial version
+' ---------------------------------
+Public Function PadString(src As String, nSize As Integer, PadChar As String) As String
+
+    If Len(src) < nSize Then
+        PadString = String(nSize - Len(src), PadChar) & src
+    Else
+        PadString = src
+    End If
+    
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - PadString[mod_Strings])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+'   Removals
+' ---------------------------------
+
+' ---------------------------------
 ' FUNCTION:     InternalTrim
 ' Description:  Removes all spaces from string (before, inside, & after)
 ' Parameters:   str - string to inspect
@@ -436,6 +846,58 @@ Err_Handler:
     Resume Exit_Handler
 End Function
 
+' ---------------------------------
+' FUNCTION:     RemoveChars
+' Description:  Removes non-numeric or numeric values from a string
+' Assumptions:  -
+' Parameters:   strInspect - string to remove non-numerics from
+'               blnNumeric - whether numbers or non-numerics are returned (boolean),
+'                            (true - return numbers only, false - return non-numerics only)
+' Returns:      string - numeric or non-numeric portion of string depending on blnNumeric
+' Throws:       none
+' Dependency:
+' Requires:     Microsoft VBScript Regular Expressions 5.5 library
+' References:
+'   Ivan F. Moala, June 12, 2004
+'   http://www.xtremevbtalk.com/archive/index.php/t-172627.html
+' Source/date:  Bonnie Campbell, June 24, 2016 for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC, 6/24/2016 - initial version
+' ---------------------------------
+Public Function RemoveChars(ByVal strInspect As String, blnNumeric As Boolean) As String
+On Error GoTo Err_Handler:
+
+    Dim oReg As RegExp
+
+    Set oReg = CreateObject("vbScript.regexp")
+
+    With oReg
+        If blnNumeric Then
+            .Pattern = "[^\d]+" '\d -> digit character of any length
+        Else
+            .Pattern = "[^\D]+" '\D -> non-digit character of any length
+        End If
+        .Global = True
+    End With
+
+    RemoveChars = oReg.Replace(strInspect, "")
+
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - RemoveNonNumerics[mod_Strings])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+'   Retrieve String Info
+' ---------------------------------
 
 ' ---------------------------------
 ' FUNCTION:     CountInString
@@ -538,6 +1000,36 @@ Err_Handler:
 End Function
 
 ' ---------------------------------
+' FUNCTION:     XX
+' Description:  Inspects a string and determines if it is capitalized or not
+' Assumptions:  -
+' Parameters:   strIn - string to manipulate (string)
+' Returns:      whether the string is capitalized or not (boolean)
+' Throws:       none
+' References:   none
+' Source/date:  Unknown, unknown
+' Adapted:      Bonnie Campbell, September 14, 2017 - for NCPN tools
+' Revisions:
+'   Unknown - Unknown - initial version
+'   BLC - 9/14/2017 - moved from mod_Utilities (removed)
+' ---------------------------------
+Public Function XX(strIn As String) As Boolean
+On Error GoTo Err_Handler
+
+    
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (" & Err.Number & " - XX[mod_Strings])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
 ' FUNCTION:     SplitInt
 ' Description:  Splits array of strings which are integers into an array of integers
 ' Assumptions:  Array passed in is actually an array of integers
@@ -580,54 +1072,6 @@ Err_Handler:
 End Function
 
 ' ---------------------------------
-' FUNCTION:     RemoveChars
-' Description:  Removes non-numeric or numeric values from a string
-' Assumptions:  -
-' Parameters:   strInspect - string to remove non-numerics from
-'               blnNumeric - whether numbers or non-numerics are returned (boolean),
-'                            (true - return numbers only, false - return non-numerics only)
-' Returns:      string - numeric or non-numeric portion of string depending on blnNumeric
-' Throws:       none
-' Dependency:
-' References:
-'   Ivan F. Moala, June 12, 2004
-'   http://www.xtremevbtalk.com/archive/index.php/t-172627.html
-' Source/date:  Bonnie Campbell, June 24, 2016 for NCPN tools
-' Adapted:      -
-' Revisions:
-'   BLC, 6/24/2016 - initial version
-' ---------------------------------
-Public Function RemoveChars(ByVal strInspect As String, blnNumeric As Boolean) As String
-On Error GoTo Err_Handler:
-
-    Dim oReg As RegExp
-
-    Set oReg = CreateObject("vbScript.regexp")
-
-    With oReg
-        If blnNumeric Then
-            .Pattern = "[^\d]+" '\d -> digit character of any length
-        Else
-            .Pattern = "[^\D]+" '\D -> non-digit character of any length
-        End If
-        .Global = True
-    End With
-
-    RemoveChars = oReg.Replace(strInspect, "")
-
-Exit_Handler:
-    Exit Function
-
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - RemoveNonNumerics[mod_Strings])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
 ' FUNCTION:     ExtractString
 ' Description:  Extracts string from within a string
 ' Assumptions:  -
@@ -662,127 +1106,6 @@ Err_Handler:
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - ExtractString[mod_Strings])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' FUNCTION:     ParseString
-' Description:  retrieve the item from string
-' Assumptions:  -
-' Parameters:   strTag - tag to check (string)
-' Returns:      item (string)
-' Throws:       none
-' References:   none
-' Source/date:  Bonnie Campbell, July 29, 2015 - for NCPN tools
-' Adapted:      -
-' Revisions:
-'   BLC - 7/29/2015 - initial version
-'   BLC - 8/30/2016 - moved from Tree form
-' ---------------------------------
-Public Function ParseString(str As String, idx As Integer, Optional delimiter As String = "|") As String
-On Error GoTo Err_Handler
-
-    Dim Items() As String
-    Dim Item As String
-        
-    Items() = Split(str, delimiter)
-    
-    If UBound(Items) + 1 > idx Then
-        Item = Items(idx)
-    End If
-    
-Exit_Handler:
-    ParseString = Item
-    Exit Function
-    
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (" & Err.Number & " - ParseString[mod_Strings])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' FUNCTION:     InsertSpaceBeforeCaps
-' Description:  adds a space before capitals
-' Assumptions:  -
-' Parameters:   strInspect - string to check (string)
-' Returns:      string with spaces inserted (string)
-' Throws:       none
-' References:
-'   Bleuspam, May 20, 2010
-'   http://www.utteraccess.com/forum/Split-string-capital-le-t1945127.html
-' Source/date:  Bonnie Campbell, July 29, 2015 - for NCPN tools
-' Adapted:      -
-' Revisions:
-'   BLC - 10/25/2016 - initial version
-' ---------------------------------
-Function InsertSpaceBeforeCaps(strInspect As String) As String
-On Error GoTo Err_Handler
-
-    Dim strTest As String, strNew As String
-    Dim i As Integer
-
-    For i = 1 To Len(strInspect)
-        strTest = Mid(strInspect, i, 1)
-        
-        If StrComp(strTest, StrConv(strTest, vbUpperCase), vbBinaryCompare) <> 0 Then
-            strNew = strNew & strTest
-        Else:
-            strNew = strNew & " " & strTest
-        End If
-    Next i
-    
-    InsertSpaceBeforeCaps = Trim(strNew)
-
-Exit_Handler:
-    Exit Function
-    
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (" & Err.Number & " - InsertSpaceBeforeCaps[mod_Strings])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' Function:     PadString
-' Description:  Class string padding function
-' Assumptions:  -
-' Parameters:   src - starting string (string)
-'               nSize - desired string length (integer)
-'               PadChar - character to use for padding (string)
-' Returns:      -
-' Throws:       none
-' References:
-'   Reinhold Thurner, August 19, 2015
-'   https://sourceforge.net/projects/exifclass/
-' Source/date:  Bonnie Campbell, February 21, 2017 - for NCPN tools
-' Adapted:      -
-' Revisions:
-'   BLC - 2/21/2017 - initial version
-' ---------------------------------
-Public Function PadString(src As String, nSize As Integer, PadChar As String) As String
-
-    If Len(src) < nSize Then
-        PadString = String(nSize - Len(src), PadChar) & src
-    Else
-        PadString = src
-    End If
-    
-Exit_Handler:
-    Exit Function
-    
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - PadString[mod_Strings])"
     End Select
     Resume Exit_Handler
 End Function

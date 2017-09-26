@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_Settings
 ' Level:        Application module
-' Version:      1.07
+' Version:      1.12
 ' Description:  Application-wide related values, functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
@@ -29,6 +29,19 @@ Option Explicit
 '               BLC, 7/12/2017 - 1.10 - added VCS_SAVE_TABLES for tables to backup (lookups)
 '               BLC, 7/28/2017 - 1.11 - changed DEV_MODE to global variable vs. constant to
 '                                       allow user to set via tglDevMode toggle control in UI
+' --------------------------------------------------------------------
+'               BLC, 9/7/2017  - 1.12 - merged common code for framework from Upland, Invasives, Big Rivers dbs
+' --------------------------------------------------------------------
+'                     BLC, 6/15/2017 - 1.07 - merged prior version w/ current
+'                               BLC, 5/1/2015 - 1.01 - added DEV_MODE constant
+'                               BLC, 5/13/2015 - 1.02 - added UI enabled/disabled color constants
+'                               BLC, 5/19/2015 - 1.03 - added FIX_LINKED_DBS flag constant
+'                               BLC, 5/28/2015 - 1.04 - added MAIN_APP_MENU constant
+'                       BLC, 6/19/2017 - 1.08 - added APP_RELEASE_ID constant value for
+'                                               2017 Pre-Season Invasives Reporting Tool (tsys_App_Releases)
+'                       BLC, 6/26/2017 - 1.09 - added REMOVE_RESULT_TABLES constant
+' --------------------------------------------------------------------
+' --------------------------------------------------------------------
 ' =================================
 
 ' ---------------------------------
@@ -69,6 +82,13 @@ Public gSubReportCount As Integer                  'global counter for subreport
 '               BLC, 5/3/2017  - added VCS_FULL_PATH for running VCS functions/subroutines
 '               BLC, 7/28/2017 - changed DEV_MODE to global variable vs. constant to
 '                                allow user to set via tglDevMode toggle control in UI
+' --------------------------------------------------------------------
+'               BLC, 9/7/2017  - merged common code for framework from Upland, Invasives, Big Rivers dbs
+' --------------------------------------------------------------------
+'               BLC, 6/15/2017 - merged w/ prior version
+'               BLC, 6/19/2017 - added APP_RELEASE_ID constant value for 2017 Pre-Season Invasives Reporting Tool (tsys_App_Releases)
+'               BLC, 6/26/2017 - added REMOVE_RESULT_TABLES constant for 2017 Pre-Season Invasives
+' --------------------------------------------------------------------
 ' ---------------------------------
 Public Const VCS_FULL_PATH As String = "Z:\_____LIB\dev\git_projects\libraries\VCS.accdb"   'Version Control System (VCS) db (contains modules for version control)
                                                                 'Tables to save for VCS (e.g. lookups)
@@ -98,6 +118,10 @@ Public Const ACCESS_ROLES As String = "admin,power user,data entry,read only"
 Public Const SWITCHBOARD As String = "Main"                     'String -> main application form
 Public Const DB_ADMIN_FORM As String = "DbAdmin"                'String -> main db administrative form
 Public Const BACKEND_REQUIRED As Boolean = True                 'Boolean flag -> identifies if back-end required
+Public Const REMOVE_RESULT_TABLES As Boolean = True             'Boolean flag -> clears species by route tables for TCount, PctCover, SE, & related
+                                                                '                related tables, Park_VisitYr_SpeciesCover_by_Route_Result
+                                                                '                is left alone; if False all tables are left alone
+                                                                '                & are regenerated &  overwritten when the report is run again for that park/year
 
 '-----------------------------------------------------------------------
 ' Database Type
@@ -171,7 +195,7 @@ Public Const DOT_PURPLE As String = ICON_PATH & "dot_purple" & ".png"
 Public Const PHOTO_TYPES_MAIN As String = "Reference,Overview,Feature,Transect,Other"      'String -> basic photo types
 Public Const PHOTO_TYPES_OTHER As String = "Animal,Plant,Cultural,Disturbance,Field Work,Scenic,Weather,Other"      'String -> other photo types
 Public Const PHOTO_EXT_ALLOWED As String = "jpg,jpeg,png"
-Public Const PHOTO_PATH As String = "Z:\_____LIB\dev\git_projects\big_rivers_app\"
+Public Const PHOTO_PATH As String = "C:\"
 'photo number regex pattern defined in AppEnum
 
 '-----------------------------------------------------------------------
@@ -186,3 +210,70 @@ Public g_AppQuadratPositions As Scripting.Dictionary    'global application quad
 
 Public Const QUADRATS_PER_TRANSECT As Integer = 3       'total # of quadrats found on an invasives transect
                                                         'this value assumes quadrat #s are consecutive & begin w/ 1
+
+'-----------------------------------------------------------------------
+' Big Rivers Components
+'-----------------------------------------------------------------------
+Public Const APP_IMAGES_DIR As String = ""
+Public Const PARKS = "BLCA,CANY,DINO"
+' O - Observer, R - Recorder, DE - DataEntry, V - DataVerify, C - DataCertify
+Public Const RECORD_ACTIONS As String = "O,R,DE,V,C"
+' O - Observer, R - Recorder, DE - DataEntry, V - DataVerify
+' PD - PhotoDownload, P - Photographer, C - DataCertify
+Public Const CONTACT_ROLES As String = "O,R,DE,V,C,P,PD"  'add P, PD to db?
+
+Public Const LOCATION_TYPES As String = "F,T,P"     'F=feature, T=transects, P=point
+
+Public Const LINE_DIST_SOURCES As String = "T,P"    'transect & plot
+
+'Measurement type - initially ALL = SC
+'WP-water pin, SC-slope change, U-upland, R-river
+Public Const LINE_DIST_TYPES As String = "WP,SC,U,R"
+
+'Height of tagline above ...
+'H-headpin @ 0, W-water, G-ground, V-vegetation,  WRS - water @ water pin
+'SC: Points where tagline bends or stretches while slope changes
+'W-water, G-ground, V-vegetation, R- rock, D-debris
+Public Const HEIGHT_TYPES As String = "H,W,G,V,WRS,V,R,D"
+
+'Slope Change Causes ...
+'V-vegetation, G-ground, W-water, R-rock, D-debris
+Public Const SLOPE_CHANGE_CAUSES As String = "D,G,R,V,W"
+
+'Transect, Feature, Reference or Overview (T, F, R, O - transect, feature, reference, overview/point-to-point),
+'Other photos: OA-animal, OC-cultural, OD-disturbance, OF-field work, OP-plants, OS-scenic, OW-weather, OO-other
+Public Const PHOTO_TYPES As String = "T,F,O,R,OA,OC,OD,OF,OP,OS,OW,OO"
+
+'Transducer types - A-air, W-water
+Public Const TRANSDUCER_TYPES As String = "A,W"
+
+'Timing of actions (BD-before-download, AD-after-download/reinstallation)
+Public Const TRANSDUCER_TIMING As String = "BD,AD"
+
+'Plot densities
+Public Const PLOT_DENSITIES As String = "1,2,4,8"
+
+'Transect numbers --> BLCA & CANY, range 1-8, DINO has no transects
+Public Const TRANSECT_NUMBERS As String = "1,2,3,4,5,6,7,8"
+
+'Veg walk collection types --> Site or Feature to handle prior non-site data (S or F)
+Public Const COLLECTION_TYPES As String = "S,F"
+
+'Veg plot cover types --> WCC = woody canopy cover (BLCA & CANY)
+'                         URC - understory rooted cover (BLCA & CANY),
+'                         ARS - all rooted species (DINO)
+Public Const COVER_TYPES As String = "WCC,URC,ARS"
+
+'Veg unknowns
+Public Const PLANT_TYPES As String = "herb,shrub,tree,grass,sedge,other"  'TEXT(50) --> TEXT(15)
+Public Const LEAF_TYPES As String = "compound/simple, arrangement" 'TEXT(50) --> TEXT(25)
+Public Const FORB_GRASS_TYPES As String = "Annual,Perennial" 'TEXT(10)
+Public Const PERENNIAL_GRASS_TYPES As String = "Bunchgrass, Rhizomatous" 'TEXT(15)
+'Salient feature TEXT(255)
+'Leaf margin TEXT(50)
+'Other leaf characteristics:  pubescence, sap, stipules TEXT(50)
+'Stem characteristics: shape, pubescence, bud TEXT(50)
+'Flower characteristics: color location floral formula TEXT(50)
+'General and microhabitat characteristics TEXT(50)
+'Perennial grass type: Bunchgrass or Rhizomatous TEXT(15)
+'Collection method TEXT(50)

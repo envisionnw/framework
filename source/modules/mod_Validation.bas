@@ -21,7 +21,274 @@ Option Explicit
 ' --------------------------------------------------------------------
 '               BLC, 3/22/2017          added to Upland db
 ' --------------------------------------------------------------------
+'               BLC - 9/14/2017 - 1.07 - added from mod_Utilities: IsNothing(), IsCapital()
+'                                        reorganized methods
 ' =================================
+
+' ---------------------------------
+'  Properties
+' ---------------------------------
+
+' ---------------------------------
+'  Subroutines & Functions
+' ---------------------------------
+
+' ---------------------------------
+'  Comparisons
+' ---------------------------------
+
+' ---------------------------------
+' FUNCTION:     IsBetween
+' Description:  Checks if value is between supplied bounding values/limits
+' Assumptions:  -
+' Parameters:   iValue - value to check (variant)
+'               lowBound - lower limit (double)
+'               highBound - upper limit (double)
+'               inclusive - whether the lower & upper limits should be included (boolean)
+' Returns:      boolean - True (value is between limits), False (value is outside limits)
+' Throws:       none
+' References:   none
+' Source/date:  Bonnie Campbell, April 4, 2016 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 4/4/2016 - initial version
+' ---------------------------------
+Function IsBetween(iValue As Variant, lowBound As Double, highBound As Double, inclusive As Boolean) As Boolean
+On Error GoTo Err_Handler
+
+    Dim isOK As Boolean
+    'default
+    isOK = False
+    
+    'ensure numeric
+    If Not IsNumeric(iValue) Then GoTo Exit_Handler
+
+    If inclusive Then
+        Select Case iValue
+            'rejects --> all result in isOK = false (no change)
+            Case Is < lowBound
+            Case Is > highBound
+            
+            'valid cases
+            Case Is = lowBound
+                isOK = True
+            Case Is = highBound
+                isOK = True
+            Case Is > lowBound And (iValue < highBound)
+                isOK = True
+        End Select
+    Else
+        Select Case iValue
+            'rejects --> all result in isOK = false (no change)
+            Case Is < lowBound
+            Case Is > highBound
+            Case Is = lowBound
+            Case Is = highBound
+            
+            'valid cases
+            Case Is > lowBound And (iValue < highBound)
+                isOK = True
+        End Select
+    End If
+    
+    IsBetween = isOK
+    
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - IsBetween[mod_Validation])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+'  Matching
+' ---------------------------------
+
+' ---------------------------------
+' FUNCTION:     IsRegExpMatch
+' Description:  Checks if string is a match for the regular expression pattern
+' Assumptions:  -
+' Parameters:   strInspect - string to check
+'               strPattern - pattern to check against (string)
+' Returns:      boolean - True (string matches), False (string does not match)
+' Throws:       none
+' References:   Microsoft VBScript Regular Expressions 5.5 (added reference)
+' Source/date:
+'   RICHA, March 31, 2014
+'   https://blog.udemy.com/vba-regex/
+' Adapted:      Bonnie Campbell, April 4, 2016 - for NCPN tools
+' Revisions:
+'   BLC - 4/4/2016 - initial version
+' ---------------------------------
+Function IsRegExpMatch(strInspect As String, strPattern As String) As Boolean
+On Error GoTo Err_Handler:
+
+    Dim oRegExp As VBScript_RegExp_55.RegExp
+    
+    Set oRegExp = CreateObject("vbscript.regexp")
+    
+    With oRegExp
+        .Global = True
+        .IgnoreCase = True
+        .Pattern = strPattern
+        
+        IsRegExpMatch = .test(strInspect)
+
+    End With
+                
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - IsRegExpMatch[mod_Validation])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' FUNCTION:     IsTypeMatch
+' Description:  Checks if value is or can be converted to the data type noted
+'               Relies on attempting to convert, if it fails via type mismatch or otherwise false is returned
+' Assumptions:  -
+' Note:
+'               Value     Variant type          Value     Variant type
+'               0     Empty (unitialized)       10     Error Value
+'               1     Null (no valid data)      11     Boolean
+'               2     Integer                   12     Variant (only used with arrays of variants)
+'               3     Long Integer              13     Data access object
+'               4     Single                    14     Decimal value
+'               5     Double                    17     Byte
+'               6     Currency                  36     User Defined Type
+'               7     Date                      8192           Array
+'               8     String
+'               9     Object
+'
+' Parameters:   iValue - value to check (variant)
+'               dataType - data type name (string)
+' Returns:      boolean - True (value is or can be converted), False (value isn't/can't be converted to the data type passed in)
+' Throws:       none
+' References:   none
+' Source/date:  Bonnie Campbell, May 20, 2016 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 5/20/2016 - initial version
+' ---------------------------------
+Function IsTypeMatch(iValue As Variant, DataType As String) As Boolean
+On Error GoTo Err_Handler
+
+    Dim isOK As Boolean
+    Dim result As Variant
+    
+    'default
+    isOK = True
+    
+    'check type
+    Select Case DataType
+        Case "boolean"  '0 or 1, yes/no values are mismatches
+            result = CBool(iValue)
+        Case "byte"     '0 or 1, yes/no values are mismatches
+            result = CByte(iValue)
+        Case "number"
+            If Not IsNumeric(iValue) Then isOK = False
+        Case "integer"
+            result = CInt(iValue)
+        Case "long"
+            result = CLng(iValue)
+        Case "double"
+            result = CDbl(iValue)
+        Case "single"
+            result = CSng(iValue)
+        Case "decimal"
+            result = CDec(iValue)
+        Case "string"
+            result = CStr(iValue)
+        Case "date"
+            result = CDate(iValue)
+        Case "currency"
+            result = CDate(iValue)
+        Case Else
+            isOK = False
+    End Select
+    
+Exit_Handler:
+    IsTypeMatch = isOK
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case "13" 'RunTime Error 13: Type Mismatch
+        isOK = False
+        Resume Exit_Handler
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - IsTypeMatch[mod_Validation])"
+    End Select
+    'fail on error
+    isOK = False
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+'  Presence/Absence
+' ---------------------------------
+
+' ---------------------------------
+' FUNCTION:     IsNothing
+' Description:  Checks if item is a "logical" nothign based on data type
+' Assumptions:  Nothing -->  Empty & NULL,   Zero length string,   Number = 0
+'               Never Nothing --> Date/Time
+' Parameters:   varTest - item to check (variant)
+' Returns:      True (item is nothing)
+'               OR
+'               False (item is: empty, NULL, boolean, byte, int, long,
+'                               single, double, currency, date, or string)
+' Throws:       none
+' References:   none
+' Source/date:  MAW 7/27/2000
+' Adapted:      Bonnie Campbell, April 4, 2016 - for NCPN tools
+' Revisions:
+'   MAW - 7/27/2000 - initial version
+'   BLC - 9/14/2017 - revised for mod_Validation from mod_Utilities
+' ---------------------------------
+Function IsNothing(varTest As Variant) As Boolean
+On Error GoTo Err_Handler
+
+    IsNothing = True
+
+    Select Case varType(varTest)
+        Case vbEmpty
+            Exit Function
+        Case vbNull
+            Exit Function
+        Case vbBoolean
+            If varTest Then IsNothing = False
+        Case vbByte, vbInteger, vbLong, vbSingle, vbDouble, vbCurrency
+            If varTest <> 0 Then IsNothing = False
+        Case vbDate
+            IsNothing = False
+        Case vbString
+            If (Len(varTest) <> 0 And varTest <> " ") Then IsNothing = False
+    End Select
+    
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - IsNothing[mod_Validation])"
+    End Select
+    Resume Exit_Handler
+End Function
 
 ' ---------------------------------
 ' FUNCTION:     IsBlank
@@ -65,6 +332,125 @@ Err_Handler:
     End Select
     Resume Exit_Handler
 End Function
+
+' ---------------------------------
+' FUNCTION:     IsZLS
+' Description:  Checks if string is a zero length string (ZLS)
+' Assumptions:  -
+' Parameters:   strCheck - string to check
+' Returns:      boolean - True (string is ZLS), False (string isn't ZLS)
+' Throws:       none
+' References:   none
+' Source/date:  -
+' Adapted:      Bonnie Campbell, June 22, 2016 - for NCPN tools
+' Revisions:
+'   BLC - 6/22/2016 - initial version
+' ---------------------------------
+Function IsZLS(strCheck As String) As Boolean
+On Error GoTo Err_Handler
+
+  Dim blnZLS As Boolean
+  
+  'default
+  blnZLS = False
+  
+  If Len(strCheck) = 0 Then blnZLS = True
+
+  IsZLS = blnZLS
+    
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - IsZLS[mod_Validation])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+'  Numeric
+' ---------------------------------
+
+' ---------------------------------
+' FUNCTION:     IsZero
+' Description:  Checks if value is zero
+' Assumptions:  -
+' Parameters:   chkValue - value to check
+' Returns:      boolean - True (value is zero), False (value isn't zero)
+' Throws:       none
+' References:   none
+' Source/date:  -
+' Adapted:      Bonnie Campbell, June 22, 2016 - for NCPN tools
+' Revisions:
+'   BLC - 6/22/2016 - initial version
+' ---------------------------------
+Function IsZero(ByVal chkValue) As Boolean
+On Error GoTo Err_Handler
+
+  Dim blnZero As Boolean
+  
+  'default
+  blnZero = False
+  
+  If chkValue = 0 Then blnZero = True
+
+  IsZero = blnZero
+    
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - IsZero[mod_Validation])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+'  Array
+' ---------------------------------
+
+' ---------------------------------
+' FUNCTION:     IsInArray
+' Description:  Checks if string is found in the supplied array
+' Assumptions:  -
+' Parameters:   strFind - string to check
+'               aryLookIn - array to look in
+' Returns:      boolean - True (string is found), False (string isn't found)
+' Throws:       none
+' References:   none
+' Source/date:
+'   Jimmy Pena, June 20, 2012
+'   http://stackoverflow.com/questions/11109832/how-to-find-if-an-array-contains-a-string
+' Adapted:      Bonnie Campbell, April 4, 2016 - for NCPN tools
+' Revisions:
+'   BLC - 4/4/2016 - initial version
+' ---------------------------------
+Function IsInArray(strFind As String, aryLookIn As Variant) As Boolean
+On Error GoTo Err_Handler
+
+  IsInArray = (UBound(filter(aryLookIn, strFind)) > -1)
+    
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - IsInArray[mod_Validation])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+'  Strings
+' ---------------------------------
 
 ' ---------------------------------
 ' FUNCTION:     ValidateString
@@ -417,6 +803,46 @@ Err_Handler:
 End Function
 
 ' ---------------------------------
+'  Specific String Format
+' ---------------------------------
+
+' ---------------------------------
+' FUNCTION:     IsCapital
+' Description:  Inspects a string and determines if it is capitalized or not
+' Assumptions:  -
+' Parameters:   strChar - string to manipulate (string)
+' Returns:      whether the string is capitalized or not (boolean)
+' Throws:       none
+' References:   none
+' Source/date:  Unknown, unknown
+' Adapted:      Bonnie Campbell, September 14, 2017 - for NCPN tools
+' Revisions:
+'   Unknown - Unknown - initial version
+'   BLC - 9/14/2017 - moved from mod_Utilities (removed)
+' ---------------------------------
+Public Function IsCapital(strChar As String) As Boolean
+On Error GoTo Err_Handler
+
+    Select Case Asc(strChar)
+        Case 65 To 90
+            IsCapital = True
+        Case Else
+            IsCapital = False
+    End Select
+    
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (" & Err.Number & " - IsCapital[mod_Validation])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
 ' FUNCTION:     IsName
 ' Description:  Checks if string is a name (can contain: letter, period, dash, space)
 ' Assumptions:  -
@@ -644,308 +1070,6 @@ Err_Handler:
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - IsPhone[mod_Validation])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' FUNCTION:     IsRegExpMatch
-' Description:  Checks if string is a match for the regular expression pattern
-' Assumptions:  -
-' Parameters:   strInspect - string to check
-'               strPattern - pattern to check against (string)
-' Returns:      boolean - True (string matches), False (string does not match)
-' Throws:       none
-' References:   Microsoft VBScript Regular Expressions 5.5 (added reference)
-' Source/date:
-'   RICHA, March 31, 2014
-'   https://blog.udemy.com/vba-regex/
-' Adapted:      Bonnie Campbell, April 4, 2016 - for NCPN tools
-' Revisions:
-'   BLC - 4/4/2016 - initial version
-' ---------------------------------
-Function IsRegExpMatch(strInspect As String, strPattern As String) As Boolean
-On Error GoTo Err_Handler:
-
-    Dim oRegExp As VBScript_RegExp_55.RegExp
-    
-    Set oRegExp = CreateObject("vbscript.regexp")
-    
-    With oRegExp
-        .Global = True
-        .IgnoreCase = True
-        .Pattern = strPattern
-        
-        IsRegExpMatch = .test(strInspect)
-
-    End With
-                
-Exit_Handler:
-    Exit Function
-
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - IsRegExpMatch[mod_Validation])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' FUNCTION:     IsInArray
-' Description:  Checks if string is found in the supplied array
-' Assumptions:  -
-' Parameters:   strFind - string to check
-'               aryLookIn - array to look in
-' Returns:      boolean - True (string is found), False (string isn't found)
-' Throws:       none
-' References:   none
-' Source/date:
-'   Jimmy Pena, June 20, 2012
-'   http://stackoverflow.com/questions/11109832/how-to-find-if-an-array-contains-a-string
-' Adapted:      Bonnie Campbell, April 4, 2016 - for NCPN tools
-' Revisions:
-'   BLC - 4/4/2016 - initial version
-' ---------------------------------
-Function IsInArray(strFind As String, aryLookIn As Variant) As Boolean
-On Error GoTo Err_Handler
-
-  IsInArray = (UBound(filter(aryLookIn, strFind)) > -1)
-    
-Exit_Handler:
-    Exit Function
-
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - IsInArray[mod_Validation])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' FUNCTION:     IsBetween
-' Description:  Checks if value is between supplied bounding values/limits
-' Assumptions:  -
-' Parameters:   iValue - value to check (variant)
-'               lowBound - lower limit (double)
-'               highBound - upper limit (double)
-'               inclusive - whether the lower & upper limits should be included (boolean)
-' Returns:      boolean - True (value is between limits), False (value is outside limits)
-' Throws:       none
-' References:   none
-' Source/date:  Bonnie Campbell, April 4, 2016 - for NCPN tools
-' Adapted:      -
-' Revisions:
-'   BLC - 4/4/2016 - initial version
-' ---------------------------------
-Function IsBetween(iValue As Variant, lowBound As Double, highBound As Double, inclusive As Boolean) As Boolean
-On Error GoTo Err_Handler
-
-    Dim isOK As Boolean
-    'default
-    isOK = False
-    
-    'ensure numeric
-    If Not IsNumeric(iValue) Then GoTo Exit_Handler
-
-    If inclusive Then
-        Select Case iValue
-            'rejects --> all result in isOK = false (no change)
-            Case Is < lowBound
-            Case Is > highBound
-            
-            'valid cases
-            Case Is = lowBound
-                isOK = True
-            Case Is = highBound
-                isOK = True
-            Case Is > lowBound And (iValue < highBound)
-                isOK = True
-        End Select
-    Else
-        Select Case iValue
-            'rejects --> all result in isOK = false (no change)
-            Case Is < lowBound
-            Case Is > highBound
-            Case Is = lowBound
-            Case Is = highBound
-            
-            'valid cases
-            Case Is > lowBound And (iValue < highBound)
-                isOK = True
-        End Select
-    End If
-    
-    IsBetween = isOK
-    
-Exit_Handler:
-    Exit Function
-
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - IsBetween[mod_Validation])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' FUNCTION:     IsTypeMatch
-' Description:  Checks if value is or can be converted to the data type noted
-'               Relies on attempting to convert, if it fails via type mismatch or otherwise false is returned
-' Assumptions:  -
-' Note:
-'               Value     Variant type          Value     Variant type
-'               0     Empty (unitialized)       10     Error Value
-'               1     Null (no valid data)      11     Boolean
-'               2     Integer                   12     Variant (only used with arrays of variants)
-'               3     Long Integer              13     Data access object
-'               4     Single                    14     Decimal value
-'               5     Double                    17     Byte
-'               6     Currency                  36     User Defined Type
-'               7     Date                      8192           Array
-'               8     String
-'               9     Object
-'
-' Parameters:   iValue - value to check (variant)
-'               dataType - data type name (string)
-' Returns:      boolean - True (value is or can be converted), False (value isn't/can't be converted to the data type passed in)
-' Throws:       none
-' References:   none
-' Source/date:  Bonnie Campbell, May 20, 2016 - for NCPN tools
-' Adapted:      -
-' Revisions:
-'   BLC - 5/20/2016 - initial version
-' ---------------------------------
-Function IsTypeMatch(iValue As Variant, DataType As String) As Boolean
-On Error GoTo Err_Handler
-
-    Dim isOK As Boolean
-    Dim result As Variant
-    
-    'default
-    isOK = True
-    
-    'check type
-    Select Case DataType
-        Case "boolean"  '0 or 1, yes/no values are mismatches
-            result = CBool(iValue)
-        Case "byte"     '0 or 1, yes/no values are mismatches
-            result = CByte(iValue)
-        Case "number"
-            If Not IsNumeric(iValue) Then isOK = False
-        Case "integer"
-            result = CInt(iValue)
-        Case "long"
-            result = CLng(iValue)
-        Case "double"
-            result = CDbl(iValue)
-        Case "single"
-            result = CSng(iValue)
-        Case "decimal"
-            result = CDec(iValue)
-        Case "string"
-            result = CStr(iValue)
-        Case "date"
-            result = CDate(iValue)
-        Case "currency"
-            result = CDate(iValue)
-        Case Else
-            isOK = False
-    End Select
-    
-Exit_Handler:
-    IsTypeMatch = isOK
-    Exit Function
-
-Err_Handler:
-    Select Case Err.Number
-      Case "13" 'RunTime Error 13: Type Mismatch
-        isOK = False
-        Resume Exit_Handler
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - IsTypeMatch[mod_Validation])"
-    End Select
-    'fail on error
-    isOK = False
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' FUNCTION:     IsZero
-' Description:  Checks if value is zero
-' Assumptions:  -
-' Parameters:   chkValue - value to check
-' Returns:      boolean - True (value is zero), False (value isn't zero)
-' Throws:       none
-' References:   none
-' Source/date:  -
-' Adapted:      Bonnie Campbell, June 22, 2016 - for NCPN tools
-' Revisions:
-'   BLC - 6/22/2016 - initial version
-' ---------------------------------
-Function IsZero(ByVal chkValue) As Boolean
-On Error GoTo Err_Handler
-
-  Dim blnZero As Boolean
-  
-  'default
-  blnZero = False
-  
-  If chkValue = 0 Then blnZero = True
-
-  IsZero = blnZero
-    
-Exit_Handler:
-    Exit Function
-
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - IsZero[mod_Validation])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' FUNCTION:     IsZLS
-' Description:  Checks if string is a zero length string (ZLS)
-' Assumptions:  -
-' Parameters:   strCheck - string to check
-' Returns:      boolean - True (string is ZLS), False (string isn't ZLS)
-' Throws:       none
-' References:   none
-' Source/date:  -
-' Adapted:      Bonnie Campbell, June 22, 2016 - for NCPN tools
-' Revisions:
-'   BLC - 6/22/2016 - initial version
-' ---------------------------------
-Function IsZLS(strCheck As String) As Boolean
-On Error GoTo Err_Handler
-
-  Dim blnZLS As Boolean
-  
-  'default
-  blnZLS = False
-  
-  If Len(strCheck) = 0 Then blnZLS = True
-
-  IsZLS = blnZLS
-    
-Exit_Handler:
-    Exit Function
-
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - IsZLS[mod_Validation])"
     End Select
     Resume Exit_Handler
 End Function

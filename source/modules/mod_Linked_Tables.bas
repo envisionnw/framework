@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Linked_Tables
 ' Level:        Framework module
-' Version:      1.04
+' Version:      1.07
 ' Description:  Linked table related functions & subroutines
 '
 ' Adapted from: John R. Boetsch, May 24, 2006
@@ -15,13 +15,44 @@ Option Explicit
 '               BLC, 4/30/2015 - 1.00 - added fxnVerifyLinks, fxnRefreshLinks, fxnVerifyLinkTableInfo,
 '                                fxnMakeBackup from mod_Custom_Functions
 '               BLC, 5/19/2015 - 1.01 - renamed functions, removed fxn prefix
-'               BLC, 6/5/2016  - 1.02 - renamed frm_Progress_Meter to ProgressMeter,
-'                                       removed underscores from fields
-'               BLC, 1/24/2017 - 1.03 - revised MakeBackup() to use FilePath vs. File_path
-'                                       (tsys_Link_Dbs)
-'               BLC, 2/22/2017 - 1.04 - added alternative path for new vs. legacy forms (ConnectDbs
-'                                       vs. frm_Connect_Dbs), BACKEND_REQUIRED check
+'                               ------------------------------------------------------------------------
+'                               BLC, 8/22/2017 - 1.07 - merge prior versions into single framework version
+'                               ------------------------------------------------------------------------
+'                       BLC, 6/10/2015 - 1.02 - fixed VerifyLinkTableInfo to add new linked tables to tsys_Link_Tables
+'                       BLC, 6/12/2015 - 1.03 - replaced TempVars.item(... with TempVars("...
+'                       BLC, 9/30/2015 - 1.04 - added check & resolve double quotes in table descriptions in RefreshLinks
+'                       BLC, 12/1/2015 - 1.05 - resolve issues with linked database updates to differently named backend databases
+'                       BLC, 12/3/2015 - 1.06 - added UpdateTSysTableDb
+'                                       ------------------------------------------------------------------------
+'                       BLC, 6/5/2016  - 1.02 - renamed frm_Progress_Meter to ProgressMeter,
+'                                           removed underscores from fields
+'                   BLC, 1/24/2017 - 1.03 - revised MakeBackup() to use FilePath vs. File_path
+'                                               (tsys_Link_Dbs)
+'                       BLC, 2/22/2017 - 1.04 - added alternative path for new vs. legacy forms (ConnectDbs
+'                                           vs. frm_Connect_Dbs), BACKEND_REQUIRED check
+'                               ------------------------------------------------------------------------
 ' =================================
+
+' ---------------------------------
+'  References
+' ---------------------------------
+
+' --------------------------------------------------------------------------------
+'   Msys Objects
+' --------------------------------------------------------------------------------
+' Source: Pat Hartman March 13, 2006
+'         http://www.access-programmers.co.uk/forums/showthread.php?t=103811
+' --------------------------------------------------------------------------------
+'   Type   TypeDesc           Type  TypeDesc
+'  -32768  Form                 1   Table - Local Access Tables
+'  -32766  Macro                2   Access Object - Database
+'  -32764  Reports              3   Access Object - Containers
+'  -32761  Module               4   Table - Linked ODBC Tables
+'  -32758  Users                5   Queries
+'  -32757  Database Document    6   Table - Linked Access Tables
+'  -32756  Data Access Pages    8   SubDataSheets
+' --------------------------------------------------------------------------------
+
 
 ' ---------------------------------
 '   Database Level
@@ -51,6 +82,7 @@ Option Explicit
 '               BLC, 4/30/2015 - switched from fxnSwitchboardIsOpen to FormIsOpen(frmSwitchboard)
 '               BLC, 5/18/2015 - renamed, removed fxn prefix
 '               BLC, 5/22/2015 - moved from mod_Initialize_App to mod_Linked_Tables
+'               BLC, 6/12/2015 - replaced TempVars.item("... with TempVars("...
 '               BLC, 6/5/2016  - removed underscores from field names
 '               BLC, 2/22/2017 - added alternative path for new vs. legacy forms (ConnectDbs
 '                                vs. frm_Connect_Dbs), BACKEND_REQUIRED check
@@ -646,10 +678,16 @@ End Function
 '                                connection strings (e.g. Access 2010 w/ "Dbq=")
 '               BLC, 6/4/2016  - revised tsys_Link_Tables fields to match Big Rivers field naming revisions (LinkDb vs Link_db, LinkTable vs. Link_table)
 '                                renamed frm_Progress_Meter to ProgressMeter
+'                               -------------------------------------------------------------------------
+'                               BLC, 8/22/2017 - merged in prior work
+'                       BLC, 9/30/2015 - add description parsing to avoid errors due to quotes
+'                       BLC, 12/1/2015 - resolve issues with linked database updates to differently named backend databases
 ' =================================
 Public Function RefreshLinks(strDbName As String, ByVal strNewConnStr As String, _
     Optional strComponent As String = "DATABASE=", _
-    Optional ByVal blnIsODBC As Boolean = False) As Boolean
+    Optional ByVal blnIsODBC As Boolean = False, _
+    Optional strNewDbName As String _
+        ) As Boolean
     On Error GoTo Err_Handler
 
     Dim varFileName As Variant
@@ -668,6 +706,8 @@ Public Function RefreshLinks(strDbName As String, ByVal strNewConnStr As String,
     Dim strProgress As String   ' Progress bar string
 
     RefreshLinks = False   ' Default unless all tables verified
+    'set new db name default to current name if strNewDbName not populated
+    If Len(strNewDbName) = 0 Then strNewDbName = strDbName
 
     Set db = CurrentDb
     Set rs = db.OpenRecordset(GetTemplate("s_tsys_link_tables_by_dbname", "dbName" & PARAM_SEPARATOR & strDbName), dbOpenSnapshot)
@@ -739,13 +779,17 @@ Debug.Print strTable
             Set tdf = db.TableDefs(strTable)
             tdf.connect = strNewConnStr
             tdf.RefreshLink
-            ' Update the table description in tsys_Link_Tables
+            ' Update the table description & Link_db in tsys_Link_Tables
             ' Set default description in case there is none
             ' Encode SQL specials (",') in description
             strDesc = " - no description - "
             strDesc = SQLencode(tdf.Properties("Description")) ' Throws trapped error 3270 if none
 Debug.Print strDesc
-            strSQL = GetTemplate("u_tsys_link_tables_description", "descr" & PARAM_SEPARATOR & strDesc & "|tbl" & PARAM_SEPARATOR & strTable)
+                        
+                        ''replace double quotes with singles
+            'strDesc = Replace(strDesc, """", "'")
+            
+                        strSQL = GetTemplate("u_tsys_link_tables_description", "descr" & PARAM_SEPARATOR & strDesc & "|tbl" & PARAM_SEPARATOR & strTable)
 '
 '            strSQL = "UPDATE tsys_Link_Tables " & _
 '                "SET tsys_Link_Tables.DescriptionText=""" & strDesc & _
@@ -753,6 +797,8 @@ Debug.Print strDesc
             DoCmd.SetWarnings False
             DoCmd.RunSQL strSQL
             DoCmd.SetWarnings True
+                        'update database name & description in tsys_Link_Dbs & tsys_Link_Files
+            'within form modules (frm_Connect_Tables / frm_Connect_Dbs)
             rs.MoveNext
         Loop
     Else    ' ODBC back-end
@@ -839,16 +885,20 @@ Err_Handler:
         MsgBox "Error #" & Err.Number & ":  Cannot find the following file:" & _
             vbCrLf & vbCrLf & varFileName, vbCritical, _
             "Error encountered (#" & Err.Number & " - RefreshLinks[mod_Linked_Tables])"
+      Case 3061   ' Bad parameters for the SQL string
+        MsgBox "Error #" & Err.Number & ":  SQL syntax error. Please notify the " & _
+            "database administrator before using this application.", vbCritical, _
+            "Error encountered (#" & Err.Number & " - RefreshLinks[mod_Linked_Tables])"
+      Case 3074   ' Missing operator, get this error also if SQL string contains double quotes
+        MsgBox "Error #" & Err.Number & ": " & Err.Description & vbCrLf & _
+            "This can be caused by double quotes in the SQL string.", vbCritical, _
+            "Error encountered (#" & Err.Number & " - RefreshLinks[mod_Linked_Tables])"
       Case 3078   ' Also got this error if the function call SQL string has a bad
                 '   reference to the system table
         MsgBox "Error #" & Err.Number & ":  The following table is not native " & _
             "to the selected database file." & vbCrLf & "Please make sure you " & _
             "browsed to to the correct file." & vbCrLf & vbCrLf & strTable, _
             vbCritical, "Error encountered (#" & Err.Number & " - RefreshLinks[mod_Linked_Tables])"
-      Case 3061   ' Bad parameters for the SQL string
-        MsgBox "Error #" & Err.Number & ":  SQL syntax error. Please notify the " & _
-            "database administrator before using this application.", vbCritical, _
-            "Error encountered (#" & Err.Number & " - RefreshLinks[mod_Linked_Tables])"
       Case 3265
         MsgBox "Error #" & Err.Number & ":  The database file is missing the " & _
             "following table:" & vbCrLf & vbCrLf & strTable, _
@@ -910,6 +960,11 @@ End Function
 '               BLC, 5/18/2015 - renamed, removed fxn prefix
 '               BLC, 5/19/2015 - added check for FIX_LINKED_DBS flag when DbAdmin is not fully implemented
 '               BLC, 6/4/2016  - adapted to Big Rivers Application, adjust to renamed tsys_Link_Tables fields
+'                               -------------------------------------------------------------------------
+'                               BLC, 8/22/2017 - merged in prior work
+'                              BLC, 6/10/2015 - updated SQL insert into tsys_Link_Tables for missing MSysObjects tables
+'                                                captured by qsys_Linked_tables_not_in_tsys_Link_Tables (missing Link_type)
+'                                                bug resulted in new linked tables never being inserted into tsys_Link_Tables & subsequent errors
 ' =================================
 Public Function VerifyLinkTableInfo() As Boolean
     On Error GoTo Err_Handler
@@ -950,7 +1005,7 @@ Public Function VerifyLinkTableInfo() As Boolean
         Do Until rs.EOF
             ' Delete mismatched records from tsys_Link_Tables
 '            strSQL = "DELETE * FROM tsys_Link_Tables WHERE ([LinkTable]=""" & _
-'                rs![Link_table] &
+'                rs![Link_table] & """);"
             strSQL = GetTemplate("d_tsys_link_tables", "linktbl" & PARAM_SEPARATOR & rs![LinkTable])
             DoCmd.SetWarnings False
             DoCmd.RunSQL strSQL
@@ -974,6 +1029,7 @@ Public Function VerifyLinkTableInfo() As Boolean
         ' Append missing table records to tsys_Link_Tables
 '        strSQL = "INSERT INTO tsys_Link_Tables " & _
 '            "( LinkTable, LinkDb ) " & _
+'                       "( Link_table, Link_db,  Link_type ) " & _
 '            "SELECT qsys_Linked_tables_not_in_tsys_Link_Tables.CurrTable, " & _
 '            "qsys_Linked_tables_not_in_tsys_Link_Tables.CurrDb " & _
 '            "FROM qsys_Linked_tables_not_in_tsys_Link_Tables;"
@@ -1061,7 +1117,7 @@ Exit_Procedure:
 
 Err_Handler:
     Select Case Err.Number
-      Case 3135, 3061, 3078  ' Problem with SQL syntax, or ref to nonexistent object, etc.
+      Case 3061, 3078, 3135  ' Problem with SQL syntax, or ref to nonexistent object, etc.
         MsgBox "Error #" & Err.Number & ":  SQL syntax error. Please notify the " & _
             "database administrator before using this application.", vbCritical, _
             "Error encountered (#" & Err.Number & " - VerifyLinkTableInfo[mod_Linked_Tables])"
@@ -1182,7 +1238,7 @@ Exit_Procedure:
 
 Err_Handler:
     Select Case Err.Number
-      Case 3135, 3061, 3078  ' Problem with SQL syntax, or ref to nonexistent object, etc.
+      Case 3061, 3078, 3135  ' Problem with SQL syntax, or ref to nonexistent object, etc.
         MsgBox "Error #" & Err.Number & ":  SQL syntax error. Please notify the " & _
             "database administrator before using this application.", vbCritical, _
             "Error encountered (#" & Err.Number & " - VerifyLinks[mod_Linked_Tables])"
@@ -1246,4 +1302,44 @@ Err_Handler:
             "Error encountered (#" & Err.Number & " - FixLinkedDatabase[mod_Linked_Tables])"
     End Select
     Resume Exit_Procedure
+End Sub
+
+' ---------------------------------
+' SUB:          UpdateTSysTablesDb
+' Description:  Update database value for a table w/in tsys_Link_Tables
+' Assumptions:  Tables (tsys_Link_Tables) exist with fields as noted
+'               Database file & path are valid.
+' Parameters:   strNewDb - new database (e.g. "mynewdb.accdb")
+'               strOrigDb - original database  (e.g. "mydb.accdb")
+' Returns:      -
+' Throws:       none
+' References:   -
+' Source/date:  Bonnie Campbell, December 3, 2015 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 12/3/2015 - initial version
+' ---------------------------------
+Public Sub UpdateTSysTablesDb(strNewDb As String, strOrigDb As String)
+On Error GoTo Err_Handler
+    
+    Dim strSQL As String
+        
+    DoCmd.SetWarnings False
+    
+    'update tsys_Link_Tables
+    strSQL = "UPDATE tsys_Link_Tables SET Link_db = '" & strNewDb & "' WHERE Link_db = '" & strOrigDb & "';"
+    DoCmd.RunSQL (strSQL)
+        
+    DoCmd.SetWarnings True
+
+Exit_Sub:
+    Exit Sub
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - UpdateTSysTablesDb[mod_Linked_Tables])"
+    End Select
+    Resume Exit_Sub
 End Sub

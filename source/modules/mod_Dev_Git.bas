@@ -72,7 +72,7 @@ On Error GoTo Err_Handler
         FName = FolderName & "\" & FName
     End If
     
-    If Dir(FName, vbNormal + vbHidden + vbSystem) <> vbNullString Then
+    If dir(FName, vbNormal + vbHidden + vbSystem) <> vbNullString Then
         If OverwriteExisting = True Then
             Kill FName
         Else

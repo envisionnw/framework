@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_SQL
 ' Level:        Framework module
-' VERSION:      1.05
+' VERSION:      1.07
 ' Description:  Database/SQL properties, functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, 7/24/2014
@@ -14,6 +14,11 @@ Option Explicit
 '               BLC, 6/30/2015 - 1.03 - combined GetDbQuerySQL with GetQuerySQL, renamed get... to Get... functions
 '               BLC, 8/21/2015 - 1.04 - added ConcatRelated notes for Error 3048 using linked tables
 '               BLC, 3/16/2016 - 1.05 - added PrepareWhereClause() [Uplands 2016 preseason mods]
+' --------------------------------------------------------------------
+'               BLC, 4/18/2017          added updated version to Invasives db
+' --------------------------------------------------------------------
+'               BLC, 4/18/2017 - 1.06 - adjusted for invasives
+'               BLC, 4/28/2017 - 1.07 - added SQL_encode(), GetParamsFromSQL() moved from mod_Db
 ' =================================
 
 ' ---------------------------------
@@ -278,6 +283,65 @@ Err_Handler:
 End Sub
 
 ' ---------------------------------
+'   Alter SQL
+' ---------------------------------
+
+' ---------------------------------
+' FUNCTION:     SQLencode
+' Description:  sanitizes SQL to remove special characters
+' Parameters:   strSQL - SQL to sanitize (string)
+' Returns:      strSanitized - sanitized SQL (string)
+' Assumptions:
+' Throws:       none
+' References:
+'   Susan Harkins, March 2, 2011
+'   http://www.techrepublic.com/blog/microsoft-office/5-rules-for-embedding-strings-in-vba-code/
+' Source/date:  Bonnie Campbell, June 2016
+' Revisions:    BLC, 6/6/2016 - initial version
+' ---------------------------------
+Public Function SQLencode(strSQL)
+On Error GoTo Err_Handler
+    
+    Dim aryReplace(1, 2) As String
+    Dim i As Integer
+    Dim strNewSQL As String
+    
+    'default
+    strNewSQL = ""
+    
+    'exit if no description
+    If Len(strSQL) = 0 Then GoTo Exit_Handler
+    
+    '--------------------------
+    ' replacement characters
+    '--------------------------
+    '   "   Chr(34)
+    '   '   Chr(39)
+    '--------------------------
+    aryReplace(0, 0) = """"
+    aryReplace(0, 1) = 34
+    aryReplace(1, 0) = "'"
+    aryReplace(1, 1) = 39
+    
+    For i = 0 To UBound(aryReplace, 1)
+        strNewSQL = Replace(strSQL, aryReplace(i, 0), "Chr(" & aryReplace(i, 1) & ")")
+    Next
+
+    SQLencode = strNewSQL
+    
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - SQLencode[mod_SQL])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
 '   SQL Parameters
 ' ---------------------------------
 
@@ -345,6 +409,59 @@ Err_Handler:
             "Error encountered (#" & Err.Number & " - GetParam[mod_SQL])"
     End Select
     Resume Exit_Function
+End Function
+
+' ---------------------------------
+' FUNCTION:     GetParamsFromSQL
+' Description:  extracts parameters from SQL string
+' Assumptions:  -
+' Parameters:   sql - SQL to retrieve parameters from(string)
+' Returns:      params - delimited string of parameters and parameter types (string)
+' References:   -
+' Source/date:  Bonnie Campbell, September 20 2016
+' Revisions:    BLC, 9/20/2016 - initial version
+' ---------------------------------
+Public Function GetParamsFromSQL(SQL As String) As String
+On Error GoTo Err_Handler
+
+    Dim Params As String
+    
+    'default
+    Params = ""
+    
+    If Len(SQL) > 0 Then
+        If InStr(SQL, "PARAMETERS ") Then
+            Dim delimPos As Integer
+            
+            Params = Replace(SQL, "PARAMETERS ", "")
+            delimPos = InStr(Params, ";")
+            Params = Left(Params, delimPos - 1)
+            Params = Replace(Params, ", ", "|")
+            Params = Replace(Params, " ", ":")
+            
+            'convert TEXT(#) values to STRING
+            If InStr(Params, "TEXT(") Then
+                'remove TEXT( )
+                Params = Replace(Params, "TEXT(", "STRING")
+                Params = Replace(Params, ")", "")
+                'remove numerics
+                Params = RemoveChars(Params, False)
+            End If
+            
+        End If
+    End If
+    
+Exit_Handler:
+    GetParamsFromSQL = Params
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - GetParamsFromSQL[mod_SQL])"
+    End Select
+    Resume Exit_Handler
 End Function
 
 ' ---------------------------------

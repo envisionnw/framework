@@ -54,7 +54,7 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - initializeControls[mod_Common_UI])"
+            "Error encountered (#" & Err.Number & " - initializeControls[mod_Db_Admin])"
     End Select
     Resume Exit_Procedure
 End Sub

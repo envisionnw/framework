@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        VegTransect
 ' Level:        Framework class
-' Version:      1.05
+' Version:      1.06
 '
 ' Description:  VegTransect object related properties, events, functions & procedures
 '
@@ -23,6 +23,10 @@ Option Explicit
 '                                         added StartTime, Comments properties
 '               BLC - 7/16/2017  - 1.04 - revised to accommodate NULL StartTime values
 '               BLC - 7/25/2017  - 1.05 - revised GetTransectQuadrats() to address empty recordsets for transects w/o quadrats
+' --------------------------------------------------------------------------------------
+'               BLC - 8/23/2017  - 1.06 - merge in prior work:
+'                                                                                       Big Rivers park casing for Transect property
+' --------------------------------------------------------------------------------------
 ' =================================
 
 '---------------------
@@ -104,6 +108,25 @@ Public Property Let TransectNumber(Value As Integer)
         MsgBox "Park must be set before setting transect number.", vbCritical, "Missing Park"
         
     End If
+    'validate park (BLCA & CANY only)
+'    Select Case Me.Park
+'        Case "BLCA", "CANY"
+'            'check value
+'            'validate transect #
+'            Dim aryTransectNum() As String
+'            aryTransectNum = Split(TRANSECT_NUMBERS, ",")
+'            If IsInArray(CStr(value), aryTransectNum) Then
+'                m_TransectNumber = value
+'            Else
+'                RaiseEvent InvalidTransectNumber(value)
+'            End If
+'        Case "DINO"
+'            'invalid
+'            RaiseEvent InvalidTransectNumber(value)
+'        Case Else
+'            'invalid
+'            RaiseEvent InvalidTransectNumber(value)
+'    End Select
 End Property
 
 Public Property Get TransectNumber() As Integer

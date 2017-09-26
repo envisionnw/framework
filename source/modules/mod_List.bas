@@ -4,12 +4,19 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_List
 ' Level:        Framework module
-' Version:      1.01
+' Version:      1.04
 ' Description:  Listview & listbox related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
 ' Revisions:    BLC, 4/30/2015 - 1.00 - initial version
-'               BLC, 6/24/2016 - 1.01 - replaced Exit_Function > Exit_Handler
+'               BLC, 6/12/2015 - 1.01 - updated documentation, TempVars("... vs. TempVars.item("...
+'               BLC, 6/18/2015 - 1.02 - updated lvwPopulateFromQuery to use aryHeadings vs aryFields
+'               BLC, 12/1/2015 - 1.03 - "extra" vs. target area renaming (handle back-end table fields not yet being renamed)
+' ----------------------------------------------------------------------------------------
+'                               BLC, 8/23/2017 - 1.04 - merged in prior work:
+'                              BLC, 6/24/2016 - 1.01 - replaced Exit_Function > Exit_Handler
+' ----------------------------------------------------------------------------------------
+'               BLC, 9/14/2017 - 1.04 - added ReplaceListItem() from mod_Utilities (removed)
 ' =================================
 
 ' ---------------------------------
@@ -33,8 +40,9 @@ Option Explicit
 '                   http://support2.microsoft.com/default.aspx?scid=kb;en-us;194784
 '                   http://forums.esri.com/Thread.asp?c=93&f=992&t=198775
 '               BLC, 4/30/2015 - added error handling & moved from mod_Common_UI to mod_List
+'               BLC, 6/18/2015 - renamed aryFields to aryHeadings per documentation
 ' =================================
-Public Sub lvwPopulateFromQuery(ctrl As MSComctlLib.ListView, strSQL As String, aryFields As Variant)
+Public Sub lvwPopulateFromQuery(ctrl As MSComctlLib.ListView, strSQL As String, aryHeadings As Variant)
 On Error GoTo Err_Handler
     Dim dbs As Database
     Dim rs As Recordset
@@ -51,9 +59,9 @@ On Error GoTo Err_Handler
     If rs.RecordCount > 0 Then
         rs.MoveFirst
         Do Until rs.EOF
-            Set Item = ctrl.ListItems.Add(, , rs(aryFields(i)))
-            For i = 1 To UBound(aryFields)
-              Item.SubItems(i) = rs(aryFields(i))
+            Set Item = ctrl.ListItems.Add(, , rs(aryHeadings(i)))
+            For i = 1 To UBound(aryHeadings)
+              Item.SubItems(i) = rs(aryHeadings(i))
             Next
             On Error Resume Next 'continue even in error
             rs.MoveNext
@@ -63,7 +71,7 @@ On Error GoTo Err_Handler
 
     Set rs = Nothing
 
-Exit_Procedure:
+Exit_Handler:
     Exit Sub
 
 Err_Handler:
@@ -72,7 +80,7 @@ Err_Handler:
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - lvwPopulateFromQuery[mod_List])"
     End Select
-    Resume Exit_Procedure
+    Resume Exit_Handler
 End Sub
 
 ' ---------------------------------
@@ -98,7 +106,7 @@ On Error GoTo Err_Handler
 
     Dim rows As Integer, cols As Integer, i As Integer, j As Integer, matches As Integer
     Dim frm As Form
-    Dim stritem As String, strColHeads As String, aryColWidths() As String
+    Dim strItem As String, strColHeads As String, aryColWidths() As String
 
     'exit if subform control (hdrs are static & present on sfrm)
     If ctrl.ControlType = 112 Then
@@ -191,7 +199,7 @@ On Error GoTo Err_Handler
     
     'ctrl.refresh
 
-Exit_Procedure:
+Exit_Handler:
     Exit Sub
 
 Err_Handler:
@@ -200,7 +208,7 @@ Err_Handler:
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - lbxConditionalColor[mod_List])"
     End Select
-    Resume Exit_Procedure
+    Resume Exit_Handler
 End Sub
 
 ' ---------------------------------
@@ -272,6 +280,7 @@ End Function
 ' Revisions:
 '   BLC - 3/5/2015 - initial version
 '   BLC - 5/10/2015 - moved to mod_List from mod_Lists
+'   BLC - 6/12/2015 - replaced TempVars.item("... with TempVars("...
 ' ---------------------------------
 Public Sub SortList(lbx As ListBox) ', orderCol As Integer)
 
@@ -283,7 +292,7 @@ On Error GoTo Err_Handler
   
   'skip first row if lbx has headers
   iHdr = 0
-  If Len(TempVars.Item("lbxHdr")) > 0 Then
+  If Len(TempVars("lbxHdr")) > 0 Then
     iHdr = 1
   End If
   
@@ -402,8 +411,10 @@ End Function
 ' SUB:          SaveListToTable
 ' Description:  Save list items to table
 ' Assumptions:  -
-' Parameters:   ctrl - control to iterate through
-'               tbl - table being populated
+' Parameters:   ctrl - control to iterate through (control object)
+'               tbl - table being populated (string)
+'               tblFields - array of fields to populate (variant)
+'               blnSelectedOnly - copy only selected list items (boolean)
 ' Returns:      N/A
 ' Throws:       none
 ' References:   none
@@ -412,6 +423,7 @@ End Function
 ' Revisions:
 '   BLC - 2/8/2015  - initial version
 '   BLC - 5/10/2015 - moved to mod_List from mod_Lists
+'   BLC - 6/18/2015 - updated documentation
 ' ---------------------------------
 Public Sub SaveListToTable(ctrl As Control, tbl As String, tblFields As Variant, blnSelectedOnly As Boolean)
 
@@ -461,15 +473,15 @@ End Sub
 ' ---------------------------------
 ' SUB:          SetListRecordset
 ' Description:  Create a recordset from list items
-'               This creates a temporary table for creating the recordset via DAO.
+'               This creates a Temporary table for creating the recordset via DAO.
 ' Assumptions:  -
 ' Parameters:   lbx - listbox control to get records from (listbox)
 '               blnHeaders - true if listbox has headers, false if not (boolean)
 '               aryFields - fields (headers & data) from listbox data (array)
 '               aryFieldTypes - field types from listbox data (array)
-'               tblName - temporary table name (string)
-'               blnReplace - true = replace records in the temp table (if it exists)
-'                            false = append to records in the temp table (if it exists)
+'               tblName - Temporary table name (string)
+'               blnReplace - true = replace records in the Temp table (if it exists)
+'                            false = append to records in the Temp table (if it exists)
 ' Returns:      -
 ' Throws:       none
 ' References:   none
@@ -477,8 +489,8 @@ End Sub
 ' Adapted:      Bonnie Campbell, May 10, 2015 - for NCPN tools
 ' Revisions:
 '   BLC - 5/21/2015 - initial version
-'   BLC - 5/26/2015 - revised to SetListRecordset saving listbox rows to temp table
-'   BLC - 5/27/2015 - added blnReplace to handle adding additional records to the temp
+'   BLC - 5/26/2015 - revised to SetListRecordset saving listbox rows to Temp table
+'   BLC - 5/27/2015 - added blnReplace to handle adding additional records to the Temp
 '                     table from a list
 ' ---------------------------------
 Public Sub SetListRecordset(lbx As ListBox, blnHeaders As Boolean, _
@@ -551,7 +563,7 @@ Dim blnTableExists As Boolean
             
         If Not blnTableExists Then
             
-            'create temporary table (if it doesn't exist)
+            'create Temporary table (if it doesn't exist)
             Set tdf = CurrentDb.CreateTableDef(tblName)
                     
             aryFieldNames = Split(CStr(aryFields(0)), ";")
@@ -610,17 +622,16 @@ Err_Handler:
     Resume Exit_Handler
 End Sub
 
-
 ' ---------------------------------
-' SUB:          SetListRecordset
+' SUB:          AddListRecordset
 ' Description:  Add list items to existing records in a list recordset table via DAO.
 ' Assumptions:  Recordset contains the same number and type of fields as the list recordset table.
-' Parameters:   tblName - temporary table name (string)
+' Parameters:   tblName - Temporary table name (string)
 '               rsList - listbox recordset (DAO.recordset)
 '               aryFieldNames - table fields (string array)
 '               aryFieldTypes - field types (variant array)
-'               blnReplace - true = replace records in the temp table (if it exists)
-'                            false = append to records in the temp table (if it exists)
+'               blnReplace - true = replace records in the Temp table (if it exists)
+'                            false = append to records in the Temp table (if it exists)
 ' Returns:      -
 ' Throws:       none
 ' References:   none
@@ -628,6 +639,7 @@ End Sub
 ' Adapted:      Bonnie Campbell, May 26, 2015 - for NCPN tools
 ' Revisions:
 '   BLC - 5/27/2015 - initial version
+'   BLC - 12/1/2015 - "extra" vs. target area renaming (handle back-end table fields not yet being renamed)
 ' ---------------------------------
 Public Sub AddListRecordset(tblName As String, rsList As DAO.Recordset, strFieldNames As String, _
                 aryFieldTypes As Variant, blnReplace As Boolean)
@@ -676,7 +688,7 @@ Dim blnTableExists As Boolean
         'Create Table
         If Not blnTableExists Then
             
-            'create temporary table (if it doesn't exist)
+            'create Temporary table (if it doesn't exist)
             Set tdf = CurrentDb.CreateTableDef(tblName)
 
             For iRow = 0 To UBound(aryFieldNames)
@@ -707,9 +719,14 @@ Dim blnTableExists As Boolean
             'add each field (second element of aryData)
             For iCol = 0 To UBound(aryFieldNames) ' - 1
             
-                'add record field values for each record (aryFields - 1, row 0 = field names)
-                rsProcess(aryFieldNames(iCol)).Value = rsList(aryFieldNames(iCol)).Value
-
+                'handle Target_Area_ID vs. Extra_Area_ID since back-end table field names have not been adjusted
+                If aryFieldNames(iCol) = "Extra_Area_ID" Then
+                    'add record field values for each record (aryFields - 1, row 0 = field names)
+                    rsProcess(aryFieldNames(iCol)).Value = rsList("Target_Area_ID").Value
+                Else
+                    'add record field values for each record (aryFields - 1, row 0 = field names)
+                    rsProcess(aryFieldNames(iCol)).Value = rsList(aryFieldNames(iCol)).Value
+                End If
 '                iCol = iCol + 1
             Next
 
@@ -738,7 +755,7 @@ End Sub
 
 ' ---------------------------------
 ' FUNCTION:     GetListRecordset
-' Description:  Create a recordset from list items saved in temp table
+' Description:  Create a recordset from list items saved in Temp table
 ' Assumptions:  Records have already been saved to table via SetListRecordset
 ' Parameters:   tblName - name of table to check
 ' Returns:      rs - recordset from list items (or empty recordset), (nothing if no table exists)
@@ -801,7 +818,7 @@ Public Sub MoveSingleItem(frm As Form, strSourceControl As String, strTargetCont
     
 On Error GoTo Err_Handler
     
-    Dim stritem As String
+    Dim strItem As String
     Dim intColumnCount As Integer
     
     'if source = target, just remove the item
@@ -830,18 +847,18 @@ On Error GoTo Err_Handler
     End If
     
     For intColumnCount = 0 To frm.Controls(strSourceControl).ColumnCount - 1
-        stritem = stritem & frm.Controls(strSourceControl).Column(intColumnCount) & ";"
+        strItem = strItem & frm.Controls(strSourceControl).Column(intColumnCount) & ";"
     Next
     
     'remove extra semi-colon (;)
-    stritem = Left(stritem, Len(stritem) - 1)
+    strItem = Left(strItem, Len(strItem) - 1)
 
     'Check the length to make sure something is selected
     ' -------------------------------------------------------------------------
     '  NOTE: ListIndex is zero based, so add 1 to remove proper item
     ' -------------------------------------------------------------------------
-    If Len(stritem) > 0 Then
-        frm.Controls(strTargetControl).AddItem stritem
+    If Len(strItem) > 0 Then
+        frm.Controls(strTargetControl).AddItem strItem
         frm.Controls(strSourceControl).RemoveItem frm.Controls(strSourceControl).ListIndex + 1
     Else
         MsgBox "Please select an item to move."
@@ -882,7 +899,7 @@ Public Sub MoveAllItems(frm As Form, strSourceControl As String, strTargetContro
     
 On Error GoTo Err_Handler
     
-    Dim stritem As String
+    Dim strItem As String
     Dim intColumnCount As Integer, startRow As Integer
     Dim lngRowCount As Long
     
@@ -906,11 +923,11 @@ On Error GoTo Err_Handler
     
     For lngRowCount = startRow To frm.Controls(strSourceControl).ListCount - 1
         For intColumnCount = 0 To frm.Controls(strSourceControl).ColumnCount - 1
-            stritem = stritem & frm.Controls(strSourceControl).Column(intColumnCount, lngRowCount) & ";"
+            strItem = strItem & frm.Controls(strSourceControl).Column(intColumnCount, lngRowCount) & ";"
         Next
-        stritem = Left(stritem, Len(stritem) - 1)
-        frm.Controls(strTargetControl).AddItem stritem
-        stritem = ""
+        strItem = Left(strItem, Len(strItem) - 1)
+        frm.Controls(strTargetControl).AddItem strItem
+        strItem = ""
     Next
         
     'clear the list
@@ -955,15 +972,16 @@ End Sub
 '   BLC - 3/5/2015 - added ability to remove from list w/o adding to target if strSourceControl = strTargetControl
 '   BLC - 5/10/2015 - moved to mod_List from mod_Lists
 '   BLC - 5/22/2015 - updated documentation
+'   BLC - 6/12/2015 - replaced TempVars.item("... with TempVars("...
 ' ---------------------------------
 Public Sub MoveSelectedItems(frm As Form, strSourceControl As String, strTargetControl As String)
     
 On Error GoTo Err_Handler
     
-    Dim iRow As Integer, startRow As Integer, i As Integer, x As Integer, iRemovedItems As Integer
+    Dim iRow As Integer, startRow As Integer, i As Integer, X As Integer, iRemovedItems As Integer
     Dim arySelectedItems() As Integer
     Dim blnDimensioned As Boolean
-    Dim stritem As String
+    Dim strItem As String
     
     'if source = target, just remove the items
     If strSourceControl = strTargetControl Then
@@ -985,8 +1003,8 @@ On Error GoTo Err_Handler
     
     'add back the header if it doesn't exist
     If frm.Controls(strTargetControl).ColumnHeads = True And frm.Controls(strTargetControl).ListCount = 0 Then
-       stritem = TempVars.Item("lbxHdr") & stritem
-       frm.Controls(strTargetControl).AddItem stritem
+       strItem = TempVars("lbxHdr") & strItem
+       frm.Controls(strTargetControl).AddItem strItem
     End If
     
     'generate array of selected items
@@ -1024,20 +1042,20 @@ On Error GoTo Err_Handler
     iRemovedItems = 0
     
     'iterate through selected items
-    For x = LBound(arySelectedItems) To UBound(arySelectedItems)
+    For X = LBound(arySelectedItems) To UBound(arySelectedItems)
                         
-        iRow = arySelectedItems(x) - iRemovedItems
+        iRow = arySelectedItems(X) - iRemovedItems
             
         'clear string
-        stritem = ""
+        strItem = ""
         
         'add all columns
         For i = 0 To frm.Controls(strSourceControl).ColumnCount
-            stritem = stritem & frm.Controls(strSourceControl).Column(i, iRow) & ";"
+            strItem = strItem & frm.Controls(strSourceControl).Column(i, iRow) & ";"
         Next i
         
         'add to target
-        frm.Controls(strTargetControl).AddItem stritem
+        frm.Controls(strTargetControl).AddItem strItem
         
         'remove from source
         frm.Controls(strSourceControl).RemoveItem iRow
@@ -1047,7 +1065,7 @@ On Error GoTo Err_Handler
             iRemovedItems = iRemovedItems + 1
         End If
     
-    Next x
+    Next X
 
 Exit_Handler:
     Exit Sub
@@ -1203,3 +1221,109 @@ Err_Handler:
     End Select
     Resume Exit_Handler
 End Sub
+
+' ---------------------------------
+' SUB:          ReplaceListItem
+' Description:  replace an item w/in a delimited list
+' Assumptions:  -
+' Parameters:   List - list to manipulate (string)
+'               Find - item to replace (string)
+'               Replace - item to insert (string)
+'               Delimiter - character delimiting the list (string)
+'               CaseSensitive - whether the search should be case sensitive (boolean)
+'               Trim - whether the string should be trimmed (boolean)
+' Returns:      list as a delimited string w/ the "Find" item replaced
+' Throws:       none
+' References:   none
+' Source/date:
+' Adapted:      Bonnie Campbell, September 14, 2017 - for NCPN tools
+' Revisions:
+'   Unknown - unknown - initial version
+'   BLC - 9/14/2017 - moved to mod_List from mod_Utilities (removed),
+'                     added error handling & documentation
+' ---------------------------------
+Public Function ReplaceListItem(list As String, Find As String, Replace As String, _
+                                delimiter As String, CaseSensitive As Boolean, _
+                                bTrim As Boolean) As String
+On Error GoTo Err_Handler
+
+    Dim strItem As String
+    Dim iCompare As Integer
+    Dim strResult As String
+    Dim strChar As String
+    Dim Semi As Boolean
+    Dim i As Integer
+    Dim strNewList As String
+    
+    iCompare = 1
+    If CaseSensitive = True Then iCompare = 0
+    If bTrim Then Find = Trim(Find)
+    
+    'Loop through items in the list
+    Do Until InStr(list, delimiter) = 0
+        'Get each item in the list
+        If bTrim Then
+            strItem = Trim(Left(list, InStr(list, delimiter) - 1))
+        Else
+            strItem = Left(list, InStr(list, delimiter) - 1)
+        End If
+            
+        list = Mid(list, InStr(list, delimiter) + 1)
+    
+        'Compare the item to the string to replace
+        If StrComp(strItem, Find, iCompare) = 0 Then
+            'If they're the same, replace the item
+            strResult = strResult & Replace & delimiter
+        Else
+            strResult = strResult & strItem & delimiter
+        End If
+    Loop
+    
+        'Do the last item in the list
+        If StrComp(list, Find, iCompare) = 0 Then
+            'If they're the same, replace the item
+            strResult = strResult & Replace
+        Else
+            strResult = strResult & list
+        End If
+    
+    'Clean up semicolons
+        
+        'Eliminate leading semicolons
+        Do Until Left(strResult, 1) <> delimiter
+            strResult = Mid(strResult, 2)
+        Loop
+        
+        'Eliminate trailing semicolons
+        Do Until Right(strResult, 1) <> delimiter
+            strResult = Left(strResult, Len(strResult) - 1)
+        Loop
+        
+        'Eliminate grouped semicolons
+        For i = 1 To Len(strResult)
+            strChar = Mid(strResult, i, 1)
+            If strChar = delimiter Then
+                If Semi = True Then
+                Else
+                    strNewList = strNewList & strChar
+                End If
+                Semi = True
+            Else
+                strNewList = strNewList & strChar
+                Semi = False
+            End If
+        Next i
+    
+    ReplaceListItem = strNewList
+
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - ReplaceListItem[mod_List])"
+    End Select
+    Resume Exit_Handler
+End Function

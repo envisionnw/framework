@@ -4,12 +4,13 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Photo
 ' Level:        Framework module
-' Version:      1.01
+' Version:      1.02
 ' Description:  photo functions & procedures
 '
 ' Source/date:  Bonnie Campbell, 8/30/2016
 ' Revisions:    BLC, 8/30/2016 - 1.00 - initial version
 '               BLC, 2/21/2017 - 1.01 - added GetFileExifInfo()
+'               BLC, 9/13/2017 - 1.02 - revised IngestPhotos to use FolderExists() vs DirExtists()
 ' =================================
 
 ' ---------------------------------
@@ -34,12 +35,13 @@ Option Explicit
 ' Adapted:  -
 ' Revisions:
 '   BLC - 8/30/2015 - initial version
+'   BLC - 9/13/2017 - revised from DirExists() to FolderExists()
 ' ---------------------------------
 Public Sub IngestPhotos(strPath As String, category As String)
 On Error GoTo Err_Handler
 
     Dim FSO As FileSystemObject
-    Dim iFile As File
+    Dim ifile As file
     Dim NumFiles As Integer, i As Integer, iProg As Integer
     Dim ListFiles As Files
     Dim aryExtensions() As String
@@ -53,7 +55,8 @@ On Error GoTo Err_Handler
     If Len(strPath) = 0 Then GoTo Exit_Handler
 
     'determine if directory exists
-    If DirExists(strPath) Then
+    'If DirExists(strPath) Then
+     If FolderExists(strPath) Then
      
         Set FSO = CreateObject("Scripting.FileSystemObject")
     
@@ -78,20 +81,20 @@ On Error GoTo Err_Handler
         frm!tbxPercent = 0
         
         'iterate through files w/in directory
-        For Each iFile In ListFiles
+        For Each ifile In ListFiles
         
             For i = 0 To UBound(aryExtensions)
                 
                 'check for valid images
-                If InStr(1, iFile, aryExtensions(i), vbTextCompare) > 1 Then
+                If InStr(1, ifile, aryExtensions(i), vbTextCompare) > 1 Then
                         
                     'prepare for insert
                     Dim Params(0 To 4) As Variant
                     
                     Params(0) = "i_usys_temp_photo"
                     Params(1) = strPath
-                    Params(2) = iFile.Name 'filename
-                    Params(3) = iFile.DateCreated 'file date
+                    Params(2) = ifile.Name 'filename
+                    Params(3) = ifile.DateCreated 'file date
                     Params(4) = "U"
 'Debug.Print "-----------"
 'Debug.Print iFile.Name
@@ -108,7 +111,7 @@ On Error GoTo Err_Handler
                     varReturn = SysCmd(acSysCmdUpdateMeter, iProg)
 
                     'update progress meter
-                    frm.tbxMsg = "processing " & iFile.Name
+                    frm.tbxMsg = "processing " & ifile.Name
                     frm.tbxPercent = (iProg / NumFiles) * 100
                     'font Terminal, character 'Û' (Alt+0219)
                     frm.tbxProgress = String(CInt(frm.tbxPercent / 100 * (frm.tbxProgress.Width / 144)), "Û") 'frm.tbxProgress & "Û" 'Û = color box

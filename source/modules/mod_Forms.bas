@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Forms
 ' Level:        Framework module
-' Version:      1.08
+' Version:      1.09
 ' Description:  generic form functions & procedures
 '
 ' Source/date:  Bonnie Campbell, 2/19/2015
@@ -23,6 +23,9 @@ Option Explicit
 ' --------------------------------------------------------------------
 '               BLC, 3/22/2017          added to Upland db
 ' --------------------------------------------------------------------
+'               BLC, 9/14/2017  - 1.09 - added: notes re: IsLoaded function
+'                                               from mod_Utilities: FormAssist()
+'                                               documentation & error handling
 ' =================================
 
 '=================================================================
@@ -134,6 +137,10 @@ Public RefSub As String 'referring subroutine
 '=================================================================
 
 ' ---------------------------------
+'  Open/Close/Loaded
+' ---------------------------------
+
+' ---------------------------------
 ' FUNCTION:     CloseFormsReports
 ' Description:  close forms, reports
 ' Assumptions:  -
@@ -207,7 +214,7 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - FormIsOpen[mod_UI])"
+            "Error encountered (#" & Err.Number & " - FormIsOpen[mod_Forms])"
     End Select
     Resume Exit_Handler
 End Function
@@ -244,7 +251,7 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - SwitchboardIsOpen[mod_UI])"
+            "Error encountered (#" & Err.Number & " - SwitchboardIsOpen[mod_Forms])"
     End Select
     Resume Exit_Handler
 End Function
@@ -260,6 +267,7 @@ End Function
 ' Revisions:    John R. Boetsch, 6/17/2009 - error trapping, documentation
 '               BLC, 4/30/2015 - moved from mod_Utilities to mod_UI
 '               BLC, 5/18/2015 - renamed, removed fxn prefix
+'               BLC, 9/14/2017 - removed mod_Utilities IsLoaded() is the same function
 ' =================================
 Public Function FormIsLoaded(ByVal strFormName As String) As Integer
     On Error GoTo Err_Handler
@@ -286,10 +294,192 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - FormIsLoaded[mod_UI])"
+            "Error encountered (#" & Err.Number & " - FormIsLoaded[mod_Forms])"
     End Select
     Resume Exit_Handler
 End Function
+
+' ---------------------------------
+'  Form Help
+' ---------------------------------
+' ---------------------------------
+' Sub:          FormAssist
+' Description:  Responds to OnAction on custom menu or toolbar help command
+'               Checks for an active form, then looks for a "FormHelp" handler
+'               subroutine on that form
+' Assumptions:  -
+' Parameters:   -
+' Returns:      -
+' Throws:       none
+' Usage:        -
+' References:   -
+' Source/date:  NCPN unknown
+' Adapted:      Bonnie Campbell, September 14, 2017 - for NCPN tools
+' Revisions:
+'   Unknown - unknown - initial version
+'   BLC - 9/14/2017 - moved from mod_Utilities to mod_Forms, error handling &
+'                     documentation added
+' ---------------------------------
+Public Sub FormAssist()
+On Error GoTo Err_Handler
+    
+    Dim frm As Form
+
+    ' Try to locate a form that has the focus
+    Set frm = Screen.ActiveForm
+    If Err <> 0 Then
+        ' Error means no active form,
+        '  so open standard Office Assistant
+        Application.Assistant.Help
+        'Exit Function
+        GoTo Exit_Handler
+    End If
+    
+    ' No error, so try to call the FormHelp
+    '   method of the active form
+    frm.FormHelp
+    If Err <> 0 Then
+        ' Error means no FormHelp method for
+        '  the current form,
+        '  so open standard Office Assistant
+        Application.Assistant.Help
+    End If
+    
+Exit_Handler:
+    Exit Sub
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - FormAssist[mod_Forms])"
+    End Select
+    Resume Exit_Handler
+End Sub
+
+' ---------------------------------
+'  Entire Form
+' ---------------------------------
+' ---------------------------------
+' SUB:          ToggleForm
+' Description:  Minimizes, maximizes, or restores form display
+' Assumptions:  Form is not opened if it is not already opened
+'               In part this is to avoid endless loops with forms
+'               like PreSplash which call routines that shouldn't be re-called.
+' Note:         -
+' Parameters:   strForm - form to change (string)
+'               Sizing - how to change display (integer) -1 = minimize, 0 = normal/restore, 1 = maximize
+' Returns:      -
+' Throws:       none
+' References:   -
+' Source/date:  Bonnie Campbell, June 24, 2016  - for NCPN tools
+' Revisions:    BLC, 6/24/2016 - initial version
+'               BLC, 2/22/2017 - added documentation notes @ opening form
+' ---------------------------------
+Public Sub ToggleForm(strForm As String, Sizing As Integer)
+On Error GoTo Err_Handler
+    
+    'ensure form is open, if not -> exit
+    If Not FormIsOpen(strForm) Then GoTo Exit_Handler
+    
+    Forms(strForm).SetFocus
+    
+    Select Case Sizing
+        Case -1 'minimize
+            DoCmd.Minimize
+        Case 0 'restore
+            DoCmd.Restore
+        Case 1 'maximize
+            DoCmd.Maximize
+    End Select
+    
+Exit_Handler:
+    Exit Sub
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - ToggleForm[mod_Forms])"
+    End Select
+    Resume Exit_Handler
+End Sub
+
+' ---------------------------------
+' Sub:          ClearForm
+' Description:  Clear form fields
+' Assumptions:  Form setup is similar to big rivers contact form w/ data entry
+'               above and list below
+' Parameters:   frm - form
+' Returns:      -
+' Throws:       none
+' References:   -
+' Source/date:  Bonnie Campbell, June 23, 2016 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 6/23/2016 - initial version
+'   BLC - 6/27/2016 - shifted to mod_Forms from big rivers forms
+'   BLC - 7/28/2016 - added clearing lblMsg caption
+'   BLC - 8/30/2016 - added RefSub to identify form subs called by ClearForm
+' ---------------------------------
+Public Sub ClearForm(ByRef frm As Form)
+On Error GoTo Err_Handler
+    
+    'set global
+    RefSub = "ClearForm"
+    
+    With frm
+    
+        'clear recordsource
+        .RecordSource = ""
+        
+        'clear values so they no longer look for original control sources
+        Dim ctrl As Control
+        
+        'clear the control sources to clear the textboxes
+        For Each ctrl In frm.Controls
+            Select Case ctrl.ControlType
+                Case acTextBox
+                    ctrl.ControlSource = ""
+                    ctrl.Value = ""
+                Case acComboBox
+                    'ctrl.Value = "" '<< error: 2448 can't assign value to object
+                    'ctrl.Value = Null '<< error: 2448 can't assign value to object
+                    'ctrl.ItemData (0)
+                    ' Johanness, October 12, 2012
+                    ' http://stackoverflow.com/questions/12697427/vba-clear-selections-of-a-combobox
+            End Select
+        Next
+        
+        .Controls("tbxIcon") = StringFromCodepoint(uBullet)
+        .Controls("tbxIcon").forecolor = lngRed
+        .Controls("tbxID") = 0
+        .Controls("lblMsgIcon").Caption = ""
+        .Controls("lblMsg").Caption = ""
+        .Controls("lblMsgIcon").forecolor = lngRobinEgg
+        
+        .Controls("btnSave").Enabled = False
+        
+        .list.Requery
+        
+        .Requery
+    
+    End With
+    
+Exit_Handler:
+    RefSub = ""
+    Exit Sub
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - ClearForm[mod_Forms])"
+    End Select
+    Resume Exit_Handler
+End Sub
+
+' ---------------------------------
+'  Form Controls
+' ---------------------------------
 
 ' ---------------------------------
 ' SUB:          AddControl
@@ -310,6 +500,7 @@ End Function
 ' Adapted:      Bonnie Campbell, February 19, 2015 - for NCPN tools
 ' Revisions:
 '   BLC - 2/19/2015  - initial version
+'   BLC - 9/14/2017  - updated documentation from form_frmSpeciesSearch to mod_Forms
 ' ---------------------------------
 Public Sub AddControl(frm As Form, ctrl As Control, ctrlName As String, _
                         xPos As Integer, yPos As Integer)
@@ -328,10 +519,54 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - AddControl[form_frmSpeciesSearch])"
+            "Error encountered (#" & Err.Number & " - AddControl[mod_Forms])"
     End Select
     Resume Exit_Handler
 End Sub
+
+' ---------------------------------
+' SUB:          SetFormOpacity
+' Description:  Sets form opacity
+' Assumptions:  place in forms module mod_Form for protocols which utilize that module
+' Parameters:   frm - form to prepare
+'               sngOpacity - opacity of the form (single)
+'               TColor - color for the form display (long)
+' Returns:      N/A
+' Throws:       none
+' References:   none
+' Source/date:
+' Thenman, September 24, 2009
+' http://www.access-programmers.co.uk/forums/showthread.php?t=154907
+' Adapted:      Bonnie Campbell, February 9, 2016 - for NCPN tools
+' Revisions:
+'   BLC, 2/9/2016  - initial version
+'   BLC, 6/1/2016  - moved to mod_Forms from mod_App_UI (uplands)
+' ---------------------------------
+Public Sub SetFormOpacity(frm As Form, sngOpacity As Single, TColor As Long)
+On Error GoTo Err_Handler
+
+    Dim lngStyle As Long
+    
+    ' get the current window style, then set transparency
+    lngStyle = GetWindowLong(frm.hwnd, GWL_EXSTYLE)
+    SetWindowLong frm.hwnd, GWL_EXSTYLE, lngStyle Or WS_EX_LAYERED
+    SetLayeredWindowAttributes frm.hwnd, TColor, (sngOpacity * 255), LWA_ALPHA
+    
+Exit_Handler:
+    Exit Sub
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - SetFormOpacity[mod_Forms])"
+    End Select
+    Resume Exit_Handler
+End Sub
+
+' ---------------------------------
+'  Control Response
+' ---------------------------------
 
 ' ---------------------------------
 ' SUB:          ContinuousUpDown
@@ -451,46 +686,6 @@ Err_Handler:
     Resume Exit_Handler
 End Function
 
-' ---------------------------------
-' SUB:          SetFormOpacity
-' Description:  Sets form opacity
-' Assumptions:  place in forms module mod_Form for protocols which utilize that module
-' Parameters:   frm - form to prepare
-'               sngOpacity - opacity of the form (single)
-'               TColor - color for the form display (long)
-' Returns:      N/A
-' Throws:       none
-' References:   none
-' Source/date:
-' Thenman, September 24, 2009
-' http://www.access-programmers.co.uk/forums/showthread.php?t=154907
-' Adapted:      Bonnie Campbell, February 9, 2016 - for NCPN tools
-' Revisions:
-'   BLC, 2/9/2016  - initial version
-'   BLC, 6/1/2016  - moved to mod_Forms from mod_App_UI (uplands)
-' ---------------------------------
-Public Sub SetFormOpacity(frm As Form, sngOpacity As Single, TColor As Long)
-On Error GoTo Err_Handler
-
-    Dim lngStyle As Long
-    
-    ' get the current window style, then set transparency
-    lngStyle = GetWindowLong(frm.hwnd, GWL_EXSTYLE)
-    SetWindowLong frm.hwnd, GWL_EXSTYLE, lngStyle Or WS_EX_LAYERED
-    SetLayeredWindowAttributes frm.hwnd, TColor, (sngOpacity * 255), LWA_ALPHA
-    
-Exit_Handler:
-    Exit Sub
-    
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - SetFormOpacity[mod_App_UI])"
-    End Select
-    Resume Exit_Handler
-End Sub
-
 ' =================================
 ' SUB:          CaptureEscapeKey
 ' Description:  Handles ESCAPE key actions for certain forms
@@ -530,127 +725,9 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - CaptureEscapeKey[mod_App_UI])"
+            "Error encountered (#" & Err.Number & " - CaptureEscapeKey[mod_Forms])"
     End Select
     Resume Exit_Sub
-End Sub
-
-' ---------------------------------
-' SUB:          ToggleForm
-' Description:  Minimizes, maximizes, or restores form display
-' Assumptions:  Form is not opened if it is not already opened
-'               In part this is to avoid endless loops with forms
-'               like PreSplash which call routines that shouldn't be re-called.
-' Note:         -
-' Parameters:   strForm - form to change (string)
-'               Sizing - how to change display (integer) -1 = minimize, 0 = normal/restore, 1 = maximize
-' Returns:      -
-' Throws:       none
-' References:   -
-' Source/date:  Bonnie Campbell, June 24, 2016  - for NCPN tools
-' Revisions:    BLC, 6/24/2016 - initial version
-'               BLC, 2/22/2017 - added documentation notes @ opening form
-' ---------------------------------
-Public Sub ToggleForm(strForm As String, Sizing As Integer)
-On Error GoTo Err_Handler
-    
-    'ensure form is open, if not -> exit
-    If Not FormIsOpen(strForm) Then GoTo Exit_Handler
-    
-    Forms(strForm).SetFocus
-    
-    Select Case Sizing
-        Case -1 'minimize
-            DoCmd.Minimize
-        Case 0 'restore
-            DoCmd.Restore
-        Case 1 'maximize
-            DoCmd.Maximize
-    End Select
-    
-Exit_Handler:
-    Exit Sub
-
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - Form_Open[AppReleases form])"
-    End Select
-    Resume Exit_Handler
-End Sub
-
-' ---------------------------------
-' Sub:          ClearForm
-' Description:  Clear form fields
-' Assumptions:  Form setup is similar to big rivers contact form w/ data entry
-'               above and list below
-' Parameters:   frm - form
-' Returns:      -
-' Throws:       none
-' References:   -
-' Source/date:  Bonnie Campbell, June 23, 2016 - for NCPN tools
-' Adapted:      -
-' Revisions:
-'   BLC - 6/23/2016 - initial version
-'   BLC - 6/27/2016 - shifted to mod_Forms from big rivers forms
-'   BLC - 7/28/2016 - added clearing lblMsg caption
-'   BLC - 8/30/2016 - added RefSub to identify form subs called by ClearForm
-' ---------------------------------
-Public Sub ClearForm(ByRef frm As Form)
-On Error GoTo Err_Handler
-    
-    'set global
-    RefSub = "ClearForm"
-    
-    With frm
-    
-        'clear recordsource
-        .RecordSource = ""
-        
-        'clear values so they no longer look for original control sources
-        Dim ctrl As Control
-        
-        'clear the control sources to clear the textboxes
-        For Each ctrl In frm.Controls
-            Select Case ctrl.ControlType
-                Case acTextBox
-                    ctrl.ControlSource = ""
-                    ctrl.Value = ""
-                Case acComboBox
-                    'ctrl.Value = "" '<< error: 2448 can't assign value to object
-                    'ctrl.Value = Null '<< error: 2448 can't assign value to object
-                    'ctrl.ItemData (0)
-                    ' Johanness, October 12, 2012
-                    ' http://stackoverflow.com/questions/12697427/vba-clear-selections-of-a-combobox
-            End Select
-        Next
-        
-        .Controls("tbxIcon") = StringFromCodepoint(uBullet)
-        .Controls("tbxIcon").forecolor = lngRed
-        .Controls("tbxID") = 0
-        .Controls("lblMsgIcon").Caption = ""
-        .Controls("lblMsg").Caption = ""
-        .Controls("lblMsgIcon").forecolor = lngRobinEgg
-        
-        .Controls("btnSave").Enabled = False
-        
-        .list.Requery
-        
-        .Requery
-    
-    End With
-    
-Exit_Handler:
-    RefSub = ""
-    Exit Sub
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - ClearForm[mod_Forms])"
-    End Select
-    Resume Exit_Handler
 End Sub
 
 ' ---------------------------------

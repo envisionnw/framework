@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Color
 ' Level:        Framework module
-' Version:      1.08
+' Version:      1.09
 ' Description:  color functions & procedures
 '
 ' Source/date:  Bonnie Campbell, 2/9/2015
@@ -17,6 +17,10 @@ Option Explicit
 '               BLC, 2/22/2017 - 1.06 - added RandomColor()
 '               BLC, 3/8/2017 - 1.07 - imported into invasives
 '               BLC, 7/28/2017 - 1.08 - added lngLtrYellow
+' --------------------------------------------------------------
+'               BLC, 8/22/2017 - 1.09 - merged prior work:
+'                                  ' COMMENTED OUT IN invasives: ConvertLongToRGB()
+' --------------------------------------------------------------
 ' =================================
 
 ' ---------------------------------

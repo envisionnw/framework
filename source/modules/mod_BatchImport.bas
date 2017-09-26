@@ -43,9 +43,9 @@ Public Sub BatchImportImagesToDb(DirPath As String)
 On Error GoTo Err_Handler
     
     Dim FileName As String
-    Dim x As String
+    Dim X As String
     
-    FileName = Dir(DirPath)
+    FileName = dir(DirPath)
 
     Do Until FileName = ""
         Select Case LCase(Right(FileName, 4))
@@ -128,7 +128,7 @@ MsgBox s
             Case Else
                 'Ignore other file extentions
         End Select
-        FileName = Dir 'Get next file
+        FileName = dir 'Get next file
     Loop
     
 Exit_Handler:

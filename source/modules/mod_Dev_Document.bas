@@ -4,12 +4,13 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Dev_Documentation
 ' Level:        Development module
-' Version:      1.00
+' Version:      1.01
 '
 ' Description:  Debugging related functions & procedures for database documentation
 '
 ' Source/date:  Bonnie Campbell, January 24, 2017
 ' Revisions:    BLC - 1/24/2017 - 1.00 - initial version
+'               BLC - 9/13/2017 - 1.01 - added ReferenceProperties()
 ' =================================
 
 ' ---------------------------------
@@ -364,3 +365,49 @@ Err_Handler:
     End Select
     Resume Exit_Handler
 End Sub
+
+' ---------------------------------
+' SUB:          ReferenceProperties
+' Description:  Print (debug) reference properties
+' Assumptions:  -
+' Parameters:   -
+' Returns:      text
+' Throws:       none
+' References:   -
+' Source/date:
+'   John Austin (Microsoft), June 12, 2017
+'   https://msdn.microsoft.com/en-us/vba/access-vba/articles/reference-guid-property-access
+' Adapted:      Bonnie Campbell, September 13, 2017 - for NCPN tools
+' Revisions:
+'   BLC - 9/13/2017 - initial version
+' ---------------------------------
+Public Function ReferenceProperties()
+On Error GoTo Err_Handler
+
+     Dim ref As Reference
+
+    ' Enumerate through References collection.
+    For Each ref In References
+       ' Check IsBroken property.
+       If ref.IsBroken = False Then
+          Debug.Print "Name: ", ref.Name
+          Debug.Print "FullPath: ", ref.FullPath
+         ' Debug.Print "Version: ", ref.Major &; "." &; ref.Minor
+         Debug.Print "GUID: ", ref.GUID
+       Else
+          Debug.Print "GUIDs of broken references:"
+          Debug.Print ref.GUID
+       End If
+    Next ref
+
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - GetDescrip[mod_Dev_Document])"
+    End Select
+    Resume Exit_Handler
+End Function

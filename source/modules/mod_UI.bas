@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_UI
 ' Level:        Framework module
-' Version:      1.11
+' Version:      1.15
 ' Description:  User interface related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
@@ -23,6 +23,13 @@ Option Explicit
 '               BLC, 12/12/2016 - 1.10 - added scrolling constants & function
 '               BLC, 1/11/2017 - 1.11 - added SetToggleCaption()
 '               BLC, 1/26/2017 - 1.12 - added DisplayMsg()
+'               BLC, 3/8/2017 - 1.13 - imported into invasives,
+'                                      subs/functions not available in invasives
+'                                      (missing reference/function):
+'                                      OpenAndHideVBE(), ShowAndCloseVBE(), RepaintParentForm()
+'                                      CircleControl(), ButtonHighlight(), ButtonUnHighlight()
+'               BLC, 6/25/2017 - 1.14 - added SetNavGroup copied from invasives_rpts mod_UI (v 1.04)
+'               BLC, 9/15/2017 - 1.15 - added heading for navigation
 ' =================================
 
 ' ---------------------------------
@@ -77,7 +84,7 @@ Public Const SB_BOTH = 3
 Declare Function SetWindowPos Lib "user32.dll" ( _
     ByVal hwnd As Long, _
     ByVal hWndInsertAfter As Long, _
-    ByVal x As Long, _
+    ByVal X As Long, _
     ByVal Y As Long, _
     ByVal cx As Long, _
     ByVal cy As Long, _
@@ -91,124 +98,124 @@ Const HWND_NOTOPMOST = -2
 Const SWP_HIDEWINDOW = &H80
 Const SWP_NOSIZE = &H1
 
-' ---------------------------------
-' Function:     OpenAndHideVBE
-' Description:  Opens then hides VBE
-' Notes:        Call OpenAndHideVBE before writing to the project
-'               and ShowAndCloseVBE when done.
-' Assumptions:  -
-' Parameters:   -
-' Returns:      -
-' Throws:       none
-' References:
-'   Peter Thornton, March 23, 2013
-'   https://social.msdn.microsoft.com/Forums/en-US/197a9f1d-96cb-49d6-b08c-0dcae1eafc08/vbe-flashes-while-programming-in-the-vbe?forum=isvvba
-'   AOB, September 5, 2013
-'   http://www.access-programmers.co.uk/forums/showthread.php?t=252942
-' Source/date:  Bonnie Campbell, July 6, 2016 for NCPN tools
-' Adapted:      -
-' Revisions:
-'   BLC - 7/6/2016 - initial version
-' ---------------------------------
-Public Sub OpenAndHideVBE()
-On Error GoTo Err_Handler
-    
-    Dim hWndVBE As Long
-    Dim objVBE As VBE
-    
-    Set objVBE = Application.VBE
-    
-    hWndVBE = FindWindow("wndclass_desked_gsk", _
-                            Application.VBE.MainWindow.Caption)
-    
-    Call SetWindowPos(hWndVBE, 0&, 0&, 2000&, 1, 1, _
-                        SWP_HIDEWINDOW Or SWP_NOSIZE)
-    
-    Application.VBE.MainWindow.visible = True
-    'Application.Caption errors for Access w/ Method or data member not found
-    'use "already open form caption", false instead
-    'AppActivate Application.Caption
-    AppActivate SWITCHBOARD, False
-    DoCmd.OpenForm SWITCHBOARD, acNormal, , , , acDialog
+'' ---------------------------------
+'' Function:     OpenAndHideVBE
+'' Description:  Opens then hides VBE
+'' Notes:        Call OpenAndHideVBE before writing to the project
+''               and ShowAndCloseVBE when done.
+'' Assumptions:  -
+'' Parameters:   -
+'' Returns:      -
+'' Throws:       none
+'' References:
+''   Peter Thornton, March 23, 2013
+''   https://social.msdn.microsoft.com/Forums/en-US/197a9f1d-96cb-49d6-b08c-0dcae1eafc08/vbe-flashes-while-programming-in-the-vbe?forum=isvvba
+''   AOB, September 5, 2013
+''   http://www.access-programmers.co.uk/forums/showthread.php?t=252942
+'' Source/date:  Bonnie Campbell, July 6, 2016 for NCPN tools
+'' Adapted:      -
+'' Revisions:
+''   BLC - 7/6/2016 - initial version
+'' ---------------------------------
+'Public Sub OpenAndHideVBE()
+'On Error GoTo Err_Handler
+'
+'    Dim hWndVBE As Long
+'    Dim objVBE As VBE
+'
+'    Set objVBE = Application.VBE
+'
+'    hWndVBE = FindWindow("wndclass_desked_gsk", _
+'                            Application.VBE.MainWindow.Caption)
+'
+'    Call SetWindowPos(hWndVBE, 0&, 0&, 2000&, 1, 1, _
+'                        SWP_HIDEWINDOW Or SWP_NOSIZE)
+'
+'    Application.VBE.MainWindow.Visible = True
+'    'Application.Caption errors for Access w/ Method or data member not found
+'    'use "already open form caption", false instead
+'    'AppActivate Application.Caption
+'    AppActivate SWITCHBOARD, False
+'    DoCmd.OpenForm SWITCHBOARD, acNormal, , , , acDialog
+'
+'Exit_Handler:
+'    Exit Sub
+'
+'Err_Handler:
+'    Select Case Err.Number
+'      Case Else
+'        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+'            "Error encountered (#" & Err.Number & " - OpenAndHideVBE[mod_UI])"
+'    End Select
+'    Resume Exit_Handler
+'End Sub
 
-Exit_Handler:
-    Exit Sub
-
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - OpenAndHideVBE[mod_UI])"
-    End Select
-    Resume Exit_Handler
-End Sub
-
-' ---------------------------------
-' Function:     ShowAndCloseVBE
-' Description:  Displays VBE and closes it
-' Assumptions:  -
-' Parameters:   -
-' Returns:      -
-' Throws:       none
-' References:
-'   Peter Thornton, March 23, 2013
-'   https://social.msdn.microsoft.com/Forums/en-US/197a9f1d-96cb-49d6-b08c-0dcae1eafc08/vbe-flashes-while-programming-in-the-vbe?forum=isvvba
-'   AOB, September 5, 2013
-'   http://www.access-programmers.co.uk/forums/showthread.php?t=252942
-' Source/date:  Bonnie Campbell, July 6, 2016 for NCPN tools
-' Adapted:      -
-' Revisions:
-'   BLC - 7/6/2016 - initial version
-' ---------------------------------
-Public Sub ShowAndCloseVBE()
-On Error GoTo Err_Handler
-    
-    Dim hWndVBE As Long
-    Dim cbt As CommandBarButton
-    Dim objVBE As VBIDE.VBE
-    Dim objWin As VBIDE.Window
-
-    Set objVBE = Application.VBE
-    ' optionally close all module windows,
-    ' or just the newly opened module Window
-    
-    For Each objWin In objVBE.Windows
-        If objWin.Type = vbext_wt_CodeWindow Then
-                objWin.Close
-        ElseIf objWin.Type = vbext_wt_Designer Then
-                objWin.Close
-        End If
-    Next
-    
-    objVBE.MainWindow.WindowState = vbext_ws_Minimize
-    objVBE.MainWindow.visible = False
-    
-    hWndVBE = FindWindow("wndclass_desked_gsk", _
-                            Application.VBE.MainWindow.Caption)
-    
-    Call SetWindowPos(hWndVBE, HWND_NOTOPMOST, 0, 0, 400, 300, 0)
-    
-    Set cbt = Application.VBE.CommandBars.FindControl(ID:=752)
-    
-    'Application.Caption errors for Access w/ Method or data member not found
-    'use "already open form caption", false instead
-    'AppActivate Application.Caption
-    AppActivate SWITCHBOARD, False
-    DoCmd.OpenForm SWITCHBOARD, acNormal, , , , acDialog
-    
-    cbt.Execute
-
-Exit_Handler:
-    Exit Sub
-
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - ShowAndCloseVBE[mod_UI])"
-    End Select
-    Resume Exit_Handler
-End Sub
+'' ---------------------------------
+'' Function:     ShowAndCloseVBE
+'' Description:  Displays VBE and closes it
+'' Assumptions:  -
+'' Parameters:   -
+'' Returns:      -
+'' Throws:       none
+'' References:
+''   Peter Thornton, March 23, 2013
+''   https://social.msdn.microsoft.com/Forums/en-US/197a9f1d-96cb-49d6-b08c-0dcae1eafc08/vbe-flashes-while-programming-in-the-vbe?forum=isvvba
+''   AOB, September 5, 2013
+''   http://www.access-programmers.co.uk/forums/showthread.php?t=252942
+'' Source/date:  Bonnie Campbell, July 6, 2016 for NCPN tools
+'' Adapted:      -
+'' Revisions:
+''   BLC - 7/6/2016 - initial version
+'' ---------------------------------
+'Public Sub ShowAndCloseVBE()
+'On Error GoTo Err_Handler
+'
+'    Dim hWndVBE As Long
+'    Dim cbt As CommandBarButton
+'    Dim objVBE As VBIDE.VBE
+'    Dim objWin As VBIDE.Window
+'
+'    Set objVBE = Application.VBE
+'    ' optionally close all module windows,
+'    ' or just the newly opened module Window
+'
+'    For Each objWin In objVBE.Windows
+'        If objWin.Type = vbext_wt_CodeWindow Then
+'                objWin.Close
+'        ElseIf objWin.Type = vbext_wt_Designer Then
+'                objWin.Close
+'        End If
+'    Next
+'
+'    objVBE.MainWindow.WindowState = vbext_ws_Minimize
+'    objVBE.MainWindow.Visible = False
+'
+'    hWndVBE = FindWindow("wndclass_desked_gsk", _
+'                            Application.VBE.MainWindow.Caption)
+'
+'    Call SetWindowPos(hWndVBE, HWND_NOTOPMOST, 0, 0, 400, 300, 0)
+'
+'    Set cbt = Application.VBE.CommandBars.FindControl(ID:=752)
+'
+'    'Application.Caption errors for Access w/ Method or data member not found
+'    'use "already open form caption", false instead
+'    'AppActivate Application.Caption
+'    AppActivate SWITCHBOARD, False
+'    DoCmd.OpenForm SWITCHBOARD, acNormal, , , , acDialog
+'
+'    cbt.Execute
+'
+'Exit_Handler:
+'    Exit Sub
+'
+'Err_Handler:
+'    Select Case Err.Number
+'      Case Else
+'        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+'            "Error encountered (#" & Err.Number & " - ShowAndCloseVBE[mod_UI])"
+'    End Select
+'    Resume Exit_Handler
+'End Sub
 
 ' ---------------------------------
 '  Ribbon
@@ -319,6 +326,205 @@ Err_Handler:
 End Sub
 
 ' ---------------------------------
+'  Navigation
+' ---------------------------------
+
+' ---------------------------------
+' SUB:          SetNavGroup
+' Description:
+' Parameters:   strGroup - name of group to move object to (string)
+'               stTable - name of table (object) to move (string)
+'               strType - type of object to move (string)
+' Returns:      -
+' Throws:       none
+' References:
+'   Wayne G. Dunn, December 9, 2014
+'   Phillippe R, February 9, 2016
+'   https://stackoverflow.com/questions/27366038/change-navigation-pane-group-in-access-through-vba
+' Source/date:  Bonnie Campbell June 25, 2017 - NCPN tools
+' Adapted:      -
+' Revisions:    BLC, 6/25/2017 - initial version
+' ---------------------------------
+Function SetNavGroup(strGroup As String, strTable As String, strType As String) As String
+On Error GoTo Err_Handler
+
+    Dim strSQL          As String
+    Dim dbs             As DAO.Database
+    Dim rs              As DAO.Recordset
+    Dim lCatID          As Long
+    Dim lGrpID          As Long
+    Dim lObjID          As Long
+    Dim lType           As Long
+
+    'default
+    SetNavGroup = "Failed"
+    
+    Set dbs = CurrentDb
+
+    '-- Category Code --
+    ' Ignore the following code unless you want to manage 'Categories'
+    '    Table MSysNavPaneGroupCategories has fields: Filter, Flags, Id (AutoNumber), Name, Position, SelectedObjectID, Type
+    '    strSQL = "SELECT Id, Name, Position, Type " & _
+    '            "FROM MSysNavPaneGroupCategories " & _
+    '            "WHERE (((MSysNavPaneGroupCategories.Name)='" & strGroup & "'));"
+    '    Set rs = dbs.OpenRecordset(strSQL)
+    '    If rs.EOF Then
+    '        MsgBox "No group named '" & strGroup & "' found. Will quit now.", vbOKOnly, "No Group Found"
+    '        rs.Close
+    '        Set rs = Nothing
+    '        dbs.Close
+    '        Set dbs = Nothing
+    '        Exit Function
+    '    End If
+    '    lCatID = rs!ID
+    '    rs.Close
+
+    ' New table's names are added to table 'MSysNavPaneObjectIDs'
+
+    ' Types
+        ' Type TypeDesc
+        '-32768  Form                       1   Table - Local Access Tables
+        '-32766  Macro                      2   Access object - Database
+        '-32764  Reports                    3   Access object - Containers
+        '-32761  Module                     4   Table - Linked ODBC Tables
+        '-32758  Users                      5   Queries
+        '-32757  Database Document          6   Table - Linked Access Tables
+        '-32756  Data Access Pages          8   SubDataSheets
+        
+    If LCase(strType) = "table" Then
+        lType = 1
+    ElseIf LCase(strType) = "query" Then
+        lType = 5
+    ElseIf LCase(strType) = "form" Then
+        lType = -32768
+    ElseIf LCase(strType) = "report" Then
+        lType = -32764
+    ElseIf LCase(strType) = "module" Then
+        lType = -32761
+    ElseIf LCase(strType) = "macro" Then
+        lType = -32766
+    Else
+        MsgBox "Add your own code to handle the object type of '" & strType & "'", vbOKOnly, _
+                "Add Code"
+        dbs.Close
+        Set dbs = Nothing
+        Exit Function
+    End If
+
+    ' Table MSysNavPaneGroups has fields: Flags, GroupCategoryID, Id, Name,
+    '                                     Object, Type, Group, ObjectID, Position
+'    Debug.Print "---------------------------------------"
+'    Debug.Print "Add '" & strType & "' " & strTable & "' to Group '" & strGroup & "'"
+    strSQL = "SELECT GroupCategoryID, Id, Name " & _
+            "FROM MSysNavPaneGroups " & _
+            "WHERE (((MSysNavPaneGroups.Name)='" & strGroup & "') " & _
+            "AND ((MSysNavPaneGroups.Name) Not Like 'Unassigned*'));"
+    Set rs = dbs.OpenRecordset(strSQL)
+    If rs.EOF Then
+        MsgBox "No group named '" & strGroup & "' found. Will quit now.", vbOKOnly, _
+                "No Group Found"
+        rs.Close
+        Set rs = Nothing
+        dbs.Close
+        Set dbs = Nothing
+        Exit Function
+    End If
+ '   Debug.Print rs!GroupCategoryID & vbTab & rs!ID & vbTab & rs!Name
+    lGrpID = rs!ID
+    rs.Close
+
+    ' Get Table ID From MSysObjects
+    strSQL = "SELECT * " & _
+        "FROM MSysObjects " & _
+        "WHERE (((MSysObjects.Name)='" & strTable & "') AND ((MSysObjects.Type)=" & lType & "));"
+    Set rs = dbs.OpenRecordset(strSQL)
+    If rs.EOF Then
+        MsgBox "This is crazy! Table '" & strTable & "' not found in MSysObjects.", vbOKOnly, "No Table Found"
+        rs.Close
+        Set rs = Nothing
+        dbs.Close
+        Set dbs = Nothing
+        Exit Function
+    End If
+    
+    lObjID = rs!ID
+
+    Debug.Print "Table found in MSysObjects " & lObjID & " . Lets compare to MSysNavPaneObjectIDs."
+
+    ' Filter By Type
+    strSQL = "SELECT Id, Name, Type " & _
+            "FROM MSysNavPaneObjectIDs " & _
+            "WHERE (((MSysNavPaneObjectIDs.ID)=" & lObjID & ") AND ((MSysNavPaneObjectIDs.Type)=" & lType & "));"
+    Set rs = dbs.OpenRecordset(strSQL)
+    If rs.EOF Then
+        ' Seems to be a refresh issue / delay!  I have found no way to force a refresh.
+        ' This table gets rebuilt at the whim of Access, so let's try a different approach....
+        ' Lets add the record via this code.
+        Debug.Print "Table not found in MSysNavPaneObjectIDs, add it from MSysObjects."
+        strSQL = "INSERT INTO MSysNavPaneObjectIDs ( ID, Name, Type ) VALUES ( " & lObjID & ", '" & strTable & "', " & lType & ")"
+        dbs.Execute strSQL
+    End If
+    Debug.Print lObjID & vbTab & strTable & vbTab & lType
+    rs.Close
+
+'Try_Again:
+'    ' Filter By Type
+'    strSQL = "SELECT Id, Name, Type " & _
+'            "FROM MSysNavPaneObjectIDs " & _
+'            "WHERE (((MSysNavPaneObjectIDs.Name)='" & strTable & "') " _
+'            & "AND ((MSysNavPaneObjectIDs.Type)=" & lType & "));"
+'
+'    Set rs = dbs.OpenRecordset(strSQL)
+'    If rs.EOF Then
+'        ' Seems to be a refresh issue / delay!  I have found no way to force a refresh.
+'        ' This table gets rebuilt at the whim of Access, so let's try a different approach....
+'        ' Lets add the record vis code.
+'        Debug.Print "Table not found in MSysNavPaneObjectIDs, try MSysObjects."
+'         strSQL = "SELECT * " & _
+'            "FROM MSysObjects " & _
+'            "WHERE (((MSysObjects.Name)='" & strTable & "') AND " & _
+'            "((MSysObjects.Type)=" & lType & "));"
+'        Set rs = dbs.OpenRecordset(strSQL)
+'        If rs.EOF Then
+'            MsgBox "This is crazy! Table '" & strTable & "' not found in MSysObjects.", vbOKOnly, "No Table Found"
+'            rs.Close
+'            Set rs = Nothing
+'            dbs.Close
+'            Set dbs = Nothing
+'            Exit Function
+'        Else
+'            Debug.Print "Table not found in MSysNavPaneObjectIDs, but was found in MSysObjects. Lets try to add via code."
+'            strSQL = "INSERT INTO MSysNavPaneObjectIDs ( ID, Name, Type ) VALUES ( " & rs!ID & ", '" & strTable & "', " & lType & ")"
+'            dbs.Execute strSQL
+'            GoTo Try_Again
+'        End If
+'    End If
+''    Debug.Print rs!ID & vbTab & rs!Name & vbTab & rs!Type
+'    lObjID = rs!ID
+'    rs.Close
+
+    ' Add the table to the Custom group
+    strSQL = "INSERT INTO MSysNavPaneGroupToObjects ( GroupID, ObjectID, Name ) VALUES ( " & lGrpID & ", " & lObjID & ", '" & strTable & "' )"
+    dbs.Execute strSQL
+
+    dbs.Close
+    Set dbs = Nothing
+    SetNavGroup = "Passed"
+
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - SetNavGroup[mod_UI])"
+    End Select
+    Resume Exit_Handler
+
+End Function
+
+' ---------------------------------
 '  Forms
 ' ---------------------------------
 
@@ -387,7 +593,7 @@ Err_Handler:
     Resume Exit_Procedure
 End Sub
 
-' ---------------------------------
+'' ---------------------------------
 ' SUB:          RepaintParentForm
 ' Description:  Repaints the control's parent(or grandparent or great grandparent...) form
 ' Parameters:   ctl - control whose parent form you're looking to repaint
@@ -402,11 +608,11 @@ End Sub
 Public Sub RepaintParentForm(ctl As Control)
 On Error GoTo Err_Handler:
 Dim parentControl As Object
-        
+
     Set parentControl = ctl.Parent
-    
+
     Do Until parentControl Is Nothing
-      
+
         If TypeName(parentControl.Name) = "String" Then
             'form? -> refresh the display
             If getAccessObjectType(parentControl.Name) = -32768 Then
@@ -422,7 +628,7 @@ Dim parentControl As Object
             End If
         End If
     Loop
-    
+
 Exit_Procedure:
     Exit Sub
 
@@ -891,7 +1097,7 @@ Dim ctl As Control
             .SpecialEffect = 0 'flat
             GoTo Exit_Procedure
         End If
-        
+
         'unhighlight all other buttons
         For Each ctl In .Parent.Controls
 
@@ -903,9 +1109,9 @@ Dim ctl As Control
             End If
 
         Next
-    
+
     End With
-    
+
 Exit_Procedure:
     'update display
     RepaintParentForm btn
@@ -1374,59 +1580,59 @@ End Function
 '  Drawing
 ' ---------------------------------
 
-' ---------------------------------
-' SUB:          CircleControl
-' Description:  Draws a circle around the control
-' Assumptions:  -
-' Parameters:   ctrl - control to circle (control)
-'               ellipse - whether it should be an ellipse vs. circle (boolean)
-' Returns:      -
-' Throws:       none
-' References:
-'   Duane Hookom, October 6, 2008
-'   http://www.pcreview.co.uk/threads/circle-a-word-in-access-report.3639434/
+'' ---------------------------------
+'' SUB:          CircleControl
+'' Description:  Draws a circle around the control
+'' Assumptions:  -
+'' Parameters:   ctrl - control to circle (control)
+''               ellipse - whether it should be an ellipse vs. circle (boolean)
+'' Returns:      -
+'' Throws:       none
+'' References:
+''   Duane Hookom, October 6, 2008
+''   http://www.pcreview.co.uk/threads/circle-a-word-in-access-report.3639434/
+''
+''   https://msdn.microsoft.com/en-us/library/office/aa195881(v=office.11).aspx
+'' Source/date:  Bonnie Campbell, May 10, 2016 - for NCPN tools
+'' Adapted:      -
+'' Revisions:
+''   BLC - 5/10/2016 - initial version
+'' ---------------------------------
+'Public Sub CircleControl(ctrl As Control, Optional ellipse As Boolean = False)
+'On Error GoTo Err_Handler
 '
-'   https://msdn.microsoft.com/en-us/library/office/aa195881(v=office.11).aspx
-' Source/date:  Bonnie Campbell, May 10, 2016 - for NCPN tools
-' Adapted:      -
-' Revisions:
-'   BLC - 5/10/2016 - initial version
-' ---------------------------------
-Public Sub CircleControl(ctrl As Control, Optional ellipse As Boolean = False)
-On Error GoTo Err_Handler
-    
-    Dim iWidth As Integer, iHeight As Integer
-    Dim iCenterX As Integer, iCenterY As Integer
-    Dim iRadius As Integer
-    Dim dblAspect As Double
-    Dim sngStart As Single, sngEnd As Single
-
-    iCenterX = ctrl.Left + ctrl.Width / 2
-    iCenterY = ctrl.Top + ctrl.Height / 2
-    iRadius = ctrl.Width '/ 3 '/ 2 + 100
-    dblAspect = 1 'ctrl.Height / ctrl.Width
-    
-    sngStart = -0.00000001                    ' Start of pie slice.
-
-    sngEnd = -2 * PI / 3                         ' End of pie slice.
-    ctrl.Parent.fillColor = RGB(51, 51, 51)            ' Color pie slice red.
-    ctrl.Parent.FillStyle = 0                          ' Fill pie slice.
-    
-    'add the circle to the parent
-    ' X,Y center | radius | [ color, start, end, aspect ]
-    ctrl.Parent.Circle (iCenterX, iCenterY), iRadius, lngLime, sngStart, sngEnd, dblAspect
-
-Exit_Handler:
-    Exit Sub
-    
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - CircleControl[mod_UI])"
-    End Select
-    Resume Exit_Handler
-End Sub
+'    Dim iWidth As Integer, iHeight As Integer
+'    Dim iCenterX As Integer, iCenterY As Integer
+'    Dim iRadius As Integer
+'    Dim dblAspect As Double
+'    Dim sngStart As Single, sngEnd As Single
+'
+'    iCenterX = ctrl.Left + ctrl.Width / 2
+'    iCenterY = ctrl.Top + ctrl.Height / 2
+'    iRadius = ctrl.Width '/ 3 '/ 2 + 100
+'    dblAspect = 1 'ctrl.Height / ctrl.Width
+'
+'    sngStart = -0.00000001                    ' Start of pie slice.
+'
+'    sngEnd = -2 * PI / 3                         ' End of pie slice.
+'    ctrl.Parent.fillColor = RGB(51, 51, 51)            ' Color pie slice red.
+'    ctrl.Parent.FillStyle = 0                          ' Fill pie slice.
+'
+'    'add the circle to the parent
+'    ' X,Y center | radius | [ color, start, end, aspect ]
+'    ctrl.Parent.Circle (iCenterX, iCenterY), iRadius, lngLime, sngStart, sngEnd, dblAspect
+'
+'Exit_Handler:
+'    Exit Sub
+'
+'Err_Handler:
+'    Select Case Err.Number
+'      Case Else
+'        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+'            "Error encountered (#" & Err.Number & " - CircleControl[mod_UI])"
+'    End Select
+'    Resume Exit_Handler
+'End Sub
 
 ' ---------------------------------
 ' SUB:          AddControl

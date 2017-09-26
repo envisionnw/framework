@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_User
 ' Level:        Framework module
-' Version:      1.10
+' Version:      1.11
 ' Description:  Access related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, May 2014
@@ -20,6 +20,11 @@ Option Explicit
 '               BLC, 6/30/2016 - 1.08 - adjusted to use GetTemplate
 '               BLC, 9/26/2016 - 1.09 - adjusted to use GetRecords() vs. GetTemplate()
 '               BLC, 10/5/2016 - 1.10 - revised to set UserAccessLevelID TempVar
+' ------------------------------------------------------------------------------
+'                               BLC, 8/23/2017 - 1.11 - merge prior work:
+'                               BLC, 6/6/2017  - 1.06 - revised UserName() to accommodate TestUser
+'                               BLC, 6/15/2017 - 1.07 - revised to user Contact_Access vs. tsys_User_Roles
+' ------------------------------------------------------------------------------
 ' =================================
 
 ' ---------------------------------
@@ -51,6 +56,10 @@ Option Explicit
 '               BLC, 4/4/2016  - changed Exit_Function > Exit_Handler, dbCurrent to CurrentDb
 '               BLC, 6/30/2016 - revised to use GetTemplate()
 '               BLC, 10/5/2016 - revised to set UserAccessLevelID TempVar
+' ------------------------------------------------------------------------------
+'                               BLC, 8/23/2017 - 1.11 - merge prior work:
+'                               BLC, 6/15/2016 - revised to reference Contact_Access vs. tsys_User_Roles
+' ------------------------------------------------------------------------------
 ' ---------------------------------
 Public Function getDbUserAccess() As String
 On Error GoTo Err_Handler
@@ -729,12 +738,16 @@ End Sub
 '               BLC, 4/30/2015  - moved from mod_Utilities
 '               BLC, 5/18/2015 - renamed, removed fxn prefix
 '               BLC, 4/4/2016  - changed Exit_Function > Exit_Handler
+' ------------------------------------------------------------------------------
+'                               BLC, 8/23/2017 - merged in prior work:
+'                              BLC, 6/6/2017  - revised to accommodate testing user
+' ------------------------------------------------------------------------------
 ' =================================
 Public Function UserName() As String
     On Error GoTo Err_Handler
 
     UserName = "Unknown"
-    UserName = Environ("Username")
+    UserName = IIf(DEV_MODE, "TestUser", Environ("Username"))
 
 Exit_Handler:
     Exit Function
@@ -823,8 +836,8 @@ Public Function AccessID(AccessLevel As String) As Long
     Dim rs As DAO.Recordset
     Dim strSQL As String
     
-    'add temp tempvar!
-    TempVars.Add "tempLvl", LCase(AccessLevel)
+    'add Temp Tempvar!
+    TempVars.Add "TempLvl", LCase(AccessLevel)
     'strSQL = GetTemplate("s_access_level", "lvl" & PARAM_SEPARATOR & LCase(AccessLevel))
     
     Set rs = GetRecords("s_access_lvl") 'CurrentDb.OpenRecordset(strSQL, dbOpenSnapshot)

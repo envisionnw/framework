@@ -4,14 +4,88 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_File
 ' Level:        Framework module
-' Version:      1.02
+' Version:      1.07
 ' Description:  File and directory related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
 ' Revisions:    BLC, 4/30/2015 - 1.00 - initial version
-'               BLC, 5/18/2015 - 1.01 - renamed, removed fxn prefix
-'               BLC, 8/4/2015  - 1.02 - replaced Left with Left$
+'               BLC, 6/13/2016 - 1.01 - adapted ParseFileName() for big rivers
+'               BLC, 6/24/2016 - 1.02 - replaced Exit_Function > Exit_Handler
+'               BLC, 8/30/2016 - 1.03 - add BrowseFolder(), GetSpecialFolderPath()
+'               BLC, 9/12/2016 - 1.04 - added IsAppInstalled()
+'                               -------------------------------------------------------------
+'                               BLC, 8/22/2017 - 1.05 - merged in prior work
+'                                   BLC, 5/18/2015 - 1.01 - renamed, removed fxn prefix
+'                                   BLC, 8/4/2015  - 1.02 - replaced Left with Left$
+'                               -------------------------------------------------------------
+' --------------------------------------------------------------------
+'               BLC, 9/7/2017  - 1.06 - merged common code for framework from Upland, Invasives, Big Rivers dbs
+' --------------------------------------------------------------------
+'                               - renamed utilities FileExists() to FileExistsVar() to avoid
+'                                 conflict w/ other version of FileExists (by path)
+' --------------------------------------------------------------------
+'               BLC, 9/14/2017 - 1.07 - noted ParseFileName = now removed GetPath() from mod_Utilities
 ' =================================
+
+' ---------------------------------
+'  Declarations
+' ---------------------------------
+'   Peter Thornton, March 4, 2009
+'   http://dailydoseofexcel.com/archives/2009/02/26/get-the-path-to-my-documents-in-vba/#comment-38217
+'   https://msdn.microsoft.com/en-us/library/windows/desktop/bb762494%28v=vs.85%29.aspx?f=255&MSPPError=-2147217396
+'   Public Const CSIDL_PERSONAL As Long = &H5 'my documents
+'   was CSIDL constants, now KNOWNFOLDERIDs
+'   https://msdn.microsoft.com/en-us/library/windows/desktop/dd378457(v=vs.85).aspx
+'
+'   KNOWNFOLDERIDs
+'       FOLDERID_AccountPictures        FOLDERID_AppsFolder     FOLDERID_ChangeRemovePrograms
+'       FOLDERID_AddNewPrograms         FOLDERID_AppUpdates     FOLDERID_CommonAdminTools
+'       FOLDERID_AdminTools             FOLDERID_CameraRoll     FOLDERID_CommonOEMLinks
+'       FOLDERID_ApplicationShortcuts   FOLDERID_CDBurning      FOLDERID_CommonPrograms
+'       FOLDERID_CommonStartMenu        FOLDERID_ComputerFolder FOLDERID_CommonTemplates
+'       FOLDERID_CommonStartup          FOLDERID_ConflictFolder FOLDERID_ConnectionsFolder
+'       FOLDERID_Contacts               FOLDERID_Cookies        FOLDERID_ControlPanelFolder
+'       FOLDERID_Desktop                FOLDERID_Documents      FOLDERID_DeviceMetadataStore
+'       FOLDERID_DocumentsLibrary       FOLDERID_Downloads      FOLDERID_Favorites
+'       FOLDERID_Fonts                  FOLDERID_Games          FOLDERID_GameTasks
+'       FOLDERID_History                FOLDERID_HomeGroup      FOLDERID_HomeGroupCurrentUser
+'       FOLDERID_ImplicitAppShortcuts   FOLDERID_InternetCache  FOLDERID_InternetFolder
+'       FOLDERID_Libraries              FOLDERID_Links          FOLDERID_LocalAppData
+'       FOLDERID_LocalAppDataLow        FOLDERID_Music          FOLDERID_LocalizedResourcesDir
+'       FOLDERID_MusicLibrary           FOLDERID_NetHood        FOLDERID_NetworkFolder
+'       FOLDERID_OriginalImages         FOLDERID_PhotoAlbums    FOLDERID_PicturesLibrary
+'       FOLDERID_Pictures               FOLDERID_Playlists      FOLDERID_PrintersFolder
+'       FOLDERID_PrintHood              FOLDERID_Profile        FOLDERID_ProgramData
+'       FOLDERID_ProgramFiles           FOLDERID_Programs       FOLDERID_PublicDocuments
+'       FOLDERID_ProgramFilesX86        FOLDERID_Public         FOLDERID_PublicDownloads
+'       FOLDERID_ProgramFilesX64        FOLDERID_PublicDesktop  FOLDERID_PublicGameTasks
+'       FOLDERID_ProgramFilesCommon     FOLDERID_PublicMusic    FOLDERID_PublicLibraries
+'       FOLDERID_ProgramFilesCommonX64  FOLDERID_PublicPictures FOLDERID_PublicRingtones
+'       FOLDERID_ProgramFilesCommonX86  FOLDERID_PublicVideos   FOLDERID_PublicUserTiles
+'       FOLDERID_QuickLaunch            FOLDERID_Recent         FOLDERID_RecordedTV
+'       FOLDERID_RecordedTVLibrary      FOLDERID_ResourceDir    FOLDERID_RecycleBinFolder
+'       FOLDERID_Ringtones              FOLDERID_RoamingAppData FOLDERID_RoamedTileImages
+'       FOLDERID_RoamingTiles           FOLDERID_SampleMusic    FOLDERID_SamplePictures
+'       FOLDERID_SamplePlaylists        FOLDERID_SampleVideos   FOLDERID_SavedGames
+'       FOLDERID_SavedPictures          FOLDERID_SavedSearches  FOLDERID_SavedPicturesLibrary
+'       FOLDERID_Screenshots            FOLDERID_SearchCSC      FOLDERID_SearchHistory
+'       FOLDERID_SearchHome             FOLDERID_SEARCH_MAPI    FOLDERID_SearchTemplates
+'       FOLDERID_SendTo                 FOLDERID_SidebarParts   FOLDERID_SidebarDefaultParts
+'       FOLDERID_SkyDrivePictures       FOLDERID_SkyDrive       FOLDERID_SkyDriveDocuments
+'       FOLDERID_SkyDriveCameraRoll     FOLDERID_StartMenu      FOLDERID_SyncManagerFolder
+'       FOLDERID_SyncResultsFolder      FOLDERID_Startup        FOLDERID_SyncSetupFolder
+'       FOLDERID_System                 FOLDERID_SystemX86      FOLDERID_Templates
+'       FOLDERID_TreeProperties         FOLDERID_UserPinned     FOLDERID_UserProfiles
+'       FOLDERID_UserProgramFiles       FOLDERID_UsersFiles     FOLDERID_Videos
+'       FOLDERID_UserProgramFilesCommon FOLDERID_UsersLibraries FOLDERID_VideosLibrary
+'       FOLDERID_Windows
+'
+'   WshScript Special Folders
+'        AllUsersDesktop        Desktop         NetHood        SendTo
+'        AllUsersStartMenu      Favorites       PrintHood      StartMenu
+'        AllUsersPrograms       Fonts           Programs       Startup
+'        AllUsersStartup        MyDocuments     Recent         Templates
+
 
 ' ---------------------------------
 '  DIRECTORY RELATED
@@ -41,7 +115,7 @@ Public Function CreateFolder(ByVal strPath As String) As Boolean
         CreateFolder = True
     End If
 
-Exit_Function:
+Exit_Handler:
     On Error Resume Next
     Set fs = Nothing
     Exit Function
@@ -52,7 +126,7 @@ Err_Handler:
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - CreateFolder[mod_File])"
     End Select
-    Resume Exit_Function
+    Resume Exit_Handler
 End Function
 
 ' =================================
@@ -77,7 +151,7 @@ Public Function FolderExists(ByVal strPath As String) As Boolean
     Set fs = CreateObject("Scripting.FileSystemObject")
     If fs.FolderExists(strPath) Then FolderExists = True
 
-Exit_Function:
+Exit_Handler:
     On Error Resume Next
     Set fs = Nothing
     Exit Function
@@ -88,7 +162,206 @@ Err_Handler:
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - FolderExists[mod_File])"
     End Select
-    Resume Exit_Function
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' FUNCTION:     BrowseFolder
+' Description:  file dialog browsing actions
+' Assumptions:
+'
+'   FileFilters are passed in by delimiting separate filters by a pipe (|)
+'       and the filter description and extension by a dash (-)
+'       EX:     "All files-*|CSV files-CSV"
+'
+' Parameters:   Title - display name of the file dialog (string)
+'               ButtonTitle - name of OK button (string)
+'               InitialFolder - folder to begin display (string)
+'               InitialView - desired file dialog view (string, MsoFileDialogView options)
+'               DialogType - desired dialog type (string, MsoFileDialogType options)
+'               FileFilters - file type filters (string)
+'               AllowMultiples - allows multiple directories to be selected (boolean)
+' Returns:      fully-qualified folder name selected by the user
+'               or an empty string if the user cancelled the dialog (string)
+' Throws:       none
+' Requires:     Microsoft Office 14.0 Object Library for msoFileDialogFolderPicker
+' References:
+'   Chip Pearson, July 5, 2007
+'   http://www.cpearson.com/excel/browsefolder.aspx
+' Source/date:
+' Adapted:      Bonnie Campbell, August 30, 2016 - for NCPN tools
+' Revisions:
+'   BLC - 8/30/2016 - initial version
+'   BLC - 9/1/2016  - added FileFilters optional parameter
+' ---------------------------------
+Public Function BrowseFolder(Title As String, _
+        Optional ButtonTitle As String = "Confirm", _
+        Optional InitialFolder As String = vbNullString, _
+        Optional InitialView As Office.MsoFileDialogView = msoFileDialogViewList, _
+        Optional DialogType As MsoFileDialogType = msoFileDialogFolderPicker, _
+        Optional FileFilters As String = "", _
+        Optional AllowMultiples As Boolean = False) As String
+'----------------------
+' Dialog Options:
+'   (MsoFileDialogType Constants)
+'   msoFileDialogFilePicker     Allows user to select a file.
+'   msoFileDialogFolderPicker   Allows user to select a folder.
+'   msoFileDialogOpen           Allows user to open a file.
+'   msoFileDialogSaveAs         Allows user to save a file.
+'
+' View Options:
+'   msoFileDialogViewDetails    2   Files displayed in a list with detail information.
+'   msoFileDialogViewLargeIcons 6   Files displayed as large icons.
+'   msoFileDialogViewList       1   Files displayed in a list without details.
+'   msoFileDialogViewPreview    4   Files displayed in a list with a preview pane showing
+'                                   the selected file.
+'   msoFileDialogViewProperties 3   Files displayed in a list with a pane showing the
+'                                   selected file's properties.
+'   msoFileDialogViewSmallIcons 7   Files displayed as small icons.
+'   msoFileDialogViewThumbnail  5   Files displayed as thumbnails.
+'   msoFileDialogViewTiles      9   Files displayed as tiled icons.
+'   msoFileDialogViewWebView    8   Files displayed in Web view.
+'----------------------
+    
+On Error GoTo Err_Handler
+    
+    'Dim V As Variant
+    Dim InitFolder As String
+    Dim SelectedFolder As String
+    
+    'prepare file dialog box
+    With Application.FileDialog(DialogType)
+        .Title = Title
+        .ButtonName = ButtonTitle
+        .InitialView = InitialView
+        .AllowMultiSelect = AllowMultiples
+
+        If Len(FileFilters) > 0 Then
+            Dim aryFilters() As String
+            Dim filter As Variant
+            Dim filterData() As String
+            
+            .Filters.Clear
+            
+            'prepare filter description & file types
+            aryFilters = Split(FileFilters, "|")
+            
+            For Each filter In aryFilters
+                'filter description - extension
+                filterData = Split(CStr(filter), "-")
+                            
+                .Filters.Add filterData(0), "*." & filterData(1)
+            
+            Next
+        
+        End If
+
+        If Len(InitialFolder) > 0 Then
+            
+            If dir(InitialFolder, vbDirectory) <> vbNullString Then
+                InitFolder = InitialFolder
+                If Right(InitFolder, 1) <> "\" Then
+                    InitFolder = InitFolder & "\"
+                End If
+                .InitialFileName = InitFolder
+            End If
+            
+        End If
+        '.Show
+        
+        'set directory if OK clicked
+        If .Show = True Then
+            SelectedFolder = .SelectedItems(1)
+        End If
+        
+'        On Error Resume Next
+'        Err.Clear
+'
+'        V = .SelectedItems(1)
+'        If Err.Number <> 0 Then
+'            V = vbNullString
+'        End If
+    End With
+    
+    BrowseFolder = SelectedFolder 'CStr(V)
+    
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - BrowseFolder[mod_File])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' FUNCTION:     GetSpecialFolderPath
+' Description:  retrieve full path of specified special folder
+' Assumptions:  -
+' Notes:
+'   WshScript special folders include
+'        AllUsersDesktop        Desktop         NetHood        SendTo
+'        AllUsersStartMenu      Favorites       PrintHood      StartMenu
+'        AllUsersPrograms       Fonts           Programs       Startup
+'        AllUsersStartup        MyDocuments     Recent         Templates
+'
+' Parameters:   SpecialFolder - special folder name (string)
+' Returns:      fully-qualified folder name or desired special folder (string)
+' Throws:       none
+' References:
+'   Mike Alexander, February 27, 2009
+'   http://dailydoseofexcel.com/archives/2009/02/26/get-the-path-to-my-documents-in-vba/
+'   bradxlsure, March 17, 2008
+'   http://www.pcreview.co.uk/threads/re-wscript-object-not-found.947405/
+' Source/date:
+' Adapted:      Bonnie Campbell, August 30, 2016 - for NCPN tools
+' Revisions:
+'   BLC - 8/30/2016 - initial version
+' ---------------------------------
+Function GetSpecialFolderPath(SpecialFolder As String)
+On Error GoTo Err_Handler
+
+    Dim arySpecials() As String, strPath As String
+    
+    arySpecials = Split("desktop,allusersdesktop,sendto,startmenu,recent,favorites,mydocuments" _
+                    & "" _
+                        , ",")
+    
+    
+    'default
+    strPath = ""
+        
+ '   If IsInArray(SpecialFolder, arySpecials) Then
+    
+        Dim oWshShell As Object
+        Dim oFolders As Object
+        
+        Set oWshShell = CreateObject("WScript.Shell")
+        
+        Set oFolders = oWshShell.SpecialFolders
+    
+
+        strPath = oFolders(SpecialFolder)
+    
+  '  End If
+    
+    GetSpecialFolderPath = strPath
+
+Exit_Handler:
+    Set oWshShell = Nothing
+    Set oFolders = Nothing
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - GetSpecialFolderPath[mod_File])"
+    End Select
+    Resume Exit_Handler
 End Function
 
 ' ---------------------------------
@@ -133,7 +406,7 @@ Public Function GetFile(Optional ByVal strInitialDir As String, _
         flags:=lngFlags, _
         DialogTitle:=strTitle)
 
-Exit_Function:
+Exit_Handler:
     Exit Function
 
 Err_Handler:
@@ -142,7 +415,7 @@ Err_Handler:
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - GetFile[mod_File])"
     End Select
-    Resume Exit_Function
+    Resume Exit_Handler
 End Function
 
 ' =================================
@@ -160,7 +433,7 @@ End Function
 '               BLC, 4/30/2015 - move from mod_Utilities to mod_File
 '               BLC, 5/18/2015 - renamed, removed fxn prefix
 ' =================================
-Public Function SaveFile(ByVal strFileName As String, ByVal strFileType As String, _
+Public Function SaveFile(ByVal strFilename As String, ByVal strFileType As String, _
     ByVal strFileExt As String, Optional ByVal strTitle As String = "Save As") As Variant
 
     On Error GoTo Err_Handler
@@ -179,9 +452,9 @@ Public Function SaveFile(ByVal strFileName As String, ByVal strFileType As Strin
         filter:=strFilter, _
         flags:=lngFlags, _
         DialogTitle:=strTitle, _
-        FileName:=strFileName)
+        FileName:=strFilename)
 
-Exit_Function:
+Exit_Handler:
     Exit Function
 
 Err_Handler:
@@ -190,7 +463,7 @@ Err_Handler:
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - SaveFile[mod_File])"
     End Select
-    Resume Exit_Function
+    Resume Exit_Handler
 End Function
 
 ' =================================
@@ -215,7 +488,7 @@ Public Function FileExists(ByVal strPath As String) As Boolean
     Set fs = CreateObject("Scripting.FileSystemObject")
     If fs.FileExists(strPath) Then FileExists = True
 
-Exit_Function:
+Exit_Handler:
     On Error Resume Next
     Set fs = Nothing
     Exit Function
@@ -226,7 +499,49 @@ Err_Handler:
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - FileExists[mod_File])"
     End Select
-    Resume Exit_Function
+    Resume Exit_Handler
+End Function
+
+' =================================
+' FUNCTION:     FileExistsVar
+' Description:  Indicates whether or not the indicated file exists
+' Parameters:   varFile as a variant
+' Returns:      True or False
+' Throws:       none
+' References:   none
+' Source/date:  John R. Boetsch, 5/8/2006
+' Revisions:    JRB, 5/8/2006 - initial version
+'               BLC, 4/30/2015 - moved from mod_Utilities to mod_File
+'               BLC, 5/18/2015 - renamed, removed fxn prefix
+' --------------------------------------------------------------------
+'   BLC - 9/7/2017  - merge uplands, invasives, big rivers dbs modifications
+' --------------------------------------------------------------------
+'                   - shifted from mod_Utilities
+' --------------------------------------------------------------------
+'   BLC - 9/13/2017 - debugged during framework merge
+' =================================
+Public Function FileExistsVar(varFile As Variant) As Boolean
+On Error GoTo Err_Handler
+
+If IsNull(varFile) Then
+    FileExistsVar = False
+    Exit Function
+End If
+
+FileExistsVar = (Len(dir(varFile)) > 0)
+
+Exit_Handler:
+    On Error Resume Next
+    Set varFile = Nothing
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - FileExistsVar[mod_File])"
+    End Select
+    Resume Exit_Handler
 End Function
 
 ' =================================
@@ -258,7 +573,7 @@ Public Function DeleteFile(ByVal strPath As String) As Boolean
             "File delete error (DeleteFile)"
     End If
 
-Exit_Function:
+Exit_Handler:
     On Error Resume Next
     Set fs = Nothing
     Exit Function
@@ -269,12 +584,12 @@ Err_Handler:
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - DeleteFile[mod_File])"
     End Select
-    Resume Exit_Function
+    Resume Exit_Handler
 End Function
 
 ' =================================
 ' FUNCTION:     ParseFileName
-' Description:  Parses an input path string to return only the file name, if present
+' Description:  Parses an input path string to return only the name, if present
 ' Parameters:   strFullPath - string for the full file path
 ' Returns:      string including only the file name
 ' Throws:       none
@@ -283,7 +598,12 @@ End Function
 ' Revisions:    John R. Boetsch, 6/17/2009 - error trapping, documentation
 '               BLC, 4/30/2015 - moved from mod_Utilities to mod_File
 '               BLC, 5/18/2015 - renamed, removed fxn prefix
-'               BLC, 8/4/2015  - replaced Mid/Left with Mid$/Left$
+'               BLC, 6/13/2016 - adapted for big rivers
+'                               ---------------------------------------------------------------
+'                               BLC, 8/22/2017 - merged in prior work
+'                              BLC, 8/4/2015  - replaced Mid/Left with Mid$/Left$
+'                               ---------------------------------------------------------------
+'               BLC, 9/14/2017 - same as now removed mod_Utilities GetPath()
 ' =================================
 Public Function ParseFileName(ByVal strFullPath As String) As String
     On Error GoTo Err_Handler
@@ -297,7 +617,7 @@ Public Function ParseFileName(ByVal strFullPath As String) As String
     
     ParseFileName = strFullPath
 
-Exit_Function:
+Exit_Handler:
     Exit Function
 
 Err_Handler:
@@ -306,7 +626,7 @@ Err_Handler:
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - ParseFileName[mod_File])"
     End Select
-    Resume Exit_Function
+    Resume Exit_Handler
 End Function
 
 ' =================================
@@ -326,7 +646,7 @@ End Function
 Public Function ParseFileExt(ByVal strFullPath As String, _
     Optional blnIncludeDot As Boolean = True) As String
 
-    On Error GoTo Err_Handler
+    On Error GoTo Exit_Handler
 
     Dim arrPath() As String
     Dim strFile As String
@@ -348,7 +668,7 @@ Public Function ParseFileExt(ByVal strFullPath As String, _
 
     ParseFileExt = strTemp
 
-Exit_Function:
+Exit_Handler:
     Exit Function
 
 Err_Handler:
@@ -357,7 +677,7 @@ Err_Handler:
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - ParseFileExt[mod_File])"
     End Select
-    Resume Exit_Function
+    Resume Exit_Handler
 End Function
 
 ' =================================
@@ -387,7 +707,7 @@ Public Function OpenExcelFile(ByVal strPath As String) As Variant
         .Workbooks.Open (strPath)
     End With
     
-Exit_Function:
+Exit_Handler:
     On Error Resume Next
     Set objExcel = Nothing
     Exit Function
@@ -398,7 +718,7 @@ Err_Handler:
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - OpenExcelFile[mod_File])"
     End Select
-    Resume Exit_Function
+    Resume Exit_Handler
 End Function
 
 ' =================================
@@ -415,19 +735,19 @@ End Function
 '               BLC, 8/4/2015  - replaced Left with Left$, removed strFile
 ' =================================
 Public Function ParsePath(ByVal strFullPath As String) As String
-    On Error GoTo Err_Handler
+On Error GoTo Exit_Handler
 
     Dim arrPath() As String
-    'Dim strFile As String
+    Dim strFile As String
 
     ' Split into an array based on the "\" delimiter; file name should be the uppermost segment
     arrPath = Split(strFullPath, "\")
-    'strFile = arrPath(UBound(arrPath))
+    strFile = arrPath(UBound(arrPath))
 
     ' Path is the full string minus length of the file name
     ParsePath = Left$(strFullPath, Len(strFullPath) - Len(arrPath(UBound(arrPath))))
 
-Exit_Function:
+Exit_Handler:
     Exit Function
 
 Err_Handler:
@@ -436,5 +756,47 @@ Err_Handler:
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - ParsePath[mod_File])"
     End Select
-    Resume Exit_Function
+    Resume Exit_Handler
+End Function
+
+' =================================
+' FUNCTION:     AppIsInstalled
+' Description:  Determine if an office application is installed
+' Assumptions:  app uses the appropriate application name
+'                  Outlook.Application      Excel.Application
+'                  Word.Application         Access.Application
+' Parameters:   app - application name (string)
+' Returns:      true - if application is installed (boolean)
+'               false - if application is not found (boolean)
+' Throws:       none
+' References:
+'   RobDog888, August 26, 2005
+'   http://www.vbforums.com/showthread.php?357311-How-to-check-if-word-excel-access-or-any-office-application-is-Installed
+' Source/date:  Bonnie Campbell, 9/12/2016 for NCPN tools
+' Revisions:    BLC, 9/12/2016 - initial version
+' =================================
+Public Function AppIsInstalled(ByVal app As String) As Boolean
+    On Error GoTo Exit_Handler
+
+    Dim blnInstalled As Boolean
+    Dim oApp As Object
+
+    blnInstalled = False
+            
+    Set oApp = CreateObject(app)
+            
+    blnInstalled = True
+
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    MsgBox "Office Application not installed!", vbExclamation, "Office App Installation Info"
+    
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - AppIsInstalled[mod_File])"
+    End Select
+    Resume Exit_Handler
 End Function

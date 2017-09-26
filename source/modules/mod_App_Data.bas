@@ -1,11 +1,10 @@
 Option Compare Database
-
 Option Explicit
 
 ' =================================
 ' MODULE:       mod_App_Data
 ' Level:        Application module
-' Version:      1.28
+' Version:      1.35
 ' Description:  data functions & procedures specific to this application
 '
 ' Source/date:  Bonnie Campbell, 2/9/2015
@@ -44,325 +43,310 @@ Option Explicit
 '               BLC, 3/29/2017  - 1.25 - added FieldCheck, FieldOK, Dependencies for templates
 '               BLC, 3/30/2017  - 1.26 - added non-parameterized query option for GetRecords()
 '               BLC, 4/3/2017   - 1.27 - added qc_species_by_plot_visit
-'               BLC, 8/14/2017  - 1.28 - add error handling to address error 3048 on SetPlotCheckResult(),
+' --------------------------------------------------------------------
+'               BLC, 4/17/2017          added updated version to Invasives db
+' --------------------------------------------------------------------
+'               BLC, 4/17/2017  - 1.28 - revised for Invasives
+'               BLC, 7/5/2017   - 1.29 - SetRecords() added inserts for transect quadrats &
+'                                        surface cover records, GetRecords() added
+'                                        surface microhabitat & quadrat IDs templates
+'               BLC, 7/14/2017  - 1.30 - add transect update template
+'               BLC, 7/16/2017  - 1.31 - revise u_transect_data to exclude NULLable start time,
+'                                        Add u_transect_start_time
+'               BLC, 7/17/2017  - 1.32 - add u_quadrat_flags
+'               BLC, 7/18/2017  - 1.33 - add species cover templates
+'               BLC, 7/24/2017  - 1.34 - added get surface ID from col name template
+'               BLC, 7/26/2017  - 1.35 - added u_surfacecover_by_ID template
+' --------------------------------------------------------------------
+'               BLC, 9/7/2017  - 1.36 - merged common code for framework from Upland, Invasives, Big Rivers dbs
+' --------------------------------------------------------------------
+'                   BLC - 6/3/2015  - 1.04 - added IsUsedTargetArea
+'                   BLC - 12/1/2015 - 1.05 - "extra" vs target area renaming (IsUsedTargetArea > IsUsedExtraArea)
+'                   BLC - 6/14/2017 - 1.06 - add SetRecord(), GetRecords()
+'                   ------------
+'                   BLC, 8/14/2017  - 1.28 - add error handling to address error 3048 on SetPlotCheckResult(),
 '                                        GetRecords()
+' --------------------------------------------------------------------
 ' =================================
 
-'' ---------------------------------
-'' SUB:          fillList
-'' Description:  Fill a list (or listbox like subform) from specific queries for datasheets, species or other items
-'' Assumptions:  Either a listbox or subform control is being populated
-'' Parameters:   frm - main form object
-''               ctrl - either:
-''                      lbx - main form listbox object (for filling a listbox control)
-''                      sfrm - subform object (for populating a subform control)
-'' Returns:      N/A
-'' Throws:       none
-'' References:   none
-'' Source/date:
-'' Adapted:      Bonnie Campbell, February 6, 2015 - for NCPN tools
-'' Revisions:
-''   BLC, 2/6/2015  - initial version
-''   BLC, 2/18/2015 - adapted to include subform as well as listbox controls
-''   BLC, 5/1/2015  - integrated into Invasives Reporting tool
-'' ---------------------------------
-'Public Sub fillList(frm As Form, ctrlSource As Control, Optional ctrlDest As Control)
-'
-'On Error GoTo Err_Handler
-'
-'    Dim db As DAO.Database
-'    Dim rs As DAO.Recordset
-'    Dim strQuery As String, strSQL As String
-'
-'    'output to form or listbox control?
-'
-'    'determine data source
-'    Select Case ctrlSource.name
-'
-'        Case "lbxDataSheets", "sfrmDatasheets" 'Datasheets
-'            strQuery = "qry_Active_Datasheets"
-'            strSQL = CurrentDb.QueryDefs(strQuery).sql
-'
-'        Case "lbxSpecies", "lbxTgtSpecies", "fsub_Species_Listbox" 'Species
-'            strQuery = "qry_Plant_Species"
-'            strSQL = CurrentDb.QueryDefs(strQuery).sql
-'
-'    End Select
-'
-'    'fetch data
-'    Set db = CurrentDb
-'    Set rs = db.OpenRecordset(strSQL)
-'
-'    'set TempVars
-'    TempVars.Add "strSQL", strSQL
-'
-'    If Not ctrlDest Is Nothing Then
-'        'populate list & headers
-'        PopulateList ctrlSource, rs, ctrlDest
-'    Else
-'        'populate only ctrlSource headers
-'        PopulateListHeaders ctrlSource, rs
-'    End If
-'
-'Exit_Handler:
-'    Exit Sub
-'
-'Err_Handler:
-'    Select Case Err.Number
-'      Case Else
-'        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-'            "Error encountered (#" & Err.Number & " - fillList[mod_App_Data])"
-'    End Select
-'    Resume Exit_Handler
-'End Sub
-
-'' ---------------------------------
-'' SUB:          PopulateList
-'' Description:  Populate listbox and similar controls from recordset
-'' Assumptions:  -
-'' Parameters:   ctrlSource - source control (listbox/listview)
-''               rs - recordset used to populate control (recordset object)
-''               ctrlDest - destination control (listbox/listview)
-'' Returns:      -
-'' Throws:       none
-'' References:   none
-'' Source/date:
-'' krish KM, Aug. 27, 2014
-'' http://stackoverflow.com/questions/25526904/populate-listbox-using-ado-recordset
-'' Adapted:      Bonnie Campbell, February 6, 2015 - for NCPN tools
-'' Revisions:
-''   BLC - 2/6/2015 - initial version
-''   BLC - 5/10/2015 - moved to mod_List from mod_Lists
-''   BLC - 5/20/2015 - changed from tbxMasterCode to tbxLUCode
-''   BLC - 5/22/2015 - moved to mod_App_Data from mod_List
-'' ---------------------------------
-'Public Sub PopulateList(ctrlSource As Control, rs As Recordset, ctrlDest As Control)
-'
-'On Error GoTo Err_Handler
-'
-'    Dim frm As Form
-'    Dim rows As Integer, cols As Integer, i As Integer, j As Integer, matches As Integer, iZeroes As Integer
-'    Dim strItem As String, strColHeads As String, aryColWidths() As String
-'
-'    Set frm = ctrlSource.Parent
-'
-'    rows = rs.RecordCount
-'    cols = rs.Fields.Count
-'
-'    'address no records
-'    If Nz(rows, 0) = 0 Then
-'        MsgBox "Sorry, no records found..."
-'        GoTo Exit_Handler
-'    End If
-'
-'    'handle sfrm controls (acSubform = 112)
-'    If ctrlSource.ControlType = acSubform Then
-'        Set ctrlSource.Form.Recordset = rs
-'
-'        ctrlSource.Form.Controls("tbxCode").ControlSource = "Code"
-'        ctrlSource.Form.Controls("tbxSpecies").ControlSource = "Species"
-'        'ctrlSource.Form.Controls("tbxMasterCode").ControlSource = "Master_PLANT_Code"
-'        ctrlSource.Form.Controls("tbxLUCode").ControlSource = "LUCode"
-'        ctrlSource.Form.Controls("tbxTransectOnly").ControlSource = "Transect_Only"
-'        ctrlSource.Form.Controls("tbxTgtAreaID").ControlSource = "Target_Area_ID"
-'
-'        'set the initial record count (MoveLast to get full count, MoveFirst to set display to first)
-'        rs.MoveLast
-'        ctrlSource.Parent.Form.Controls("lblSfrmSpeciesCount").Caption = rs.RecordCount & " species"
-'        rs.MoveFirst
-'
-'        GoTo Exit_Handler
-'    End If
-'
-'    'fetch column widths array
-'    aryColWidths = Split(ctrlSource.ColumnWidths, ";")
-'
-'    'count number of 0 width elements
-'    iZeroes = CountArrayValues(aryColWidths, "0")
-'
-'    'clear out existing values
-'    ClearList ctrlSource
-'
-'    'populate column names (if desired)
-'    If ctrlSource.ColumnHeads = True Then
-'        PopulateListHeaders ctrlSource, rs
-'
-'        'populate second listbox headers if present
-'        If ctrlDest.ColumnHeads = True Then
-'            ClearList ctrlDest
-'            PopulateListHeaders ctrlDest, rs
-'        End If
-'    End If
-'
-'    'populate data
-'    Select Case ctrlSource.RowSourceType
-'        Case "Table/Query"
-'            Set ctrlSource.Recordset = rs
-'        Case ""
-'
-'            'initialize
-'            i = 0
-'
-'            Do Until rs.EOF
-'
-'                'initialize item
-'                strItem = ""
-'
-'                'generate item
-'                For j = 0 To cols - 1
-'                    'check if column is displayed width > 0
-'                    If CInt(aryColWidths(j)) > 0 Then
-'
-'                        strItem = strItem & rs.Fields(j).Value & ";"
-'
-'                        'determine how many separators there are (";") --> should equal # cols
-'                        matches = (Len(strItem) - Len(Replace$(strItem, ";", ""))) / Len(";")
-'
-'                        'add item if not already in list --> # of ; should equal cols - 1
-'                        'but # in list should only be # of non-zero columns --> cols - iZeroes
-'                        If matches = cols - iZeroes Then
-'                            ctrlSource.AddItem strItem
-'                            'reset the string
-'                            strItem = ""
-'                        End If
-'
-'                    End If
-'
-'                Next
-'
-'                i = i + 1
-'
-'                rs.MoveNext
-'            Loop
-'        Case "Field List"
-'    End Select
-'
-'Exit_Handler:
-'    Exit Sub
-'
-'Err_Handler:
-'    Select Case Err.Number
-'      Case Else
-'        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-'            "Error encountered (#" & Err.Number & " - PopulateList[mod_App_Data])"
-'    End Select
-'    Resume Exit_Handler
-'End Sub
-
-'' ---------------------------------
-'' SUB:          AddListToTable
-'' Description:  Populate table from listbox
-'' Assumptions:  -
-'' Parameters:   lbx - listbox control
-'' Returns:      -
-'' Throws:       none
-'' References:   none
-'' Source/date:  Bonnie Campbell, June 3, 2015 - for NCPN tools
-'' Adapted:      -
-'' Revisions:
-''   BLC - 6/3/2015 - initial version
-'' ---------------------------------
-'Public Sub AddListToTable(lbx As ListBox)
-'
-'On Error GoTo Err_Handler
-'
-'Dim aryFields() As String
-'Dim aryFieldTypes() As Variant
-'Dim strCode As String, strSpecies As String, strLUCode As String
-'Dim iRow As Integer, iTransectOnly As Integer, iTgtAreaID As Integer
-'
-'    iRow = lbx.ListCount - 1 'Forms("frm_Tgt_Species").Controls("lbxTgtSpecies").ListCount - 1
-'
-'    ReDim Preserve aryFields(0 To iRow)
-'
-'    'header row (iRow = 0)
-'    aryFields(0) = "Code;Species;LUCode;Transect_Only;Target_Area_ID"   'iRow = 0
-'    aryFieldTypes = Array(dbText, dbText, dbText, dbInteger, dbInteger)
-'
-'    'data rows (iRow > 0)
-'    For iRow = 1 To lbx.ListCount - 1
-'
-'        ' ---------------------------------------------------
-'        '  NOTE: listbox column MUST have a non-zero width to retrieve its value
-'        ' ---------------------------------------------------
-'         strCode = lbx.Column(0, iRow) 'column 0 = Master_PLANT_Code (Code)
-'         strSpecies = lbx.Column(1, iRow) 'column 1 = Species name (Species)
-'         strLUCode = lbx.Column(2, iRow) 'column 2 = LU_Code (LUCode)
-'         iTransectOnly = Nz(lbx.Column(3, iRow), 0) 'column 3 = Transect_Only (TransectOnly)
-'         iTgtAreaID = Nz(lbx.Column(4, iRow), 0) 'column 4 = Target_Area_ID (TgtAreaID)
-'
-'        aryFields(iRow) = strCode & ";" & strSpecies & ";" & strLUCode & ";" & iTransectOnly & ";" & iTgtAreaID
-'
-'    Next
-'
-'    'save the existing records to temp_Listbox_Recordset & replace any existing records
-'    SetListRecordset lbx, True, aryFields, aryFieldTypes, "temp_Listbox_Recordset", True
-'
-'Exit_Handler:
-'    Exit Sub
-'
-'Err_Handler:
-'    Select Case Err.Number
-'      Case Else
-'        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-'            "Error encountered (#" & Err.Number & " - PopulateList[mod_App_Data])"
-'    End Select
-'    Resume Exit_Handler
-'End Sub
-
+' =================================
+'   List Methods
+' =================================
 ' ---------------------------------
-' FUNCTION:     GetParkState
-' Description:  Retrieve the state associated with a park (via tlu_Parks)
-' Assumptions:  Park state is properly identified in tlu_Parks
-' Parameters:   parkCode - 4 character park designator
-' Returns:      ParkState - 2 character state abbreviation
+' SUB:          fillList
+' Description:  Fill a list (or listbox like subform) from specific queries for datasheets, species or other items
+' Assumptions:  Either a listbox or subform control is being populated
+' Parameters:   frm - main form object
+'               ctrl - either:
+'                      lbx - main form listbox object (for filling a listbox control)
+'                      sfrm - subform object (for populating a subform control)
+' Returns:      N/A
 ' Throws:       none
 ' References:   none
 ' Source/date:
-' Adapted:      Bonnie Campbell, February 19, 2015 - for NCPN tools
+' Adapted:      Bonnie Campbell, February 6, 2015 - for NCPN tools
 ' Revisions:
-'   BLC - 2/19/2015  - initial version
-'   BLC - 6/28/2016  - revised to uppercase GetParkState vs getParkState
+'   BLC, 2/6/2015  - initial version
+'   BLC, 2/18/2015 - adapted to include subform as well as listbox controls
+'   BLC, 5/1/2015  - integrated into Invasives Reporting tool
+' --------------------------------------------------------------------
+'   BLC - 9/7/2017  - merge uplands, invasives, big rivers dbs modifications
+' --------------------------------------------------------------------
+'                   - un-comment out
+' --------------------------------------------------------------------
 ' ---------------------------------
-Public Function getParkState(ParkCode As String) As String
-
+Public Sub fillList(frm As Form, ctrlSource As Control, Optional ctrlDest As Control)
 On Error GoTo Err_Handler
-    
+
     Dim db As DAO.Database
     Dim rs As DAO.Recordset
-    Dim state As String, strSQL As String
-   
-    'handle only appropriate park codes
-    If Len(ParkCode) <> 4 Then
-        GoTo Exit_Handler
-    End If
-    
-    'generate SQL ==> NOTE: LIMIT 1; syntax not viable for Access, use SELECT TOP x instead
-    strSQL = "SELECT TOP 1 ParkState FROM tlu_Parks WHERE ParkCode LIKE '" & ParkCode & "';"
-            
+    Dim strQuery As String, strSQL As String
+
+    'output to form or listbox control?
+
+    'determine data source
+    Select Case ctrlSource.Name
+
+        Case "lbxDataSheets", "sfrmDatasheets" 'Datasheets
+            strQuery = "qry_Active_Datasheets"
+            strSQL = CurrentDb.QueryDefs(strQuery).SQL
+
+        Case "lbxSpecies", "lbxTgtSpecies", "fsub_Species_Listbox" 'Species
+            strQuery = "qry_Plant_Species"
+            strSQL = CurrentDb.QueryDefs(strQuery).SQL
+
+    End Select
+
     'fetch data
     Set db = CurrentDb
     Set rs = db.OpenRecordset(strSQL)
-    
-    'assume only 1 record returned
-    If rs.RecordCount > 0 Then
-        state = rs.Fields("ParkState").Value
+
+    'set TempVars
+    TempVars.Add "strSQL", strSQL
+
+    If Not ctrlDest Is Nothing Then
+        'populate list & headers
+        PopulateList ctrlSource, rs, ctrlDest
+    Else
+        'populate only ctrlSource headers
+        PopulateListHeaders ctrlSource, rs
     End If
-   
-    'return value
-    getParkState = state
-    
+
 Exit_Handler:
-    Exit Function
-    
+    Exit Sub
+
 Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - GetParkState[mod_App_Data])"
+            "Error encountered (#" & Err.Number & " - fillList[mod_App_Data])"
     End Select
     Resume Exit_Handler
-End Function
+End Sub
+
+' ---------------------------------
+' SUB:          PopulateList
+' Description:  Populate listbox and similar controls from recordset
+' Assumptions:  -
+' Parameters:   ctrlSource - source control (listbox/listview)
+'               rs - recordset used to populate control (recordset object)
+'               ctrlDest - destination control (listbox/listview)
+' Returns:      -
+' Throws:       none
+' References:   none
+' Source/date:
+' krish KM, Aug. 27, 2014
+' http://stackoverflow.com/questions/25526904/populate-listbox-using-ado-recordset
+' Adapted:      Bonnie Campbell, February 6, 2015 - for NCPN tools
+' Revisions:
+'   BLC - 2/6/2015 - initial version
+'   BLC - 5/10/2015 - moved to mod_List from mod_Lists
+'   BLC - 5/20/2015 - changed from tbxMasterCode to tbxLUCode
+'   BLC - 5/22/2015 - moved to mod_App_Data from mod_List
+' --------------------------------------------------------------------
+'   BLC - 9/7/2017  - merge uplands, invasives, big rivers dbs modifications
+' --------------------------------------------------------------------
+'                   - un-comment out
+'               BLC - 12/1/2015 - "extra" vs. target area renaming (tbxTgtAreaID > tbxExtraAreaID, Target_Area_ID > Extra_Area_ID)
+' --------------------------------------------------------------------
+' ---------------------------------
+Public Sub PopulateList(ctrlSource As Control, rs As Recordset, ctrlDest As Control)
+On Error GoTo Err_Handler
+
+    Dim frm As Form
+    Dim rows As Integer, cols As Integer, i As Integer, j As Integer, matches As Integer, iZeroes As Integer
+    Dim strItem As String, strColHeads As String, aryColWidths() As String
+
+    Set frm = ctrlSource.Parent
+
+    rows = rs.RecordCount
+    cols = rs.Fields.Count
+
+    'address no records
+    If Nz(rows, 0) = 0 Then
+        MsgBox "Sorry, no records found..."
+        GoTo Exit_Handler
+    End If
+
+    'handle sfrm controls (acSubform = 112)
+    If ctrlSource.ControlType = acSubform Then
+        Set ctrlSource.Form.Recordset = rs
+
+        ctrlSource.Form.Controls("tbxCode").ControlSource = "Code"
+        ctrlSource.Form.Controls("tbxSpecies").ControlSource = "Species"
+        'ctrlSource.Form.Controls("tbxMasterCode").ControlSource = "Master_PLANT_Code"
+        ctrlSource.Form.Controls("tbxLUCode").ControlSource = "LUCode"
+        ctrlSource.Form.Controls("tbxTransectOnly").ControlSource = "Transect_Only"
+        ctrlSource.Form.Controls("tbxExtraAreaID").ControlSource = "Target_Area_ID"
+
+        'set the initial record count (MoveLast to get full count, MoveFirst to set display to first)
+        rs.MoveLast
+        ctrlSource.Parent.Form.Controls("lblSfrmSpeciesCount").Caption = rs.RecordCount & " species"
+        rs.MoveFirst
+
+        GoTo Exit_Handler
+    End If
+
+    'fetch column widths array
+    aryColWidths = Split(ctrlSource.ColumnWidths, ";")
+
+    'count number of 0 width elements
+    iZeroes = CountArrayValues(aryColWidths, "0")
+
+    'clear out existing values
+    ClearList ctrlSource
+
+    'populate column names (if desired)
+    If ctrlSource.ColumnHeads = True Then
+        PopulateListHeaders ctrlSource, rs
+
+        'populate second listbox headers if present
+        If ctrlDest.ColumnHeads = True Then
+            ClearList ctrlDest
+            PopulateListHeaders ctrlDest, rs
+        End If
+    End If
+
+    'populate data
+    Select Case ctrlSource.RowSourceType
+        Case "Table/Query"
+            Set ctrlSource.Recordset = rs
+        Case "Value List"
+
+            'initialize
+            i = 0
+
+            Do Until rs.EOF
+
+                'initialize item
+                strItem = ""
+
+                'generate item
+                For j = 0 To cols - 1
+                    'check if column is displayed width > 0
+                    If CInt(aryColWidths(j)) > 0 Then
+
+                        strItem = strItem & rs.Fields(j).Value & ";"
+
+                        'determine how many separators there are (";") --> should equal # cols
+                        matches = (Len(strItem) - Len(Replace$(strItem, ";", ""))) / Len(";")
+
+                        'add item if not already in list --> # of ; should equal cols - 1
+                        'but # in list should only be # of non-zero columns --> cols - iZeroes
+                        If matches = cols - iZeroes Then
+                            ctrlSource.AddItem strItem
+                            'reset the string
+                            strItem = ""
+                        End If
+
+                    End If
+
+                Next
+
+                i = i + 1
+
+                rs.MoveNext
+            Loop
+        Case "Field List"
+    End Select
+
+Exit_Handler:
+    Exit Sub
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - PopulateList[mod_App_Data])"
+    End Select
+    Resume Exit_Handler
+End Sub
+
+' ---------------------------------
+' SUB:          AddListToTable
+' Description:  Populate table from listbox
+' Assumptions:  -
+' Parameters:   lbx - listbox control
+' Returns:      -
+' Throws:       none
+' References:   none
+' Source/date:  Bonnie Campbell, June 3, 2015 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 6/3/2015 - initial version
+'   BLC - 12/1/2015 - "extra" vs. target area renaming (iTgtAreaID > iExtraAreaID, Target_Area_ID > Extra_Area_ID)
+' --------------------------------------------------------------------
+'   BLC - 9/7/2017  - merge uplands, invasives, big rivers dbs modifications
+' --------------------------------------------------------------------
+'                   - un-comment out
+' --------------------------------------------------------------------
+' ---------------------------------
+Public Sub AddListToTable(lbx As ListBox)
+On Error GoTo Err_Handler
+
+Dim aryFields() As String
+Dim aryFieldTypes() As Variant
+Dim strCode As String, strSpecies As String, strLUCode As String
+Dim iRow As Integer, iTransectOnly As Integer, iExtraAreaID As Integer
+
+    iRow = lbx.ListCount - 1 'Forms("frm_Tgt_Species").Controls("lbxTgtSpecies").ListCount - 1
+
+    ReDim Preserve aryFields(0 To iRow)
+
+    'header row (iRow = 0)
+    aryFields(0) = "Code;Species;LUCode;Transect_Only;Extra_Area_ID"   'iRow = 0
+    aryFieldTypes = Array(dbText, dbText, dbText, dbInteger, dbInteger)
+
+    'data rows (iRow > 0)
+    For iRow = 1 To lbx.ListCount - 1
+
+        ' ---------------------------------------------------
+        '  NOTE: listbox column MUST have a non-zero width to retrieve its value
+        ' ---------------------------------------------------
+         strCode = lbx.Column(0, iRow) 'column 0 = Master_PLANT_Code (Code)
+         strSpecies = lbx.Column(1, iRow) 'column 1 = Species name (Species)
+         strLUCode = lbx.Column(2, iRow) 'column 2 = LU_Code (LUCode)
+         iTransectOnly = Nz(lbx.Column(3, iRow), 0) 'column 3 = Transect_Only (TransectOnly)
+         iExtraAreaID = Nz(lbx.Column(4, iRow), 0) 'column 4 = Extra_Area_ID (ExtraAreaID)
+
+        aryFields(iRow) = strCode & ";" & strSpecies & ";" & strLUCode & ";" & iTransectOnly & ";" & iExtraAreaID
+
+    Next
+
+    'save the existing records to temp_Listbox_Recordset & replace any existing records
+    SetListRecordset lbx, True, aryFields, aryFieldTypes, "temp_Listbox_Recordset", True
+
+Exit_Handler:
+    Exit Sub
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - AddListToTable[mod_App_Data])"
+    End Select
+    Resume Exit_Handler
+End Sub
 
 ' ---------------------------------
 ' FUNCTION:     getListLastModifiedDate
@@ -411,19 +395,19 @@ Err_Handler:
 End Function
 
 ' ---------------------------------
-' FUNCTION:     IsUsedTargetArea
-' Description:  Determine if the target area is in use by a target list
-' Parameters:   TgtAreaID - target area idenifier (integer)
-' Returns:      boolean - true if target area is in use, false if not
+' FUNCTION:     IsUsedExtraArea
+' Description:  Determine if the extra/target area is in use by a target list
+' Parameters:   ExtraAreaID - extra/target area idenifier (integer)
+' Returns:      boolean - true if extra/target area is in use, false if not
 ' Throws:       none
 ' References:   none
 ' Source/date:
 ' Adapted:      Bonnie Campbell, June 3, 2015 - for NCPN tools
 ' Revisions:
 '   BLC - 6/3/2015  - initial version
+'   BLC - 12/1/2015 - "extra" vs target area renaming (IsUsedTargetArea > IsUsedExtraArea)
 ' ---------------------------------
-Public Function IsUsedTargetArea(TgtAreaID As Integer) As Boolean
-
+Public Function IsUsedExtraArea(ExtraAreaID As Integer) As Boolean
 On Error GoTo Err_Handler
     
     Dim db As DAO.Database
@@ -431,10 +415,10 @@ On Error GoTo Err_Handler
     Dim strSQL As String
     
     'default
-    IsUsedTargetArea = False
+    IsUsedExtraArea = False
     
     'generate SQL ==> NOTE: LIMIT 1; syntax not viable for Access, use SELECT TOP x instead
-    strSQL = "SELECT TOP 1 Target_Area_ID FROM tbl_Target_Species WHERE Target_Area_ID = " & TgtAreaID & ";"
+    strSQL = "SELECT TOP 1 Target_Area_ID FROM tbl_Target_Species WHERE Target_Area_ID = " & ExtraAreaID & ";"
             
     'fetch data
     Set db = CurrentDb
@@ -442,7 +426,7 @@ On Error GoTo Err_Handler
     
     'assume only 1 record returned
     If rs.RecordCount > 0 Then
-        IsUsedTargetArea = True
+        IsUsedExtraArea = True
     Else
         GoTo Exit_Handler
     End If
@@ -454,61 +438,14 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - IsUsedTargetArea[mod_App_Data])"
+            "Error encountered (#" & Err.Number & " - IsUsedExtraArea[mod_App_Data])"
     End Select
     Resume Exit_Handler
 End Function
 
-' ---------------------------------
-' SUB:     PopulateTree
-' Description:  Populate the treeview control
-' Parameters:   TreeType - treeview type (string)
-' Returns:      -
-' Throws:       none
-' References:   none
-' Source/date:
-' Adapted:      Bonnie Campbell, June 3, 2015 - for NCPN tools
-' Revisions:
-'   BLC - 6/3/2015  - initial version
-' ---------------------------------
-Public Sub PopulateTree(TreeType As String)
-
-On Error GoTo Err_Handler
-    
-    Dim db As DAO.Database
-    Dim rs As DAO.Recordset
-    Dim strSQL As String
-    
-    Select Case TreeType
-        Case "ParkSiteFeatureTransectPlot"
-            strSQL = "SELECT * FROM qry_Park_Site_Feature_Transect_Plot"
-        Case "Photo"
-    End Select
-                   
-    'fetch data
-    Set db = CurrentDb
-    Set rs = db.OpenRecordset(strSQL)
-    
-    'assume only 1 record returned
-    If rs.RecordCount > 0 Then
-        
-        
-    Else
-        GoTo Exit_Handler
-    End If
-       
-Exit_Handler:
-    Exit Sub
-    
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - PopulateTree[mod_App_Data])"
-    End Select
-    Resume Exit_Handler
-End Sub
-
+' =================================
+'   Combobox Methods
+' =================================
 ' ---------------------------------
 ' SUB:          PopulateCombobox
 ' Description:  Populate priority/status comboboxes
@@ -525,7 +462,6 @@ End Sub
 '   BLC - 10/12/2016 - fixed to set combobox recordset
 ' ---------------------------------
 Public Sub PopulateCombobox(cbx As ComboBox, BoxType As String)
-
 On Error GoTo Err_Handler
     
     Dim db As DAO.Database
@@ -563,195 +499,60 @@ Err_Handler:
     Resume Exit_Handler
 End Sub
 
+' =================================
+'   Tree Methods
+' =================================
 ' ---------------------------------
-' FUNCTION:     GetProtocolVersion
-' Description:  Retrieve protocol version, effective & retire dates
-' Assumptions:  Assumes only one version of the protocol is active at once
-' Parameters:   blnAllVersions - indicator if all versions should be retrieved (boolean)
-' Returns:      Protocol name, version, effective & retire dates, last modified date
-' Note:         To retrieve values, data must be retrieved from the array:
-'                   ary(0,0) = ProtocolName
-'                   ary(1,0) = Version
-'                   ary(2,0) = EffectiveDate
-'                   ary(3,0) = RetireDate
-'                   ary(4,0) = LastModified
+' SUB:     PopulateTree
+' Description:  Populate the treeview control
+' Parameters:   TreeType - treeview type (string)
+' Returns:      -
 ' Throws:       none
 ' References:   none
 ' Source/date:
-' Adapted:      Bonnie Campbell, May 5, 2016 - for NCPN tools
+' Adapted:      Bonnie Campbell, June 3, 2015 - for NCPN tools
 ' Revisions:
-'   BLC - 5/5/2016  - initial version
+'   BLC - 6/3/2015  - initial version
 ' ---------------------------------
-Public Function GetProtocolVersion(Optional blnAllVersions As Boolean = False) As Variant
+Public Sub PopulateTree(TreeType As String)
 On Error GoTo Err_Handler
     
     Dim db As DAO.Database
     Dim rs As DAO.Recordset
-    Dim strSQL As String, strWHERE As String
-    Dim Count As Integer
-    Dim metadata() As Variant
-   
-    'handle only appropriate park codes
-    If blnAllVersions Then
-        strWHERE = ""
-    Else
-        strWHERE = "WHERE RetireDate IS NULL"
-    End If
+    Dim strSQL As String
     
-    'generate SQL
-'    strSQL = "SELECT ProtocolName, Version, EffectiveDate, RetireDate, LastModified FROM Protocol " _
-'                & strWHERE & ";"
-    strSQL = GetTemplate("s_protocol_info", "strWHERE" & PARAM_SEPARATOR & strWHERE)
-    
+    Select Case TreeType
+        Case "ParkSiteFeatureTransectPlot"
+            strSQL = "SELECT * FROM qry_Park_Site_Feature_Transect_Plot"
+        Case "Photo"
+    End Select
+                   
     'fetch data
     Set db = CurrentDb
     Set rs = db.OpenRecordset(strSQL)
+    
+    'assume only 1 record returned
+    If rs.RecordCount > 0 Then
         
-    If rs.BOF And rs.EOF Then GoTo Exit_Handler
-        
-    With rs
-        .MoveLast
-        .MoveFirst
-        Count = .RecordCount
-    
-        metadata = rs.GetRows(Count)
- 
-        .Close
-    End With
-    
-    'return value
-    GetProtocolVersion = metadata
-    
-Exit_Handler:
-    Set rs = Nothing
-    Exit Function
-    
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - GetProtocolVersion[mod_App_Data])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' FUNCTION:     GetSOPMetadata
-' Description:  Retrieve SOP metadata (abbreviation code, #, version, effective date)
-' Assumptions:  Assumes only one active/effective SOP # for a given area
-' Parameters:   area - area covered by the SOP (string)
-' Returns:      SOP metadata - Code, SOP #, Version, EffectiveDate
-' Note:         To retrieve value, data must be retrieved from the array:
-'                   ary(0,0) = SOP #
-'               Assuming there is only one matching SOP for each area
-' Throws:       none
-' References:   none
-' Source/date:
-' Adapted:      Bonnie Campbell, May 5, 2016 - for NCPN tools
-' Revisions:
-'   BLC - 5/5/2016  - initial version
-'   BLC - 5/11/2016 - revised to getting full SOP metadata vs. number only
-' ---------------------------------
-Public Function GetSOPMetadata(area As String) As Variant
-On Error GoTo Err_Handler
-    
-    Dim db As DAO.Database
-    Dim rs As DAO.Recordset
-    Dim strSQL As String
-        
-    'generate SQL
-    '---------------------------------------------------------------------
-    ' NOTE: use * vs % for the LIKE wildcard
-    '       if it is not used strSQL will work in a query directly,
-    '       but will fail to return records via a VBA recordset
-    '       So    "...LIKE '" & LCase(area) & "*';"   works
-    '       But   "...LIKE '" & LCase(area) & "%';"   does not (except in direct Query SQL)
-    '
-    ' c.f.  Hans Up, May 17, 2011 & discussion
-    '       http://stackoverflow.com/questions/6037290/use-of-like-works-in-ms-access-but-not-vba
-    '---------------------------------------------------------------------
-    strSQL = GetTemplate("s_sop_metadata", "area" & PARAM_SEPARATOR & LCase(area))
-    
-    'fetch data
-    Set db = CurrentDb
-    Set rs = db.OpenRecordset(strSQL, dbOpenDynaset)
-        
-    'return value
-    Set GetSOPMetadata = rs
-    
-Exit_Handler:
-    Set rs = Nothing
-    Exit Function
-    
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - GetSOPNum[mod_App_Data])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' FUNCTION:     GetParkID
-' Description:  Retrieve the ID associated with a park
-' Assumptions:  -
-' Parameters:   ParkCode - 4 character park designator (string)
-' Returns:      ID - unique park identifier (long)
-' Throws:       none
-' References:   none
-' Source/date:
-' Adapted:      Bonnie Campbell, June 28, 2016 - for NCPN tools
-' Revisions:
-'   BLC - 6/28/2016  - initial version
-'   BLC - 1/12/2017  - revised to use GetRecords() vs. GetTemplate()
-' ---------------------------------
-Public Function GetParkID(ParkCode As String) As Long
-On Error GoTo Err_Handler
-    
-    Dim db As DAO.Database
-    Dim rs As DAO.Recordset
-    Dim strSQL As String
-    Dim ID As Long
-   
-    'handle only appropriate park codes
-    If Len(ParkCode) <> 4 Then
+    Else
         GoTo Exit_Handler
     End If
-    
-    'generate SQL
-'    strSQL = GetTemplate("s_park_id", "ParkCode" & PARAM_SEPARATOR & ParkCode)
-            
-    'fetch data
-'    Set db = CurrentDb
-    Set rs = GetRecords("s_park_id") 'db.OpenRecordset(strSQL)
-
-    If rs.BOF And rs.EOF Then GoTo Exit_Handler
-
-    rs.MoveLast
-    rs.MoveFirst
-    
-    If Not (rs.BOF And rs.EOF) Then
-        ID = rs.Fields("ID")
-    End If
-    
-    rs.Close
-    
-    'return value
-    GetParkID = ID
-    
+       
 Exit_Handler:
-    Exit Function
+    Exit Sub
     
 Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - GetParkID[mod_App_Data])"
+            "Error encountered (#" & Err.Number & " - PopulateTree[mod_App_Data])"
     End Select
     Resume Exit_Handler
-End Function
+End Sub
 
+' =================================
+'   Toggle Methods
+' =================================
 ' ---------------------------------
 ' Sub:          ToggleIsActive
 ' Description:  Toggle IsActive button click actions
@@ -887,6 +688,59 @@ Err_Handler:
     Resume Exit_Handler
 End Sub
 
+' =================================
+'   Hierarchy Methods
+' =================================
+' ---------------------------------
+' Sub:          GetHierarchyLevel
+' Description:  Determine the hierarchy level set
+' Assumptions:  -
+' Parameters:   -
+' Returns:      lvl - maximum level set in the application (string)
+' Throws:       none
+' References:   -
+' Source/date:  Bonnie Campbell, January 1, 2017 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 1/11/2017 - initial version
+' ---------------------------------
+Public Function GetHierarchyLevel() As String
+On Error GoTo Err_Handler
+    
+    Dim lvl As String
+    
+    'default
+    lvl = ""
+    
+    If Not TempVars("ParkCode") Is Nothing Then
+        lvl = "park"
+        If Not TempVars("River") Is Nothing Then
+            lvl = "river"
+            If Not TempVars("SiteCode") Is Nothing Then
+                lvl = "site"
+                If Not TempVars("Feature") Is Nothing Then
+                    lvl = "feature"
+                End If
+            End If
+        End If
+    End If
+
+    GetHierarchyLevel = lvl
+
+Exit_Handler:
+    Exit Function
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - GetHierarchyLevel[mod_App_Data])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' =================================
+'   Record Methods
+' =================================
 ' ---------------------------------
 ' Sub:          GetRecords
 ' Description:  Retrieve records based on template
@@ -907,9 +761,23 @@ End Sub
 '   BLC - 3/28/2017 - added upland templates, removed big rivers templates
 '   BLC - 3/30/2017 - added option for non-parameterized queries (Else)
 '   BLC - 4/3/2017 - added qc_species_by_plot_visit
-'   BLC - 8/14/2017 - redo error handling to address error 3048
+' --------------------------------------------------------------------
+'   BLC - 4/18/2017 - added updated version to Invasives db
+' --------------------------------------------------------------------
+'   BLC - 4/18/2017 - adjusted for invasives templates
+'   BLC - 4/24/2017 - added microhabitat surface & species templates
+'   BLC - 7/5/2017  - added surface microhabitat & quadrat IDs templates
+'   BLC - 7/24/2017 - added get surface ID from col name template
+'   BLC - 7/26/2017 - added get route transects template
+'   BLC - 7/27/2017 - added "s_speciescover_dupes" template, optional params parameter
+' --------------------------------------------------------------------
+'   BLC - 9/7/2017  - merge uplands, invasives, big rivers dbs modifications
+' --------------------------------------------------------------------
+'       BLC - 8/14/2017 - redo error handling to address error 3048
+' --------------------------------------------------------------------
 ' ---------------------------------
-Public Function GetRecords(Template As String) As DAO.Recordset
+Public Function GetRecords(Template As String, _
+                            Optional Params As Variant) As DAO.Recordset
 On Error GoTo Err_Handler
     
     Dim db As DAO.Database
@@ -927,7 +795,271 @@ On Error GoTo Err_Handler
             .SQL = GetTemplate(Template)
         
             Select Case Template
-                        
+                                        
+        '-----------------------
+        '  QC
+        '-----------------------
+                Case "qc_ndc_notrecorded_all_methods_by_plot_visit", _
+                    "qc_photos_missing_by_plot_visit", _
+                    "qc_species_by_plot_visit"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("pid") = TempVars("plotID")
+                    .Parameters("vdate") = TempVars("SampleDate")
+        
+        '-----------------------
+        '  SELECTS
+        '-----------------------
+        
+            '-------------------
+            ' --- BIG RIVERS ---
+            '-------------------
+                Case "s_app_enum_list"
+                    '-- required parameters --
+                    .Parameters("etype") = TempVars("EnumType")
+                
+                Case "s_contact_list"
+                    '-- required parameters --
+                    'N/A
+                                
+                Case "s_datasheet_defaults_by_park"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                
+                Case "s_datasheet_defaults_by_river"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("waterway") = TempVars("River")
+                                
+                Case "s_events_by_feature"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("scode") = TempVars("SiteCode")
+                    .Parameters("feat") = TempVars("Feature")
+                                
+                Case "s_event_by_park_river_w_location"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("waterway") = TempVars("River")
+                    
+                Case "s_events_by_park_river"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("waterway") = TempVars("River")
+                
+                Case "s_events_by_site"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("scode") = TempVars("SiteCode")
+
+                Case "s_events_list_by_park_river"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("waterway") = TempVars("River")
+                
+                Case "s_feature_by_park_site"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("scode") = TempVars("SiteCode")
+                
+                Case "s_feature_id"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("scode") = TempVars("SiteCode")
+                
+                Case "s_feature_list"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                                        
+                Case "s_feature_list_by_site", _
+                     "s_feature_by_site"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("scode") = TempVars("SiteCode")
+                Case "s_location_by_park_river"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("waterway") = TempVars("River")
+                
+                Case "s_location_by_park_river_segment"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("seg") = TempVars("River")
+                
+                Case "s_location_list_by_park_river"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("waterway") = TempVars("River")
+                
+                Case "s_location_with_loctypeID_sensitivity"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("scode") = TempVars("SiteCode")
+                
+                Case "s_mod_wentworth_for_eventyr"
+                    '-- required parameters --
+                    'default event year to current year if not passed in
+                    .Parameters("eventyr") = Nz(TempVars("EventYear"), year(Now))
+                
+                Case "s_river_segment_id"
+                    '-- required parameters --
+                    .Parameters("waterway") = TempVars("River")
+                
+                Case "s_river_list"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                
+                Case "s_site_by_park_river"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("waterway") = TempVars("River")
+                
+                Case "s_site_by_park_river_segment"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("seg") = TempVars("River")
+                
+                Case "s_site_list_by_park_river"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("waterway") = TempVars("River")
+                
+                Case "s_site_list_by_park_river_segment"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("waterway") = TempVars("River")
+                
+                Case "s_site_list_active"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("seg") = TempVars("River")
+            
+                Case "s_species_by_park"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    
+                Case "s_top_rooted_species_last_year_by_park"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+    
+                    'revise TOP X --> 99 is replaced by # species to return (from datasheet defaults)
+                    '             -->  8 is replaced by # blanks to return (")
+                    .SQL = Replace(Replace(.SQL, 99, TempVars("TopSpecies")), 8, TempVars("TopBlanks"))
+                    
+                Case "s_top_rooted_species_last_year_by_river"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("waterway") = TempVars("River")
+    
+                    'revise TOP X --> 99 is replaced by # species to return (from datasheet defaults)
+                    '             -->  8 is replaced by # blanks to return (")
+                    .SQL = Replace(Replace(.SQL, 99, TempVars("TopSpecies")), 8, TempVars("TopBlanks"))
+                    
+                Case "s_top_understory_species_last_year_by_park"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+    
+                    'revise TOP X --> 99 is replaced by # species to return (from datasheet defaults)
+                    '             -->  8 is replaced by # blanks to return (")
+                    .SQL = Replace(Replace(.SQL, 99, TempVars("TopSpecies")), 8, TempVars("TopBlanks"))
+                    
+                Case "s_top_understory_species_last_year_by_river"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("waterway") = TempVars("River")
+    
+                    'revise TOP X --> 99 is replaced by # species to return (from datasheet defaults)
+                    '             -->  8 is replaced by # blanks to return (")
+                    .SQL = Replace(Replace(.SQL, 99, TempVars("TopSpecies")), 8, TempVars("TopBlanks"))
+                    
+                Case "s_top_woody_species_last_year_by_park"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+    
+                    'revise TOP X --> 99 is replaced by # species to return (from datasheet defaults)
+                    '             -->  8 is replaced by # blanks to return (")
+                    .SQL = Replace(Replace(.SQL, 99, TempVars("TopSpecies")), 8, TempVars("TopBlanks"))
+                    
+                Case "s_top_woody_species_last_year_by_river"
+                    '-- required parameters --
+                    .Parameters("pkode") = TempVars("ParkCode")
+                    .Parameters("waterway") = TempVars("River")
+    
+                    'revise TOP X --> 99 is replaced by # species to return (from datasheet defaults)
+                    '             -->  8 is replaced by # blanks to return (")
+                    .SQL = Replace(Replace(.SQL, 99, TempVars("TopSpecies")), 8, TempVars("TopBlanks"))
+                    
+                Case "s_veg_walk_species_last_year_by_park"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    
+                    'revise TOP X --> 8 is replaced by # blanks to return (from # rows remaining)
+                    .SQL = Replace(.SQL, 8, TempVars("Blanks"))
+                
+                Case "s_veg_walk_species_last_year_by_river"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("waterway") = TempVars("River")
+                    
+                    'revise TOP X --> 8 is replaced by # blanks to return (from # rows remaining)
+                    .SQL = Replace(.SQL, 8, TempVars("Blanks"))
+                    
+                    '-- optional parameters --
+        
+                Case "s_vegplot_number_by_site"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("scode") = TempVars("SiteCode")
+                
+                Case "s_vegtransect_by_feature"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("scode") = TempVars("SiteCode")
+                    .Parameters("feat") = TempVars("Feature")
+                
+'                Case "s_vegtransect_by_park_site"
+'                    '-- required parameters --
+'                    .Parameters("pkcode") = TempVars("ParkCode")
+'                    .Parameters("scode") = TempVars("SiteCode")
+                
+                Case "s_vegtransect_by_site"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("scode") = TempVars("SiteCode")
+                
+                Case "s_vegtransect_number_by_site"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("scode") = TempVars("SiteCode")
+            
+            '-------------------
+            ' --- UPLAND ---
+            '-------------------
+                Case "s_template_num_records"
+                    '-- required parameters --
+                
+                Case "s_surface"
+                    '-- required parameters --
+                
+                Case "s_surface_by_ID"
+                    '-- required parameters --
+                    .Parameters("sid") = TempVars("SurfaceID")
+                
+                Case "s_speciescover_by_transect"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("eid") = TempVars("Event_ID")
+                    .Parameters("tid") = TempVars("Transect_ID")
+                
+                Case "s_surfacecover_by_transect"
+                    '-- required parameters --
+                    '.Parameters("pkcode") = TempVars("ParkCode")
+                    '.Parameters("eid") = TempVars("Event_ID")
+                    .Parameters("tid") = TempVars("Transect_ID")
+
+            '-------------------
+            ' --- INVASIVES --
+            '-------------------
                 Case "s_access_level"
                     '-- required parameters --
                     .Parameters("lvl") = TempVars("tempLvl")
@@ -941,23 +1073,57 @@ On Error GoTo Err_Handler
                 Case "s_park_id"
                     '-- required parameters --
                     .Parameters("pkcode") = TempVars("ParkCode")
-           
+                                
+                Case "s_route_transects"
+                    '-- required parameters --
+                    .Parameters("eid") = TempVars("EventID")
+                
+                Case "s_surface"
+                    '-- required parameters --
+                
+                Case "s_surface_by_colname"
+                    '-- required parameters --
+                    .Parameters("cname") = TempVars("SurfaceColName")
+                
+                Case "s_surface_by_ID"
+                    '-- required parameters --
+                    .Parameters("sid") = TempVars("SurfaceID")
+                
+                Case "s_surface_IDs"
+                    '-- required parameters --
+                                
+                Case "s_speciescover_by_transect"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("eid") = TempVars("Event_ID")
+                    .Parameters("tid") = TempVars("Transect_ID")
+                
+                Case "s_surfacecover_by_transect"
+                    '-- required parameters --
+                    '.Parameters("pkcode") = TempVars("ParkCode")
+                    '.Parameters("eid") = TempVars("Event_ID")
+                    .Parameters("tid") = TempVars("Transect_ID")
+                
+                Case "s_speciescover_dupes"
+                    '-- required parameters --
+                    .Parameters("eid") = Params(1)
+                    .Parameters("tid") = Params(2)
+                    .Parameters("pcode") = Params(3)
+                    .Parameters("dead") = Params(4)
+                    
                 Case "s_template_num_records"
                     '-- required parameters --
 
-                Case "qc_ndc_notrecorded_all_methods_by_plot_visit", _
-                    "qc_photos_missing_by_plot_visit", _
-                    "qc_species_by_plot_visit"
+                Case "s_transect_quadrat_IDs"
                     '-- required parameters --
-                    .Parameters("pkcode") = TempVars("ParkCode")
-                    .Parameters("pid") = TempVars("plotID")
-                    .Parameters("vdate") = TempVars("SampleDate")
+                    .Parameters("tid") = TempVars("TransectQuadratID")
                 
                 Case "s_tsys_datasheet_defaults"
                     '-- required parameters --
-                
+                                
                 Case Else
                     'handle other non-parameterized queries
+                    
             End Select
             
             Set rs = .OpenRecordset(dbOpenDynaset)
@@ -1015,6 +1181,16 @@ End Function
 '   BLC - 3/24/2017 - set SkipRecordAction = False for uplands, removed unused big rivers cases,
 '                     added uplands cases, delete cases
 '   BLC - 3/29/2017 - added FieldOK, FieldCheck, Dependencies parameters for templates
+'   BLC - 4/24/2017 - add surface/species cover, set SkipRecordAction = false (invasives, uplands)
+'   BLC - 7/14/2017 - add u_transect_data
+'   BLC - 7/16/2017 - revise u_transect_data to exclude NULLable start time, add u_transect_start_time
+'   BLC - 7/17/2017 - add u_quadrat_flags, u_event_(startdate,observer,comments)
+'   BLC - 7/18/2017 - add species cover templates (u_speciescover, d_speciescover, i_speciescover)
+'   BLC - 7/26/2017 - add u_surfacecover_by_ID template
+' --------------------------------------------------------------------
+'   BLC - 9/7/2017  - merge uplands, invasives, big rivers dbs modifications
+' --------------------------------------------------------------------
+' --------------------------------------------------------------------
 ' ---------------------------------
 Public Function SetRecord(Template As String, Params As Variant) As Long
 On Error GoTo Err_Handler
@@ -1027,7 +1203,7 @@ On Error GoTo Err_Handler
     'exit w/o values
     If Not IsArray(Params) Then GoTo Exit_Handler
     
-    'default <-- upland does not have RecordAction table implemented so skip!
+    'default <-- upland/invasives donot have RecordAction table implemented so skip!
     SkipRecordAction = True 'False
             
     'default ID (if not set as param)
@@ -1057,11 +1233,327 @@ On Error GoTo Err_Handler
         '-----------------------
         '  INSERTS
         '-----------------------
+                
+            '-------------------
+            ' --- BIG RIVERS ---
+            '-------------------
+                Case "i_comment"
+                    '-- required parameters --
+                    .Parameters("comtype") = Params(1)             'CommentType -> table
+                    .Parameters("ctid") = Params(2)                 'TypeID
+                    .Parameters("cmt") = Params(3)                  'Comment
+                    .Parameters("CID") = Params(4)                  'CommentorID
+                    
+'                    .Parameters("CreateDate") = Now()
+'                    .Parameters("CreatedByID") = TempVars("AppUserID") 'ContactID
+'                    .Parameters("LastModified") = Now()
+                    .Parameters("LMID") = TempVars("AppUserID")     'LastModifiedByID -> ContactID
+        
+                Case "i_contact", "i_contact_new"
+                    '-- required parameters --
+                    .Parameters("First") = Params(1)
+                    .Parameters("Last") = Params(2)
+                    .Parameters("EmailAddress") = Params(3)
+                    .Parameters("Login") = Params(4)
+                    .Parameters("Org") = Params(5)
+                    .Parameters("MI") = Params(6)
+                    .Parameters("Position") = Params(7)
+                    .Parameters("Phone") = Params(8)
+                    .Parameters("Ext") = Params(9)
+                    .Parameters("IsActiveFlag") = Params(10)
+                    .Parameters("IsNPSFlag") = Params(11)
+                    
+                Case "i_contact_access"
+                    '-- required parameters --
+                    .Parameters("ContactID") = Params(1)
+                    .Parameters("AccessID") = Params(2)
+                
+                    'don't record the action or return ID
+                    SkipRecordAction = True
+                
+                Case "i_cover_species"
+                    'set the table name in the template --> handles WCC, URC, ARC species
+                    .SQL = Replace(.SQL, "INTO tbl ", "INTO " & Params(0) & " ")
+                                    
+                    '-- required parameters --
+                    .Parameters("VegPlotID") = Params(1)
+                    .Parameters("MasterPlantCode") = Params(2)
+                    .Parameters("PctCover") = Params(3)
+                        
+'        params(0) = "WoodyCanopySpecies"
+'        params(1) = .VegPlotID
+'        params(2) = .MasterPlantCode
+'        params(3) = .PercentCover
+
+'        params(0) = "RootedSpecies"
+'        params(1) = .VegPlotID
+'        params(2) = .MasterPlantCode
+'        params(3) = .PercentCover
+                
+                Case "i_event"
+                    '-- required parameters --
+                    .Parameters("SID") = Params(1)
+                    .Parameters("LID") = Params(2)
+                    .Parameters("PID") = Params(3)
+                    .Parameters("Start") = Params(4)
+                                        
+                Case "i_feature"
+                    '-- required parameters --
+                    .Parameters("LocationID") = Params(1)
+                    .Parameters("LocationName") = Params(2)
+                    .Parameters("Description") = Params(3)
+                    .Parameters("Directions") = Params(4)
+                
+                Case "i_imported_data"
+                    '-- required parameters --
+                    .Parameters("idate") = CDate(Format(Now(), "YYYY-mm-dd hh:nn:ss AMPM"))
+                    .Parameters("sfile") = Params(1)
+                    .Parameters("dtbl") = Params(2)
+                    .Parameters("nrec") = Params(3)
+                    .Parameters("srec") = Params(4)
+                    .Parameters("erec") = Params(5)
+                    
+                Case "i_location"
+                    '-- required parameters --
+                    .Parameters("csn") = Params(1)           'CollectionSourceName
+                    .Parameters("ltype") = Params(2)         'LocationType
+                    .Parameters("lname") = Params(3)         'LocationName
+                    .Parameters("dist") = Params(4)          'HeadtoOrientDistance
+                    .Parameters("brg") = Params(5)           'HeadtoOrientBearing
+                    .Parameters("lnotes") = Params(6)        'Notes
+                    
+                    '.Parameters("CreateDate") = Now()
+                    .Parameters("CID") = TempVars("AppUserID")  'CreatedByID
+                    '.Parameters("LastModified") = Now()
+                    .Parameters("LMID") = TempVars("AppUserID") 'LastModifiedByID
+                                                        
+                Case "i_login"
+                    '-- required parameters --
+                    .Parameters("uname") = Params(1) 'username
+                    .Parameters("activity") = Params(2) 'activity
+                    .Parameters("version") = TempVars("AppVersion")
+                    .Parameters("accesslvl") = TempVars("UserAccessLevelID")
+
+Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
+            " version: " & TempVars("AppVersion") & " accesslvl: " & TempVars("UserAccessLevelID")
+                    
+                    SkipRecordAction = True
+                    
+                Case "i_park"
+                    '-- required parameters --
+                    .Parameters("ParkCode") = Params(1)
+                    .Parameters("ParkName") = Params(2)
+                    .Parameters("ParkState") = Params(3)
+                    .Parameters("IsActiveForProtocol") = Params(4)
+                                                        
+                Case "i_photo"
+                    '-- required parameters --
+                    .Parameters("PhotoDate") = Params(1)
+                    .Parameters("PhotoType") = Params(2)
+                    .Parameters("PhotographerID") = Params(3)
+                    .Parameters("FileName") = Params(4)
+                    .Parameters("NCPNImageID") = Params(5)
+                    .Parameters("DirectionFacing") = Params(6)
+                    .Parameters("PhotogLocation") = Params(7)
+                    .Parameters("IsCloseup") = Params(8)
+                    .Parameters("IsInActive") = Params(9)
+                    .Parameters("IsSkipped") = Params(10)
+                    .Parameters("IsReplacement") = Params(11)
+                    .Parameters("LastPhotoUpdate") = Params(12)
+                    
+                    .Parameters("CreateDate") = Now()
+                    .Parameters("CreatedByID") = TempVars("AppUserID") 'ContactID")
+                    .Parameters("LastModified") = Now()
+                    .Parameters("LastModifiedByID") = TempVars("AppUserID") 'ContactID")
+                
+                Case "i_record_action"
+                    '-- required parameters --
+                    .Parameters("RefTable") = Params(0)
+                    .Parameters("RefID") = Params(1)
+                    .Parameters("ID") = Params(2)
+                    .Parameters("Activity") = Params(3)
+                    .Parameters("ActionDate") = Params(4)
+                    
+                    SkipRecordAction = True
+                
+                Case "i_sensitive_locations"
+                    '-- required parameters --
+                    .Parameters("pkid") = Params(0)
+                    .Parameters("lid") = Params(1)
+                    .Parameters("CID") = TempVars("AppUserID")
+                    .Parameters("LMID") = TempVars("AppUserID")
+                    
+                Case "i_sensitive_species"
+                    '-- required parameters --
+                    .Parameters("pkid") = Params(0)
+                    .Parameters("sp") = Params(1)
+                    .Parameters("CID") = TempVars("AppUserID")
+                    .Parameters("LMID") = TempVars("AppUserID")
+                    
+                Case "i_site"
+                    '-- required parameters --
+                    .Parameters("parkID") = Params(1)
+                    .Parameters("riverID") = Params(2)
+                    .Parameters("code") = Params(3)         'SiteCode
+                    .Parameters("sname") = Params(4)        'SiteName
+                    'use |flag| to force 1/0 values vs. Access False (0) & True (-1)
+                    .Parameters("flag") = Abs(Params(5))    'IsActiveForProtocol
+                    
+                    '-- optional parameters --
+                    'NOTE: parameters are limited to 255 char
+                    '      dir may be truncated via parameter since it's a MEMO field
+                    .Parameters("dir") = Params(6)          'Directions
+                    .Parameters("descr") = Params(7)        'Description
+                
+                Case "i_tagline"
+                    '-- required parameters --
+                    .Parameters("LineDistSource") = Params(1)
+                    .Parameters("LineDistSourceID") = Params(2)
+                    .Parameters("LineDistType") = Params(3)
+                    .Parameters("LineDistance") = Params(4)
+                    .Parameters("HeightType") = Params(5)
+                    .Parameters("Height") = Params(6)
+                
+                Case "i_task"
+                    '-- required parameters --
+                    .Parameters("descr") = Params(1)         'Task
+                    .Parameters("stat") = Params(2)         'Status
+                    .Parameters("prio") = Params(3)         'Priority
+                    .Parameters("ttype") = Params(4)        'TaskType
+                    .Parameters("typeident") = Params(5)    'TaskTypeID
+                    .Parameters("RID") = Params(6)          'RequestedByID
+                    .Parameters("reqdate") = Params(7)      'RequestDate
+                    .Parameters("CID") = Params(8)          'CompletedByID
+                    .Parameters("compldate") = Params(9)    'CompleteDate
+                
+                    '.Parameters("CreateDate") = Now()                  'CreateDate
+                    '.Parameters("CreatedByID") = TempVars("ContactID") 'CreatedByID
+                    '.Parameters("LastModified") = Now()                'LastModified
+                    .Parameters("LMID") = TempVars("AppUserID") 'ContactID")  'lastmodifiedID
+                
+                Case "i_template"
+                    '-- required parameters --
+                    .Parameters("tname") = Params(1)        'TemplateName
+                    .Parameters("contxt") = Params(2)       'Context
+                    '.Parameters("tmpl").Type = dbMemo       'set it to a memo field
+                    'Limit template SQL to 255 characters to avoid
+                    'error 3271 SetRecord mod_App_Data Invalid property value.
+                    'templates > 255 characters must be edited directly in the table
+                    .Parameters("tmpl") = Left(Params(3), 255) 'TemplateSQL
+                    .Parameters("rmks") = Params(4)         'Remarks
+                    .Parameters("effdate") = Params(5)      'EffectiveDate
+                    .Parameters("cid") = Params(6)          'CreatedBy_ID (contactID)
+                    .Parameters("prms") = Params(7)         'Params
+                    .Parameters("syntx") = Params(8)        'Syntax
+                    .Parameters("vers") = Params(9)         'Version
+                    .Parameters("sflag") = Params(10)       'IsSupported
+                    .Parameters("lmid") = TempVars("AppUserID") 'lastmodifiedID
+                
+                Case "i_transducer"
+                    '-- required parameters --
+                    .Parameters("EventID") = Params(1)
+                    .Parameters("TransducerType") = Params(2)
+                    .Parameters("TransducerNumber") = Params(3)
+                    .Parameters("SerialNumber") = Params(4)
+                    .Parameters("IsSurveyed") = Params(5)
+                    .Parameters("Timing") = Params(6)
+                    .Parameters("ActionDate") = Params(7)
+                    .Parameters("ActionTime") = Params(8)
+                
+                Case "i_understory_species"
+                    '-- required parameters --
+                    .Parameters("VegPlotID") = Params(1)
+                    .Parameters("MasterPlantCode") = Params(2)
+                    .Parameters("PercentCover") = Params(3)
+                    .Parameters("IsSeedling") = Params(4)
+                     
+                Case "i_vegplot"
+                    '-- required parameters --
+                    .Parameters("EventID") = Params(1)
+                    .Parameters("SiteID") = Params(2)
+                    .Parameters("FeatureID") = Params(3)
+                    .Parameters("VegTransectID") = Params(4)
+                    .Parameters("PlotNumber") = Params(5)
+                    .Parameters("PlotDistance") = Params(6)
+                    .Parameters("ModalSedimentSize") = Params(7)
+                    .Parameters("PercentFines") = Params(8)
+                    .Parameters("PercentWater") = Params(9)
+                    .Parameters("UnderstoryRootedPctCover") = Params(10)
+                    .Parameters("PlotDensity") = Params(11)
+                    .Parameters("NoCanopyVeg") = Params(12)
+                    .Parameters("NoRootedVeg") = Params(13)
+                    .Parameters("HasSocialTrail") = Params(14)
+                    .Parameters("FilamentousAlgae") = Params(15)
+                    .Parameters("NoIndicatorSpecies") = Params(16)
+                    
+                    .Parameters("CreateDate") = Now()
+                    .Parameters("CreatedByID") = TempVars("AppUserID") 'ContactID")
+                    .Parameters("LastModified") = Now()
+                    .Parameters("LastModifiedByID") = TempVars("AppUserID") 'ContactID")
+                
+                Case "i_vegtransect"
+                    '-- required parameters --
+                    .Parameters("LocationID") = Params(1)
+                    .Parameters("EventID") = Params(2)
+                    .Parameters("TransectNumber") = Params(3)
+                    .Parameters("SampleDate") = Params(4)
+        
+                Case "i_vegwalk"
+                    '-- required parameters --
+                    .Parameters("EventID") = Params(1)
+                    .Parameters("CollectionPlaceID") = Params(2)
+                    .Parameters("CollectionType") = Params(3)
+                    .Parameters("StartDate") = Params(4)
+                    
+                    .Parameters("CreateDate") = Now()
+                    .Parameters("CreatedByID") = TempVars("AppUserID") 'ContactID")
+                    .Parameters("LastModified") = Now()
+                    .Parameters("LastModifiedByID") = TempVars("AppUserID") 'ContactID")
+                    
+                Case "i_vegwalk_species"
+                    '-- required parameters --
+                    .Parameters("VegWalkID") = Params(1)
+                    .Parameters("MasterPlantCode") = Params(2)
+                    .Parameters("IsSeedling") = Params(3)
+                    
+                Case "i_waterway"
+                    '-- required parameters --
+                    .Parameters("ParkID") = Params(1)
+                    .Parameters("Name") = Params(2)
+                    .Parameters("Segment") = Params(3)
+                    
+                Case "i_usys_temp_photo"
+                    '-- required parameters --
+                    .Parameters("ppath") = Params(1)
+                    .Parameters("pfile") = Params(2)
+                    .Parameters("pdate") = Params(3)
+                    .Parameters("ptype") = Params(4)
+            
+            '-------------------
+            ' --- UPLAND & INVASIVES ---
+            '-------------------
+                Case "i_new_transect_quadrat"
+                    '-- required parameters --
+                    .Parameters("tid") = Params(1)  'record ID
+                    .Parameters("qnum") = Params(2) 'quadrat number (1-3)
+                
+                Case "i_new_transect_quadrat_sfccover"
+                    '-- required parameters --
+                    .Parameters("qid") = Params(1)  'record ID
+                    .Parameters("sid") = Params(2)  'surface microhabitat ID
+                
                 Case "i_num_records"
                     '-- required parameters --
                     .Parameters("rid") = Params(1)  'record ID
                     .Parameters("num") = Params(2)  'number of records
                     .Parameters("fok") = Params(3)  'field ok? (QC pass/fail)
+                    
+                Case "i_speciescover"
+                    '-- required parameters --
+                    .Parameters("qid") = Params(1)      'quadrat ID
+                    .Parameters("plant") = Params(2)    'plant lookup code
+                    .Parameters("dead") = Params(3)     'is dead flag
+                    .Parameters("pct") = Params(4)      'percent cover
                     
                 Case "i_template"
                     '-- required parameters --
@@ -1084,19 +1576,315 @@ On Error GoTo Err_Handler
                     .Parameters("fok") = Params(12)         'FieldOK
                     .Parameters("dep") = Params(13)         'Dependencies
                 
+                Case "i_surface_cover"
+                    '-- required parameters --
+                    .Parameters("qid") = Params(1)
+                    .Parameters("sid") = Params(2)
+                    .Parameters("pct") = Params(3)
+                    
+'                    .Parameters("") = Params(1)
+'                    .Parameters("") = Params(2)
+'                    .Parameters("") = Params(3)
+                
         '-----------------------
         '  UPDATES
         '-----------------------
+                
+            '-------------------
+            ' --- BIG RIVERS ---
+            '-------------------
+                Case "u_comment"
+                    '-- required parameters --
+                    .Parameters("CommentType") = Params(1)
+                    .Parameters("TypeID") = Params(2)
+                    .Parameters("Comment") = Params(3)
+                    .Parameters("CommentorID") = Params(4)
+                    
+                    .Parameters("CreateDate") = Now()
+                    .Parameters("CreatedByID") = TempVars("AppUserID") 'ContactID")
+                    .Parameters("LastModified") = Now()
+                    .Parameters("LastModifiedByID") = TempVars("AppUserID") 'ContactID")
+                    
+                Case "u_contact"
+                    '-- required parameters --
+                    .Parameters("First") = Params(1)
+                    .Parameters("Last") = Params(2)
+                    .Parameters("EmailAddress") = Params(3)
+                    .Parameters("Login") = Params(4)
+                    .Parameters("Org") = Params(5)
+                    .Parameters("MI") = Params(6)
+                    .Parameters("Position") = Params(7)
+                    .Parameters("Phone") = Params(8)
+                    .Parameters("Ext") = Params(9)
+                    .Parameters("IsActiveFlag") = Params(10)
+                    .Parameters("IsNPSFlag") = Params(11)
+                    .Parameters("ContactID") = Params(12)
+                    ID = Params(12)
+                
+                Case "u_contact_access"
+                    '-- required parameters --
+                    .Parameters("ContactID") = Params(1)
+                    .Parameters("AccessID") = Params(2)
+                    ID = Params(1)
+                
+                Case "u_contact_isactive_flag"
+                    '-- required parameters --
+                    .Parameters("cid") = Params(1)
+                    .Parameters("flag") = Params(2)
+                
+                Case "u_cover_species"
+                    'set the table name in the template --> handles WCC, URC, ARC species
+                    .SQL = Replace(.SQL, " tbl ", " " & Params(0) & " ")
+                                    
+                    '-- required parameters --
+                    .Parameters("VegPlot_ID") = Params(1)
+                    .Parameters("Master_PLANT_Code") = Params(2)
+                    .Parameters("PctCover") = Params(3)
+                
+                Case "u_event"
+                    '-- required parameters --
+                    .Parameters("SID") = Params(1)
+                    .Parameters("LID") = Params(2)
+                    .Parameters("PID") = Params(3)
+                    .Parameters("Start") = Params(4)
+                    .Parameters("EID") = Params(5)
+                    ID = Params(5)
+                    
+                Case "u_feature"
+                    '-- required parameters --
+                    .Parameters("LocationID") = Params(1)
+                    .Parameters("LocationName") = Params(2)
+                    .Parameters("Description") = Params(3)
+                    .Parameters("Directions") = Params(4)
+                    
+                Case "u_location"
+                    '-- required parameters --
+                    .Parameters("CollectionSourceName") = Params(1)
+                    .Parameters("LocationType") = Params(2)
+                    .Parameters("LocationName") = Params(3)
+                    .Parameters("HeadtoOrientDistance") = Params(4)
+                    .Parameters("HeadtoOrientBearing") = Params(5)
+                    
+                    .Parameters("LastModified") = Now()
+                    .Parameters("LastModifiedByID") = TempVars("AppUserID") 'ContactID")
+                
+                Case "u_mod_wentworth_retireyear"
+                    '-- required parameters --
+                    .Parameters("mwsid") = Params(1)
+                    .Parameters("yr") = Params(2)
+                
+                Case "u_park"
+                    '-- required parameters --
+                    .Parameters("ParkCode") = Params(1)
+                    .Parameters("ParkName") = Params(2)
+                    .Parameters("ParkState") = Params(3)
+                    .Parameters("IsActiveForProtocol") = Params(4)
+                        
+                Case "u_photo"
+                    '-- required parameters --
+                    .Parameters("PhotoDate") = Params(1)
+                    .Parameters("PhotoType") = Params(2)
+                    .Parameters("PhotographerID") = Params(3)
+                    .Parameters("FileName") = Params(4)
+                    .Parameters("NCPNImageID") = Params(5)
+                    .Parameters("DirectionFacing") = Params(6)
+                    .Parameters("PhotogLocation") = Params(7)
+                    .Parameters("IsCloseup") = Params(8)
+                    .Parameters("IsInActive") = Params(9)
+                    .Parameters("IsSkipped") = Params(10)
+                    .Parameters("IsReplacement") = Params(11)
+                    .Parameters("LastPhotoUpdate") = Params(12)
+                    
+                    .Parameters("CreateDate") = Now()
+                    .Parameters("CreatedByID") = TempVars("AppUserID") 'ContactID")
+                    .Parameters("LastModified") = Now()
+                    .Parameters("LastModifiedByID") = TempVars("AppUserID") 'ContactID")
+                
+                Case "u_site"
+                    '-- required parameters --
+                    .Parameters("ParkID") = Params(1)
+                    .Parameters("RiverID") = Params(2)
+                    .Parameters("Code") = Params(3)
+                    .Parameters("Name") = Params(4)
+                    .Parameters("IsActiveForProtocol") = Params(5)
+                    
+                    '-- optional parameters --
+                    .Parameters("Directions") = Params(6)
+                    .Parameters("Description") = Params(7)
+                
+                Case "u_site_isactive_flag"
+                    '-- required parameters --
+                    .Parameters("sid") = Params(1)
+                    .Parameters("flag") = Params(2)
+                
+                Case "u_tagline"
+                    '-- required parameters --
+                    .Parameters("LineDistSource") = Params(1)
+                    .Parameters("LineDistSourceID") = Params(2)
+                    .Parameters("LineDistType") = Params(3)
+                    .Parameters("LineDistance") = Params(4)
+                    .Parameters("HeightType") = Params(5)
+                    .Parameters("Height") = Params(6)
+                
+                Case "u_task"
+                    '-- required parameters --
+                    .Parameters("tid") = Params(14)         'task ID
+                    .Parameters("descr") = Params(1)        'task
+                    .Parameters("stat") = Params(2)         'status
+                    .Parameters("prio") = Params(3)         'priority
+                    .Parameters("ttype") = Params(4)        'task type
+                    .Parameters("typeident") = Params(5)    'task type ID
+                    .Parameters("RID") = Params(3)          'requested by ID
+                    .Parameters("reqdate") = Params(7)      'request date
+                    .Parameters("CID") = Params(5)          'completed by ID
+                    .Parameters("compldate") = Params(9)    'complete date
+                
+                    .Parameters("LMID") = TempVars("AppUserID") 'last modified by ID
+                
+                Case "u_transducer"
+                    '-- required parameters --
+                    .Parameters("EventID") = Params(1)
+                    .Parameters("TransducerType") = Params(2)
+                    .Parameters("TransducerNumber") = Params(3)
+                    .Parameters("SerialNumber") = Params(4)
+                    .Parameters("IsSurveyed") = Params(5)
+                    .Parameters("Timing") = Params(6)
+                    .Parameters("ActionDate") = Params(7)
+                    .Parameters("ActionTime") = Params(8)
+                
+                Case "u_template"
+                    '-- required parameters --
+                    .Parameters("id") = Params(1)
+                
+                Case "u_tsys_datasheet_defaults"
+                    '-- required parameters --
+                    .Parameters("id") = Params(1)
+                    .Parameters("pid") = Params(2)
+                    .Parameters("rid") = Params(3)
+                    .Parameters("cover") = Params(4)
+                    .Parameters("species") = Params(5)
+                    .Parameters("blanks") = Params(6)
+                    
+                    '-- optional parameters --
+                
+                Case "u_usys_temp_photo"
+                    '-- required parameters --
+                    .Parameters("iid") = Params(1)
+                    .Parameters("ptype") = Params(4)
+                
+                Case "u_vegtransect"
+                    '-- required parameters --
+                    .Parameters("LocationID") = Params(1)
+                    .Parameters("EventID") = Params(2)
+                    .Parameters("TransectNumber") = Params(3)
+                    .Parameters("SampleDate") = Params(4)
+                
+                Case "u_vegwalk"
+                    '-- required parameters --
+                    .Parameters("EventID") = Params(1)
+                    .Parameters("CollectionPlaceID") = Params(2)
+                    .Parameters("CollectionType") = Params(3)
+                    .Parameters("StartDate") = Params(4)
+                    
+                    .Parameters("CreateDate") = Now()
+                    .Parameters("CreatedByID") = TempVars("AppUserID") 'ContactID")
+                    .Parameters("LastModified") = Now()
+                    .Parameters("LastModifiedByID") = TempVars("AppUserID") '"ContactID")
+                
+                Case "u_vegwalk_species"
+                    '-- required parameters --
+                    .Parameters("VegWalkID") = Params(1)
+                    .Parameters("MasterPlantCode") = Params(2)
+                    .Parameters("IsSeedling") = Params(3)
+                    
+                Case "u_understory_species"
+                    '-- required parameters --
+                    .Parameters("VegPlotID") = Params(1)
+                    .Parameters("MasterPlantCode") = Params(2)
+                    .Parameters("PercentCover") = Params(3)
+                    .Parameters("IsSeedling") = Params(4)
+                
+                Case "u_waterway"
+                    '-- required parameters --
+                    .Parameters("ParkID") = Params(1)
+                    .Parameters("Name") = Params(2)
+                    .Parameters("Segment") = Params(3)
+            
+            '-------------------
+            ' --- UPLAND & INVASIVES ---
+            '-------------------
+                Case "u_event_comments"
+                    '-- required parameters --
+                    .Parameters("eid") = Params(1)
+                    .Parameters("cmt") = Params(2)
+                
+                Case "u_event_observer"
+                    '-- required parameters --
+                    .Parameters("eid") = Params(1)
+                    .Parameters("oid") = Params(2)
+                
+                Case "u_event_startdate"
+                    '-- required parameters --
+                    .Parameters("eid") = Params(1)
+                    .Parameters("start") = Params(2)
+                
                 Case "u_num_records"
                     '-- required parameters --
                     .Parameters("rid") = Params(1)
                     .Parameters("num") = Params(2)
                     .Parameters("fok") = Params(3)
                     
+                Case "u_quadrat_flags"
+                    '-- required parameters --
+                    .Parameters("qid") = Params(1)
+                    .Parameters("is") = Params(2)
+                    .Parameters("ne") = Params(3)
+                
+                Case "u_speciescover"
+                    '-- required parameters --
+                    .Parameters("scid") = Params(1)     'species cover record ID
+                    .Parameters("qid") = Params(2)      'quadrat ID
+                    .Parameters("plant") = Params(3)    'plant lookup code
+                    .Parameters("dead") = Params(4)     'is dead flag
+                    .Parameters("pct") = Params(5)      'percent cover
+                
+                Case "u_surface_cover"
+                    '-- required parameters --
+                    .Parameters("sfcid") = Params(1)
+                    .Parameters("qid") = Params(2)
+                    .Parameters("sid") = Params(3)
+                    .Parameters("pct") = Params(4)
+                    
+                Case "u_surfacecover_by_id"
+                    '-- required parameters --
+                    .Parameters("sfcid") = Params(1)
+                    .Parameters("pct") = Params(2)
+                
                 Case "u_template"
                     '-- required parameters --
                     .Parameters("id") = Params(1)
                 
+                Case "u_transect_data"
+                    '-- required parameters --
+                    .Parameters("oid") = Params(1)      'observer
+                    .Parameters("cmt") = Params(2)      'comments
+                    .Parameters("tid") = Params(3)      'transect quadrat ID
+                    
+                Case "u_transect_comments"
+                    '-- required parameters --
+                    .Parameters("cmt") = Params(1)      'comments
+                    .Parameters("tid") = Params(2)      'transect quadrat ID
+                
+                Case "u_transect_observer"
+                    '-- required parameters --
+                    .Parameters("oid") = Params(1)      'observer
+                    .Parameters("tid") = Params(2)      'transect quadrat ID
+                    
+                Case "u_transect_start_time"
+                    '-- required parameters --
+                    .Parameters("start") = Params(1)    'start time
+                    .Parameters("tid") = Params(2)      'transect quadrat ID
+                    
         '-----------------------
         '  DELETES
         '-----------------------
@@ -1107,8 +1895,15 @@ On Error GoTo Err_Handler
                     '-- required parameters --
                     .Parameters("rid") = Params(1)
             
-            End Select
+                Case "d_speciescover"
+                    '-- required parameters --
+                    .Parameters("scid") = Params(1)
+'                    .Parameters("qid") = params(2)
+'                    .Parameters("plant") = params(3)
+'                    .Parameters("dead") = params(4)
             
+            End Select
+'Debug.Print .sql
             .Execute dbFailOnError
                 
     ' -------------------
@@ -1183,6 +1978,9 @@ End Function
 '   BLC - 2/1/2017 - handle form upserts for forms w/o lists/msg & msg icons
 '   BLC - 2/3/2017 - location adjustments
 '   BLC - 3/27/2017 - removed big rivers cases, replaced w/ upland cases
+' --------------------------------------------------------------------
+'   BLC - 9/7/2017  - merge uplands, invasives, big rivers dbs modifications
+' --------------------------------------------------------------------
 ' ---------------------------------
 Public Sub UpsertRecord(ByRef frm As Form)
 On Error GoTo Err_Handler
@@ -1216,6 +2014,429 @@ On Error GoTo Err_Handler
     
         Select Case frm.Name
             
+            '-------------------
+            ' --- BIG RIVERS ---
+            '-------------------
+            Case "Contact"
+                Dim p As New Person
+    
+                With p
+                    'values passed into form
+                            
+                    'form values
+                    .LastName = frm!tbxLast.Value
+                    .FirstName = frm!tbxFirst.Value
+                    If Not IsNull(frm!tbxMI.Value) Then p.MiddleInitial = frm!tbxMI.Value  'FIX EMPTY STRING
+                    .Email = frm!tbxEmail.Value
+                    '.Username = frm!tbxUsername.Value
+                    If Not IsNull(frm!tbxUsername.Value) Then p.UserName = frm!tbxUsername.Value
+                    If Not IsNull(frm!tbxOrganization.Value) Then p.Organization = frm!tbxOrganization.Value
+                    If Not IsNull(frm!tbxPosition.Value) Then .PosTitle = frm!tbxPosition.Value
+                    If Not IsNull(frm!tbxPhone.Value) And Len(frm!tbxPhone.Value) > 0 Then
+                        .WorkPhone = RemoveChars(frm!tbxPhone.Value, True) 'remove non-numerics
+                    Else
+                        .WorkPhone = Null
+                    End If
+                    If Not IsNull(frm!tbxExtension.Value) And Len(frm!tbxExtension.Value) > 0 Then
+                        .WorkExtension = RemoveChars(frm!tbxExtension.Value, True) 'remove non-numerics
+                    Else
+                        .WorkExtension = Null
+                    End If
+                    If Not IsNull(frm!cbxUserRole.Column(1)) Then .AccessRole = frm!cbxUserRole.Column(1)
+                    .ID = frm!tbxID.Value '0 if new, edit if > 0
+                
+                    strCriteria = "[FirstName] = '" & .FirstName _
+                                    & "' AND [LastName] = '" & .LastName _
+                                    & "' AND [MiddleInitial] = '" & .MiddleInitial _
+                                    & "' AND [Email] = '" & .Email & "'"
+                    
+                    'set the generic object --> Contact
+                    Set obj = p
+                    
+                    'cleanup
+                    Set p = Nothing
+                End With
+
+            Case "Events"
+                Dim ev As New EventVisit
+                strTable = "Event"
+                
+                With ev
+                    'values passed into form
+                    
+                    'form values
+                    .LocationID = frm!cbxLocation.Column(0)
+                    .ProtocolID = 1 ' assumes this is for big rivers protocol
+                    .SiteID = TempVars("SiteID") 'frm!cbxSite.Column(0)
+                    
+                    .StartDate = frm!tbxStartDate.Value
+                    
+                    .ID = frm!tbxID.Value '0 if new, edit if > 0
+                    
+                    strCriteria = "[Site_ID] = " & .SiteID & " AND [Location_ID] = " & .LocationID & " AND [StartDate] = " & Format(.StartDate, "YYYY-mm-dd")
+                    
+                    'set the generic object --> EventVisit
+                    Set obj = ev
+                    
+                    'cleanup
+                    Set ev = Nothing
+                End With
+            
+            Case "Feature"
+                Dim f As New Feature
+
+                With f
+                    'values passed into form
+                            
+                    'form values
+                    .LocationID = frm!cbxLocation.Column(0)
+                    .Name = frm!tbxFeature.Value
+                    
+                    If Not IsNull(frm!tbxFeatureDirections.Value) Then f.Directions = frm!tbxFeatureDirections.Value
+                    If Not IsNull(frm!tbxDescription.Value) Then .Directions = frm!tbxDescription.Value
+                    .ID = frm!tbxID.Value '0 if new, edit if > 0
+                
+                    strCriteria = "[Location_ID] = " & .LocationID & " AND [Feature] = '" & .Name & "'"
+                    
+                    'set the generic object --> Feature
+                    Set obj = f
+                
+                    'cleanup
+                    Set f = Nothing
+                End With
+
+            Case "Location"
+                Dim loc As New Location
+                
+                With loc
+                    'form values
+                    
+                    'location types: F- feature, T- transect, P - plot
+                    .LocationType = frm.LocationType 'cbxLocationType.SelText
+                    
+                    'CollectionSourceName is the identifier for which
+                    'feature/transect/plot the location is located on
+                    'collection feature ID (A, B, C...) or Transect number (1-8)
+                    .CollectionSourceName = frm.cbxCollectionSourceID
+                                                                    
+                    .LocationName = frm!tbxName.Value
+            
+                    .HeadtoOrientDistance = frm!tbxDistance.Value
+                    .HeadtoOrientBearing = frm!tbxBearing.Value
+                    
+                    .LocationNotes = frm!tbxNotes.Value
+                    
+                    '.CreateDate = ""
+                    '.CreatedByID = 0
+                    .LastModified = Now()
+                    .LastModifiedByID = 0
+                    
+                    .ID = frm!tbxID.Value '0 if new, edit if > 0
+
+                    'ignore location notes in criteria
+                    strCriteria = "[LocationName] = '" & .LocationName _
+                                & "' AND [LocationType] = '" & .LocationType _
+                                & "' AND [CollectionSourceName] = '" & .CollectionSourceName _
+                                & "' AND [HeadtoOrientDistance_m] = " & .HeadtoOrientDistance _
+                                & " AND [HeadtoOrientBearing] = " & .HeadtoOrientBearing '_
+'                                    & " AND [LastModified] = " & .LastModified _
+'                                    & " AND [LastModifiedBy_ID] = " & .LastModifiedByID
+                
+                    'set the generic object --> Location
+                    Set obj = loc
+                    
+                    'cleanup
+                    Set loc = Nothing
+                End With
+                                        
+            Case "Photo"
+                Dim ph As New Photo
+                
+                With ph
+                    'values passed into form
+                
+                    .ID = frm!tbxID.Value '0 if new, edit if > 0
+                                
+                    'set the generic object --> Location
+                    Set obj = p
+                    
+                    'cleanup
+                    Set ph = Nothing
+                End With
+                                        
+            Case "PhotoOtherDetails"
+                Dim pho As New Photo
+                
+                With pho
+                    Dim FilePath As String
+                    Dim aryFileInfo() As Variant
+                    Dim nodeinfo() As String
+                    '0 - M, 1- C, 2-full file path, 3-file name w/o extension
+                    nodeinfo = Split(frm.Parent!tvwTree.Object.SelectedItem.Tag, "|")
+                    FilePath = nodeinfo(2)
+                    'filepath = frm.Parent!tvwTree.Object.SelectedItem.Tag 'frm!tvw.SelectedNode.Tag
+                    'aryFileInfo = GetFileEXIFInfo()
+                    'values passed into form
+'        Params(0) = "Photo"
+'        Params(1) = .PhotoDate
+'        Params(2) = .PhotoType
+'        Params(3) = .PhotographerID
+'        Params(4) = .FileName
+'        Params(5) = .NCPNImageID
+'        Params(6) = .DirectionFacing
+'        Params(7) = .PhotogLocation
+'        Params(8) = .IsCloseup
+'        Params(9) = .IsInActive
+'        Params(10) = .IsSkipped
+'        Params(11) = .IsReplacement
+'        Params(12) = .LastPhotoUpdate
+                    .PhotoType = frm!lblPhotoType
+                    Select Case .PhotoType
+                        Case "U" 'unclassified
+                        Case "F" 'feature
+                        Case "T" 'transect
+                        Case "O" 'overview
+                        Case "R" 'reference
+                        Case "O" 'other
+                    End Select
+                    .PhotographerID = frm.fsub.Form.Controls("cbxPhotog")
+                    .FileName = "" 'lblPhotoFilename 'aryFileInfo(0)
+                    
+                    .ID = frm!tbxID.Value '0 if new, edit if > 0
+                                
+                    'set the generic object --> Location
+                    Set obj = pho
+                    
+                    'cleanup
+                    Set pho = Nothing
+                End With
+                                                                                
+            Case "SetObserverRecorder"
+                Dim ra As New RecordAction
+                
+                With ra
+                    'values passed into form
+                    .RefTable = frm.RefTable
+                    .RefID = frm.RefID
+                    .ContactID = frm.RAContactID
+                    .RefAction = frm.RAAction
+                    '.ActionType = frm.RAAction
+                    .ActionDate = CDate(Format(Now(), "YYYY-mm-dd hh:nn:ss AMPM"))
+                
+                    .ID = frm!tbxID.Value '0 if new, edit if > 0
+                                
+                    strCriteria = "[Contact_ID] = " & .ContactID _
+                                & " AND [Activity] = '" & .RefAction _
+                                & "'"
+
+                    'set the generic object --> Location
+                    Set obj = ra
+                    
+                    'cleanup
+                    Set ra = Nothing
+                End With
+            
+            
+            Case "Site"
+                Dim s As New Site
+                
+                With s
+                    'values passed into form
+                    .Park = TempVars("ParkCode")
+                    .River = TempVars("River")
+                    
+                    'form values
+                    .Code = frm!tbxSiteCode.Value
+                    .Name = frm!tbxSiteName.Value
+                    .Directions = Nz(frm!tbxSiteDirections.Value, "")
+                    .Description = Nz(frm!tbxDescription.Value, "")
+                    
+                    'assumed
+                    .IsActiveForProtocol = 1 'all sites assumed active when added
+        
+                    .ID = frm!tbxID.Value '0 if new, edit if > 0
+                
+                    strCriteria = "[SiteCode] = '" & .Code & "' AND [SiteName] = '" & .Name & "'"
+                
+                    'set the generic object --> Site
+                    Set obj = s
+                    
+                    'cleanup
+                    Set s = Nothing
+                End With
+                
+            Case "SurveyFile"
+            
+            Case "Task"
+                Dim tk As New Task
+                
+                With tk
+                    .ID = frm!tbxID.Value '0 if new, edit if > 0
+                    .RequestDate = frm!tbxRequestDate.Value
+                    .RequestedByID = frm!cbxRequestedBy.Column(0)
+                    .Status = frm!cbxStatus.Column(0)
+                    .Priority = frm!cbxPriority.Column(0)
+                    .Task = frm!tbxTask.Value
+                    .TaskType = frm.ContextType
+                    
+                    strCriteria = "[TaskType] = '" & .TaskType _
+                                & "' AND [Task] = '" & .Task _
+                                & "'"
+                
+                    'set the generic object --> Task
+                    Set obj = tk
+                    
+                    'cleanup
+                    Set tk = Nothing
+                End With
+            
+            Case "Transducer"
+                Dim t As New Transducer
+        
+                With t
+                    'values passed into form
+                    .EventID = 1
+                            
+                    'form values
+                    .TransducerType = ""
+                    .TransducerNumber = frm!cbxTransducer.SelText
+                    .SerialNumber = frm!tbxSerialNo.Value
+                    .IsSurveyed = frm!chkSurveyed.Value
+                    .Timing = frm!cbxTiming.SelText
+                    .ActionDate = Format(frm!tbxSampleDate.Value, "YYYY-mm-dd")
+                    .ActionTime = Format(frm!tbxSampleTime.Value, "hh:mm.ss")
+                    
+                    .ID = frm!tbxID.Value '0 if new, edit if > 0
+                
+                    strCriteria = "[TransducerNumber] = " & .TransducerNumber _
+                                & " AND [Timing] = '" & .Timing _
+                                & "' AND [SerialNumber] = '" & .SerialNumber _
+                                & "' AND [ActionDate] = " & .ActionDate
+                
+                    'set the generic object --> Transducer
+                    Set obj = t
+                    
+                    'cleanup
+                    Set t = Nothing
+                End With
+            
+            Case "Transect"
+                Dim vt As New VegTransect
+                strTable = "VegTransect"
+                
+                With vt
+                    'values passed into form
+                    .Park = TempVars("ParkCode")
+                    .LocationID = 1
+                    .EventID = 1
+                            
+                    'form values
+                    .TransectNumber = frm!tbxNumber.Value
+                    .SampleDate = Format(frm!tbxSampleDate.Value, "YYYY-mm-dd")
+                    
+                    .ID = frm!tbxID.Value '0 if new, edit if > 0
+                    
+                    strCriteria = "[TransectNumber] = " & .TransectNumber _
+                                & "' AND [SampleDate] = " & .SampleDate
+                
+                    'set the generic object --> VegTransect
+                    Set obj = vt
+                    
+                    'cleanup
+                    Set vt = Nothing
+                End With
+            
+            Case "UserRole"
+                Dim u As New Person
+                    
+                With u
+                    'values passed into form
+            '        .EventID = 1
+                            
+                    'form values
+            '        .UserRoleType = ""
+            '        .UserRoleNumber = cbxUserRole.SelText
+            '        .SerialNumber = tbxSerialNo.value
+            '        .IsSurveyed = chkSurveyed.value
+            '        .Timing = cbxTiming.SelText
+            '        .ActionDate = Format(tbxSampleDate.value, "YYYY-mm-dd")
+            '        .ActionTime = Format(tbxSampleTime.value, "hh:mm.ss")
+                    
+                    .ID = frm!tbxID.Value '0 if new, edit if > 0
+                
+                    'strCriteria = "[UserRoleNumber] = " & .UserRoleNumber
+                
+                    'set the generic object --> Location
+                    Set obj = u
+                    
+                    'cleanup
+                    Set u = Nothing
+                End With
+
+            Case "VegWalk"
+                Select Case frm.FormContext
+                    Case "AllRootedSpecies"
+                        Dim ars As New RootedSpecies
+                        
+                        With ars
+                            'values passed into form
+                            .ID = frm!tbxID.Value '0 if new, edit if > 0
+                            
+                            'set the generic object --> Woody Canopy Species
+                            Set obj = ars
+                            
+                            'cleanup
+                            Set ars = Nothing
+                        End With
+                    
+                    Case "UnderstoryRootedSpecies"
+                        Dim ucs As New UnderstoryCoverSpecies
+                        
+                        With ucs
+                            'values passed into form
+                            .ID = frm!tbxID.Value '0 if new, edit if > 0
+                            
+                            'set the generic object --> Woody Canopy Species
+                            Set obj = ucs
+                            
+                            'cleanup
+                            Set ucs = Nothing
+                        End With
+
+                    Case "VegWalk"
+                        Dim vw As New VegWalk
+                        
+                        With vw
+                            'values passed into form
+                        
+                            .ID = frm!tbxID.Value '0 if new, edit if > 0
+                                        
+                            'set the generic object --> Location
+                            Set obj = vw
+                            
+                            'cleanup
+                            Set vw = Nothing
+                        End With
+                    
+                    Case "WoodyCanopySpecies"
+                        Dim wcs As New WoodyCanopySpecies
+                        
+                        With wcs
+                            'values passed into form
+                            .ID = frm!tbxID.Value '0 if new, edit if > 0
+                            
+                            'set the generic object --> Woody Canopy Species
+                            Set obj = wcs
+                            
+                            'cleanup
+                            Set wcs = Nothing
+                        End With
+                
+                End Select
+                
+            '-------------------
+            ' --- UPLAND & INVASIVES ---
+            '-------------------
             Case "Template"
                 'Dim tpl As New Template
                 Dim tpl As Template
@@ -1263,8 +2484,6 @@ On Error GoTo Err_Handler
                 
                 'inserts only, no ID?
                 NoList = True
-                
-            
 
             Case Else
                 GoTo Exit_Handler
@@ -1392,222 +2611,844 @@ Err_Handler:
     Resume Exit_Handler
 End Sub
 
-'' ---------------------------------
-'' Sub:          SetObserverRecorder
-'' Description:  Sets data observer & recorder
-'' Assumptions:  -
-'' Parameters:   obj - object to set observer/recorder on (object)
-''               tbl - name of table being modified (string)
-'' Returns:      -
-'' Throws:       none
-'' References:   -
-'' Source/date:  Bonnie Campbell, August 9, 2016 - for NCPN tools
-'' Adapted:      -
-'' Revisions:
-''   BLC - 8/9/2016 - initial version
-'' ---------------------------------
-'Public Sub SetObserverRecorder(obj As Object, tbl As String)
-'On Error GoTo Err_Handler
-'
-'    'handle record actions
-'    Dim act As New RecordAction
-'    With act
-'
-'    'Recorder
-'        .RefAction = "R"
-'        .ContactID = obj.RecorderID
-'        .RefID = obj.ID
-'        .RefTable = tbl
-'        .SaveToDb
-'
-'    'Observer
-'        .RefAction = "O"
-'        .ContactID = obj.ObserverID
-'        .RefID = obj.ID
-'        .RefTable = tbl
-'        .SaveToDb
-'
-'    End With
-'
-'Exit_Handler:
-'    Exit Sub
-'Err_Handler:
-'    Select Case Err.Number
-'      Case Else
-'        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-'            "Error encountered (#" & Err.Number & " - SetObserverRecorder[mod_App_Data])"
-'    End Select
-'    Resume Exit_Handler
-'End Sub
-
-'' ---------------------------------
-'' Sub:          UploadCSVFile
-'' Description:  Uploads data into database from CSV file
-'' Assumptions:  -
-'' Parameters:   strFilename - name of file being uploaded (string)
-'' Returns:      -
-'' Throws:       none
-'' References:   -
-'' Source/date:  Bonnie Campbell, September 1, 2016 - for NCPN tools
-'' Adapted:      -
-'' Revisions:
-''   BLC - 9/1/2016 - initial version
-''   BLC - 10/19/2016 - renamed to UploadCSVFile from UploadSurveyFile to genericize
-'' ---------------------------------
-'Public Sub UploadCSVFile(strFilename As String)
-'On Error GoTo Err_Handler
-'
-'    'import to table
-'    ImportCSV strFilename, "usys_temp_csv", True, True
-'
-'Exit_Handler:
-'    Exit Sub
-'Err_Handler:
-'    Select Case Err.Number
-'      Case Else
-'        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-'            "Error encountered (#" & Err.Number & " - UploadCSVFile[mod_App_Data])"
-'    End Select
-'    Resume Exit_Handler
-'End Sub
-
 ' ---------------------------------
-' Function:          FetchAddlData
-' Description:  Retrieves additional data field(s)
-' Assumptions:
-'               fields are delimited w/ a pipe (|)
-' Parameters:   tbl - name of table to retrieve from (string)
-'               field(s) - name of field to retrieve (string)
-'               id - record to retrieve's ID (long)
-' Returns:      field value(s) for record (DAO.Recordset)
-' Throws:       none
-' References:
-'   Steven Thomas, November 28, 2011
-'   https://blogs.office.com/2011/11/28/display-real-time-information-with-the-controltip-property/
-' Source/date:  Bonnie Campbell, September 13, 2016 - for NCPN tools
-' Adapted:      -
-' Revisions:
-'   BLC - 9/13/2016 - initial version
-' ---------------------------------
-Public Function FetchAddlData(tbl As String, Fields As String, ID As Long) As DAO.Recordset
-On Error GoTo Err_Handler
-    
-    'values are required --> exit if not
-    If Len(tbl) = 0 Or Len(Fields) = 0 Or Not (ID > 0) Then GoTo Exit_Handler
-    
-    'begin retrieval
-    Dim field As String
-    Dim strFields As String
-    Dim strSQL As String
-    Dim db As DAO.Database
-    Dim qdf As DAO.QueryDef
-    
-    Set db = CurrentDb
-    
-    With db
-        Set qdf = .QueryDefs("usys_temp_qdf")
-        
-        With qdf
-            
-            'check for multiple fields
-            If InStr(Fields, "|") > 0 Then
-                Dim aryFlds() As String
-                Dim i As Integer
-                
-                aryFlds = Split(Fields, "|")
-                
-                For i = 0 To UBound(aryFlds)
-                    strFields = aryFlds(i) & ","
-                Next
-                
-                'remove extra comma
-                strFields = IIf(Right(strFields, 1) = ",", RTrim(strFields), strFields)
-            
-            Else
-                
-                strFields = Fields
-            End If
-            
-            'base
-            strSQL = "SELECT " & strFields & " FROM " & tbl & " WHERE ID = " & ID & ";"
-            
-            'update the query SQL
-            .SQL = strSQL
-            
-            Dim rs As DAO.Recordset
-
-            Set rs = .OpenRecordset
-                        
-            'send results
-            Set FetchAddlData = rs
-            
-            'cleanup
-            Set rs = Nothing
-            Set qdf = Nothing
-            Set db = Nothing
-
-        End With
-    End With
-    
-
-Exit_Handler:
-    Exit Function
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - FetchAddlData[mod_App_Data])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' Sub:          GetHierarchyLevel
-' Description:  Determine the hierarchy level set
+' Sub:          SetObserverRecorder
+' Description:  Sets data observer & recorder
 ' Assumptions:  -
-' Parameters:   -
-' Returns:      lvl - maximum level set in the application (string)
+' Parameters:   obj - object to set observer/recorder on (object)
+'               tbl - name of table being modified (string)
+' Returns:      -
 ' Throws:       none
 ' References:   -
-' Source/date:  Bonnie Campbell, January 1, 2017 - for NCPN tools
+' Source/date:  Bonnie Campbell, August 9, 2016 - for NCPN tools
 ' Adapted:      -
 ' Revisions:
-'   BLC - 1/11/2017 - initial version
+'   BLC - 8/9/2016 - initial version
+' --------------------------------------------------------------------
+'   BLC - 9/7/2017  - merge uplands, invasives, big rivers dbs modifications
+' --------------------------------------------------------------------
+'                   - un-comment out
+' --------------------------------------------------------------------
 ' ---------------------------------
-Public Function GetHierarchyLevel() As String
+Public Sub SetObserverRecorder(obj As Object, tbl As String)
 On Error GoTo Err_Handler
-    
-    Dim lvl As String
-    
-    'default
-    lvl = ""
-    
-    If Not TempVars("ParkCode") Is Nothing Then
-        lvl = "park"
-        If Not TempVars("River") Is Nothing Then
-            lvl = "river"
-            If Not TempVars("SiteCode") Is Nothing Then
-                lvl = "site"
-                If Not TempVars("Feature") Is Nothing Then
-                    lvl = "feature"
-                End If
-            End If
-        End If
-    End If
 
-    GetHierarchyLevel = lvl
+    'handle record actions
+    Dim act As New RecordAction
+    With act
+
+    'Recorder
+        .RefAction = "R"
+        .ContactID = obj.RecorderID
+        .RefID = obj.ID
+        .RefTable = tbl
+        .SaveToDb
+
+    'Observer
+        .RefAction = "O"
+        .ContactID = obj.ObserverID
+        .RefID = obj.ID
+        .RefTable = tbl
+        .SaveToDb
+
+    End With
 
 Exit_Handler:
+    Exit Sub
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - SetObserverRecorder[mod_App_Data])"
+    End Select
+    Resume Exit_Handler
+End Sub
+
+' ---------------------------------
+' SUB:          CollapseRows
+' Description:  Collapses TCount, PctCover, SE for one species/IsDead into one row
+' Parameters:   -
+' Returns:      -
+' Throws:       -
+' References:   -
+'   R.Hicks, Sept 15, 2002
+'   http://www.utteraccess.com/forum/copy-table-structure-vb-t117555.html
+' Source/date:  Bonnie Campbell, June 22 2017
+' Adapted:      -
+' Revisions:    BLC - 6/22/2017 - initial version
+' --------------------------------------------------------------------
+'   BLC - 9/7/2017  - merge uplands, invasives, big rivers dbs modifications
+' --------------------------------------------------------------------
+'                   - shifted from frm_Species_Cover_by_Route
+' --------------------------------------------------------------------
+' ---------------------------------
+Public Sub CollapseRows(tbl As String) 'tdf As DAO.TableDef)
+On Error GoTo Err_Handler
+
+    Dim db As DAO.Database
+    Dim tdf As DAO.TableDef
+    Dim col As field
+    Dim rs As DAO.Recordset
+    Dim rsPctCover As DAO.Recordset
+    Dim rsSE As DAO.Recordset
+    Dim strTableNew As String
+    Dim strCol As String
+    Dim Park As String, VisitYear As String, Species As String, CommonName As String, _
+        IsDead As String, Route As String
+    Dim PrevPark As String, PrevVisitYear As String, PrevSpecies As String, _
+        PrevCommonName As String, PrevIsDead As String, PrevRoute As String
+    Dim TCount As Integer
+    Dim PctCover As String
+    Dim SE As Double
+    Dim Concat As String, PrevConcat As String
+    
+    strTableNew = tbl & "_NEW"
+    
+    PrevPark = ""
+    PrevVisitYear = ""
+    PrevSpecies = ""
+    PrevCommonName = ""
+    PrevIsDead = ""
+    
+    Set db = CurrentDb
+    Set tdf = db.TableDefs(tbl)
+    
+    Set rs = db.OpenRecordset(tdf.Name)
+    
+    'remove table if it exists
+    If TableExists(strTableNew) Then DoCmd.DeleteObject acTable, strTableNew
+    
+    'create empty table w/ same columns to fill into
+    DoCmd.TransferDatabase acExport, "Microsoft Access", db.Name, acTable, tdf.Name, strTableNew, True
+    
+    With tdf
+        'iterate through ALL
+        Do Until rs.BOF And rs.EOF
+        
+            'iterate result columns (fields)
+            For Each col In tdf.Fields
+            
+                'get park, visit year, species, common name & isdead
+                If col.OrdinalPosition = 1 Then Park = rs!Unit_Code
+                If col.OrdinalPosition = 2 Then VisitYear = rs!Visit_Year
+                If col.OrdinalPosition = 3 Then Species = rs!Species
+                If col.OrdinalPosition = 4 Then CommonName = rs!Master_Common_Name
+                If col.OrdinalPosition = 5 Then IsDead = rs!IsDead
+            
+                'ignore 1-5 (static Park, Year, Species, Master Common Name, IsDead)
+                If col.OrdinalPosition > 5 Then
+                
+                    'get column & route name
+                    strCol = col.Name
+                    Route = Left(strCol, InStr(col.Name, ") ") + 1)
+                                     
+                    Select Case Replace(strCol, Route, "")
+                        Case "TCount"
+                            TCount = col.Value
+                        Case "AvgCover"
+                            PctCover = col.Value
+                        Case "SE"
+                            SE = col.Value
+                    End Select
+
+                    'concatenate for comparison
+                    Concat = Park & VisitYear & Species & CommonName & IsDead & Route
+                    
+                    If Concat <> PrevConcat Then
+                
+                    'add these to the new table if they don't already exist
+                    End If
+    
+                    If PrevSpecies = rs!Species And PrevIsDead = rs!IsDead Then
+                    
+                    End If
+                End If
+                
+                'capture the previous values
+                PrevConcat = Concat
+                PrevPark = Park
+                PrevVisitYear = VisitYear
+                PrevSpecies = Species
+                PrevCommonName = CommonName
+                PrevIsDead = IsDead
+                
+           Next
+           
+        Loop
+    
+    End With
+
+Exit_Procedure:
+    Set tdf = Nothing
+    Set rs = Nothing
+    Exit Sub
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - CollapseRows[mod_App_Data])"
+    End Select
+    Resume Exit_Procedure
+End Sub
+
+' =================================
+'   SOP Methods
+' =================================
+' ---------------------------------
+' FUNCTION:     GetProtocolVersion
+' Description:  Retrieve protocol version, effective & retire dates
+' Assumptions:  Assumes only one version of the protocol is active at once
+' Parameters:   blnAllVersions - indicator if all versions should be retrieved (boolean)
+' Returns:      Protocol name, version, effective & retire dates, last modified date
+' Note:         To retrieve values, data must be retrieved from the array:
+'                   ary(0,0) = ProtocolName
+'                   ary(1,0) = Version
+'                   ary(2,0) = EffectiveDate
+'                   ary(3,0) = RetireDate
+'                   ary(4,0) = LastModified
+' Throws:       none
+' References:   none
+' Source/date:
+' Adapted:      Bonnie Campbell, May 5, 2016 - for NCPN tools
+' Revisions:
+'   BLC - 5/5/2016  - initial version
+' ---------------------------------
+Public Function GetProtocolVersion(Optional blnAllVersions As Boolean = False) As Variant
+On Error GoTo Err_Handler
+    
+    Dim db As DAO.Database
+    Dim rs As DAO.Recordset
+    Dim strSQL As String, strWHERE As String
+    Dim Count As Integer
+    Dim metadata() As Variant
+   
+    'handle only appropriate park codes
+    If blnAllVersions Then
+        strWHERE = ""
+    Else
+        strWHERE = "WHERE RetireDate IS NULL"
+    End If
+    
+    'generate SQL
+'    strSQL = "SELECT ProtocolName, Version, EffectiveDate, RetireDate, LastModified FROM Protocol " _
+'                & strWHERE & ";"
+    strSQL = GetTemplate("s_protocol_info", "strWHERE" & PARAM_SEPARATOR & strWHERE)
+    
+    'fetch data
+    Set db = CurrentDb
+    Set rs = db.OpenRecordset(strSQL)
+        
+    If rs.BOF And rs.EOF Then GoTo Exit_Handler
+        
+    With rs
+        .MoveLast
+        .MoveFirst
+        Count = .RecordCount
+    
+        metadata = rs.GetRows(Count)
+ 
+        .Close
+    End With
+    
+    'return value
+    GetProtocolVersion = metadata
+    
+Exit_Handler:
+    Set rs = Nothing
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - GetProtocolVersion[mod_App_Data])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' FUNCTION:     GetSOPMetadata
+' Description:  Retrieve SOP metadata (abbreviation code, #, version, effective date)
+' Assumptions:  Assumes only one active/effective SOP # for a given area
+' Parameters:   area - area covered by the SOP (string)
+' Returns:      SOP metadata - Code, SOP #, Version, EffectiveDate
+' Note:         To retrieve value, data must be retrieved from the array:
+'                   ary(0,0) = SOP #
+'               Assuming there is only one matching SOP for each area
+' Throws:       none
+' References:   none
+' Source/date:
+' Adapted:      Bonnie Campbell, May 5, 2016 - for NCPN tools
+' Revisions:
+'   BLC - 5/5/2016  - initial version
+'   BLC - 5/11/2016 - revised to getting full SOP metadata vs. number only
+' ---------------------------------
+Public Function GetSOPMetadata(area As String) As Variant
+On Error GoTo Err_Handler
+    
+    Dim db As DAO.Database
+    Dim rs As DAO.Recordset
+    Dim strSQL As String
+        
+    'generate SQL
+    '---------------------------------------------------------------------
+    ' NOTE: use * vs % for the LIKE wildcard
+    '       if it is not used strSQL will work in a query directly,
+    '       but will fail to return records via a VBA recordset
+    '       So    "...LIKE '" & LCase(area) & "*';"   works
+    '       But   "...LIKE '" & LCase(area) & "%';"   does not (except in direct Query SQL)
+    '
+    ' c.f.  Hans Up, May 17, 2011 & discussion
+    '       http://stackoverflow.com/questions/6037290/use-of-like-works-in-ms-access-but-not-vba
+    '---------------------------------------------------------------------
+    strSQL = GetTemplate("s_sop_metadata", "area" & PARAM_SEPARATOR & LCase(area))
+    
+    'fetch data
+    Set db = CurrentDb
+    Set rs = db.OpenRecordset(strSQL, dbOpenDynaset)
+        
+    'return value
+    Set GetSOPMetadata = rs
+    
+Exit_Handler:
+    Set rs = Nothing
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - GetSOPNum[mod_App_Data])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' =================================
+'   Discrete Data Methods
+' =================================
+' ---------------------------------
+' FUNCTION:     GetParkID
+' Description:  Retrieve the ID associated with a park
+' Assumptions:  -
+' Parameters:   ParkCode - 4 character park designator (string)
+' Returns:      ID - unique park identifier (long)
+' Throws:       none
+' References:   none
+' Source/date:
+' Adapted:      Bonnie Campbell, June 28, 2016 - for NCPN tools
+' Revisions:
+'   BLC - 6/28/2016  - initial version
+'   BLC - 1/12/2017  - revised to use GetRecords() vs. GetTemplate()
+' ---------------------------------
+Public Function GetParkID(ParkCode As String) As Long
+On Error GoTo Err_Handler
+    
+    Dim db As DAO.Database
+    Dim rs As DAO.Recordset
+    Dim strSQL As String
+    Dim ID As Long
+   
+    'handle only appropriate park codes
+    If Len(ParkCode) <> 4 Then
+        GoTo Exit_Handler
+    End If
+    
+    'generate SQL
+'    strSQL = GetTemplate("s_park_id", "ParkCode" & PARAM_SEPARATOR & ParkCode)
+            
+    'fetch data
+'    Set db = CurrentDb
+    Set rs = GetRecords("s_park_id") 'db.OpenRecordset(strSQL)
+
+    If rs.BOF And rs.EOF Then GoTo Exit_Handler
+
+    rs.MoveLast
+    rs.MoveFirst
+    
+    If Not (rs.BOF And rs.EOF) Then
+        ID = rs.Fields("ID")
+    End If
+    
+    rs.Close
+    
+    'return value
+    GetParkID = ID
+    
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - GetParkID[mod_App_Data])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' FUNCTION:     GetParkState
+' Description:  Retrieve the state associated with a park (via tlu_Parks)
+' Assumptions:  Park state is properly identified in tlu_Parks
+' Parameters:   parkCode - 4 character park designator
+' Returns:      ParkState - 2 character state abbreviation
+' Throws:       none
+' References:   none
+' Source/date:
+' Adapted:      Bonnie Campbell, February 19, 2015 - for NCPN tools
+' Revisions:
+'   BLC - 2/19/2015  - initial version
+'   BLC - 6/28/2016  - revised to uppercase GetParkState vs getParkState
+' ---------------------------------
+Public Function getParkState(ParkCode As String) As String
+
+On Error GoTo Err_Handler
+    
+    Dim db As DAO.Database
+    Dim rs As DAO.Recordset
+    Dim state As String, strSQL As String
+   
+    'handle only appropriate park codes
+    If Len(ParkCode) <> 4 Then
+        GoTo Exit_Handler
+    End If
+    
+    'generate SQL ==> NOTE: LIMIT 1; syntax not viable for Access, use SELECT TOP x instead
+    strSQL = "SELECT TOP 1 ParkState FROM tlu_Parks WHERE ParkCode LIKE '" & ParkCode & "';"
+            
+    'fetch data
+    Set db = CurrentDb
+    Set rs = db.OpenRecordset(strSQL)
+    
+    'assume only 1 record returned
+    If rs.RecordCount > 0 Then
+        state = rs.Fields("ParkState").Value
+    End If
+   
+    'return value
+    getParkState = state
+    
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - GetParkState[mod_App_Data])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' FUNCTION:     GetRiverSegments
+' Description:  Retrieve the river segments associated with a park
+' Assumptions:  River segments are properly associate w/ park
+' Parameters:   ParkCode - 4 character park designator
+' Returns:      segments - river segments (Green, CAC, GBC, Yampa, CBC, GBC, etc.)
+' Throws:       none
+' References:   none
+' Source/date:
+' Adapted:      Bonnie Campbell, May 5, 2016 - for NCPN tools
+' Revisions:
+'   BLC - 5/5/2016  - initial version
+' ---------------------------------
+Public Function GetRiverSegments(ParkCode As String) As Variant
+On Error GoTo Err_Handler
+    
+    Dim db As DAO.Database
+    Dim rs As DAO.Recordset
+    Dim strSQL As String
+    Dim Count As Integer
+    Dim segments() As Variant
+   
+    'handle only appropriate park codes
+    If Len(ParkCode) <> 4 Then
+        GoTo Exit_Handler
+    End If
+    
+    'generate SQL
+    strSQL = GetTemplate("s_get_river_segments", "ParkCode" & PARAM_SEPARATOR & ParkCode)
+
+            
+    'fetch data
+    Set db = CurrentDb
+    Set rs = db.OpenRecordset(strSQL)
+
+    If rs.BOF And rs.EOF Then GoTo Exit_Handler
+
+    rs.MoveLast
+    rs.MoveFirst
+    Count = rs.RecordCount
+    
+    'retrieve 2D array of records
+    'segments(intField, intRecord) --> segments(0,1) = 2nd record, 1st field
+    segments = rs.GetRows(Count)
+ 
+    rs.Close
+    
+    'return value
+    GetRiverSegments = segments
+    
+Exit_Handler:
+    Set rs = Nothing
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - GetRiverSegments[mod_App_Data])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' FUNCTION:     GetRiverSegmentID
+' Description:  Retrieve the ID associated with a River
+' Assumptions:  -
+' Parameters:   segment - river segment designator (string)
+' Returns:      ID - unique river identifier (long)
+' Throws:       none
+' References:   none
+' Source/date:
+' Adapted:      Bonnie Campbell, June 28, 2016 - for NCPN tools
+' Revisions:
+'   BLC - 6/28/2016  - initial version
+'   BLC - 1/17/2017  - revise to use GetRecords() vs. GetTemplate()
+' ---------------------------------
+Public Function GetRiverSegmentID(segment As String) As Long
+On Error GoTo Err_Handler
+    
+    Dim db As DAO.Database
+    Dim rs As DAO.Recordset
+    Dim strSQL As String
+    Dim ID As Long
+   
+    'handle only appropriate River codes
+    If Len(segment) < 1 Then
+        GoTo Exit_Handler
+    End If
+    
+    'generate SQL
+'    strSQL = GetTemplate("s_river_segment_id", "waterway" & PARAM_SEPARATOR & segment)
+            
+    'fetch data
+'    Set db = CurrentDb
+    Set rs = GetRecords("s_river_segment_id") 'db.OpenRecordset(strSQL)
+
+    If rs.BOF And rs.EOF Then GoTo Exit_Handler
+
+    rs.MoveLast
+    rs.MoveFirst
+    
+    If Not (rs.BOF And rs.EOF) Then
+        ID = rs.Fields("ID")
+    End If
+    
+    rs.Close
+    
+    'return value
+    GetRiverSegmentID = ID
+    
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - GetRiverSegmentID[mod_App_Data])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' FUNCTION:     GetSiteID
+' Description:  Retrieve the ID associated with a site
+' Assumptions:  -
+' Parameters:   ParkCode - park designator (4-character string)
+'               SiteCode - site designator (2-character string)
+' Returns:      ID - unique site identifier (long)
+' Throws:       none
+' References:   none
+' Source/date:
+' Adapted:      Bonnie Campbell, June 28, 2016 - for NCPN tools
+' Revisions:
+'   BLC - 6/28/2016  - initial version
+' ---------------------------------
+Public Function GetSiteID(ParkCode As String, SiteCode As String) As Long
+On Error GoTo Err_Handler
+    
+    Dim db As DAO.Database
+    Dim rs As DAO.Recordset
+    Dim strSQL As String
+    Dim ID As Long
+   
+    'handle only appropriate River codes
+    If Len(ParkCode) <> 4 Or Len(SiteCode) <> 2 Then
+        GoTo Exit_Handler
+    End If
+    
+    'generate SQL
+    strSQL = GetTemplate("s_site_id_by_code", _
+            "ParkCode" & PARAM_SEPARATOR & ParkCode & _
+            "|sitecode" & PARAM_SEPARATOR & SiteCode)
+            
+    'fetch data
+    Set db = CurrentDb
+    Set rs = db.OpenRecordset(strSQL)
+
+    If rs.BOF And rs.EOF Then GoTo Exit_Handler
+
+    rs.MoveLast
+    rs.MoveFirst
+    
+    If Not (rs.BOF And rs.EOF) Then
+        ID = rs.Fields("ID")
+    End If
+    
+    rs.Close
+    
+    'return value
+    GetSiteID = ID
+    
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - GetSiteID[mod_App_Data])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' FUNCTION:     GetFeatureID
+' Description:  Retrieve the ID associated with a feature
+' Assumptions:  -
+' Parameters:   ParkCode - park designator (4-character string)
+'               Feature - feature designator (2-character string)
+' Returns:      ID - unique feature identifier (long)
+' Throws:       none
+' References:   none
+' Source/date:
+' Adapted:      Bonnie Campbell, June 28, 2016 - for NCPN tools
+' Revisions:
+'   BLC - 6/28/2016  - initial version
+'   BLC - 10/4/2016  - update to use parameter query
+' ---------------------------------
+Public Function GetFeatureID(ParkCode As String, Feature As String) As Long
+On Error GoTo Err_Handler
+    
+    Dim db As DAO.Database
+    Dim rs As DAO.Recordset
+    Dim strSQL As String
+    Dim ID As Long
+   
+    'handle only appropriate River codes
+    If Len(ParkCode) <> 4 Or Len(Feature) < 1 Then
+        GoTo Exit_Handler
+    End If
+    
+'    'generate SQL
+'    strSQL = GetTemplate("s_feature_id", _
+'            "ParkCode" & PARAM_SEPARATOR & ParkCode & _
+'            "|feature" & PARAM_SEPARATOR & Feature)
+'
+'    'fetch data
+'    Set db = CurrentDb
+'    Set rs = db.OpenRecordset(strSQL)
+'
+'    If rs.BOF And rs.EOF Then GoTo Exit_Handler
+'
+'    rs.MoveLast
+'    rs.MoveFirst
+'
+'    If Not rs.BOF And rs.EOF Then
+'        ID = rs.GetRows(1)
+'    End If
+'
+'    rs.Close
+    
+    'return value
+    GetFeatureID = ID
+    
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - GetFeatureID[mod_App_Data])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' Sub:          GetSurfaceIDs
+' Description:  Sets a collection of surface IDs where IDs can be retrieved
+'               from column names
+' Assumptions:  -
+' Parameters:   -
+' Returns:      -
+' Throws:       none
+' References:   -
+' Source/date:  Bonnie Campbell, April 24, 2017 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 4/24/2016 - initial version
+' ---------------------------------
+Public Function GetSurfaceIDs() As Scripting.Dictionary
+On Error GoTo Err_Handler
+
+    Dim rs As DAO.Recordset
+    Dim strKey As String, strItem As String
+
+    'prepare dictionary
+    Dim dict As Scripting.Dictionary
+    Set dict = CreateObject("Scripting.Dictionary")
+    
+    'retrieve surfaces & surface IDs
+    Set rs = GetRecords("s_surface")
+    
+    If Not (rs.BOF And rs.EOF) Then
+        Do Until rs.EOF
+            
+            With dict
+            
+                strKey = rs("ColName")
+                strItem = rs("ID")
+                
+                If Not .Exists(strKey) Then
+                    'add the ColName (key) & ID (value)
+                    '--------------------------------------
+                    ' NOTE:
+                    '   Cannot use notation w/ rs("fieldname")
+                    '   notation because as soon as you leave
+                    '   the Do Until the dictionary forgets
+                    '   the values since rs("fieldname") is
+                    '   out of scope.
+                    '   -> Error 3420: Object invalid or no longer set
+                    '   Use:
+                    '       .Add strKey, strItem
+                    '   Not:
+                    '       .Add strKey, rs("ID")
+                    '--------------------------------------
+                    .Add strKey, strItem
+                End If
+            
+            End With
+            
+            'Debug.Print strKey & ": " & strItem & " = " & dict(strKey)
+            
+            rs.MoveNext
+        Loop
+    End If
+    
+    'set global dictionary
+    Set g_AppSurfaces = dict
+    
+    'return dictionary
+    Set GetSurfaceIDs = dict
+    
+Exit_Handler:
+    'Set dict = Nothing
+    Set rs = Nothing
     Exit Function
 Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - GetHierarchyLevel[mod_App_Data])"
+            "Error encountered (#" & Err.Number & " - GetSurfaceIDs[mod_App_Data])"
     End Select
     Resume Exit_Handler
 End Function
 
+' ---------------------------------
+' Sub:          GetQuadratPositions
+' Description:  Sets a collection of quadrat positions where positions can be retrieved
+'               from quadrat control names
+' Assumptions:  -
+' Parameters:   -
+' Returns:      -
+' Throws:       none
+' References:   -
+' Source/date:  Bonnie Campbell, April 24, 2017 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 4/24/2016 - initial version
+' ---------------------------------
+Public Function GetQuadratPositions() As Scripting.Dictionary
+On Error GoTo Err_Handler
+
+    Dim ctrl As Variant 'control name
+    Dim strKey As String, strItem As String
+
+    'prepare dictionary
+    Dim dict As Scripting.Dictionary
+    Set dict = CreateObject("Scripting.Dictionary")
+    
+    Dim aryControls() As String
+    
+    'prepare positions
+    aryControls = Split("Q1,Q2,Q3,Q1_3m,Q2_8m,Q3_13m,Q1_hm,Q2_5m,Q3_10m", ",")
+    
+    For Each ctrl In aryControls
+        
+        With dict
+        
+            strKey = ctrl
+            
+            Select Case ctrl
+                Case "Q1", "Q2", "Q3"
+                    strItem = vbNullString 'position NULL
+                Case "Q1_3m"
+                    strItem = 3
+                Case "Q1_hm"
+                    strItem = 0
+                Case "Q2_8m", "Q2_5m"
+                    strItem = Replace(Right(ctrl, 2), "m", "")
+                Case "Q3_13m", "Q3_10m"
+                    strItem = Replace(Right(ctrl, 3), "m", "")
+            End Select
+            
+            If Not .Exists(strKey) Then
+                    'add the ctrl name (key) & position (value)
+                    .Add strKey, strItem
+            End If
+            
+            Debug.Print strKey & ": " & strItem & " = " & dict(strKey)
+            
+        End With
+    
+    Next
+    
+    'set global dictionary
+    Set g_AppQuadratPositions = dict
+    
+    'return dictionary
+    Set GetQuadratPositions = dict
+    
+Exit_Handler:
+    'Set dict = Nothing
+    Exit Function
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - GetQuadratPositions[mod_App_Data])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' =================================
+'   PlotCheck Methods
+' =================================
 ' ---------------------------------
 ' Sub:          RunPlotCheck
 ' Description:  Run plot check queries
@@ -1627,7 +3468,7 @@ Public Function RunPlotCheck()
 On Error GoTo Err_Handler
 
     Dim strTemplate As String
-    Dim x As Variant
+    Dim X As Variant
 
     'clear num records
     ClearTable "NumRecords"
@@ -1638,9 +3479,9 @@ On Error GoTo Err_Handler
     'use g_AppTemplates scripting dictionary vs. recordset to avoid missing dependencies
     'iterate through queries
  '   For i = 0 To g_AppTemplates.Count - 2
-    For Each x In g_AppTemplates
+    For Each X In g_AppTemplates
     
-        With g_AppTemplates.Item(x) 'g_AppTemplates.Items()(i)
+        With g_AppTemplates.Item(X) 'g_AppTemplates.Items()(i)
             strTemplate = .Item("TemplateName")
             
             Debug.Print strTemplate
@@ -1682,7 +3523,11 @@ End Function
 '   BLC - 3/29/2017 - adjusted to accommodate FieldOK (pass/fail/unknown) values
 '   BLC - 3/30/2017 - handle dependencies (queries dependent on queries)
 '                     only queries used for field checks are checked
-'   BLC - 8/14/2017 - add error handling to address error 3048
+' --------------------------------------------------------------------
+'   BLC - 9/7/2017  - merge uplands, invasives, big rivers dbs modifications
+' --------------------------------------------------------------------
+'       BLC - 8/14/2017 - add error handling to address error 3048
+' --------------------------------------------------------------------
 ' ---------------------------------
 Public Function SetPlotCheckResult(strTemplate As String, action As String)
 On Error GoTo Err_Handler
@@ -1693,7 +3538,6 @@ On Error GoTo Err_Handler
     Dim iTemplate As Long
     Dim i As Integer, iOK As Integer
     Dim blnFieldCheck As Boolean, isOK As Boolean
-
     
     'initialize AppTemplates if not populated
     If g_AppTemplates Is Nothing Then GetTemplates
@@ -2018,6 +3862,355 @@ Err_Handler:
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - PrepareSpeciesQuery[mod_App_Data form])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' =================================
+'   Update Methods
+' =================================
+' ---------------------------------
+' Function:     UpdateTransect
+' Description:  Updates transect record values (Invasives)
+'               and returns the submitted value (single)
+' Assumptions:  Controls of transect visit form trigger the
+'               function using:
+'                   =UpdateTransect()
+'               in their change event properties
+' Parameters:   -
+' Returns:      if successful - submitted cover value (single)
+'               or 0 if not
+' Throws:       none
+' References:   -
+' Source/date:  Bonnie Campbell, July 13, 2017 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 7/13/2016 - initial version
+' ---------------------------------
+Public Function UpdateTransectX() As Single
+On Error GoTo Err_Handler
+
+    Dim transectID As String
+    Dim ObserverID As String
+    Dim Comments As String
+    Dim StartTime As Variant
+    
+    Dim vt As New VegTransect
+    
+    With Forms("frm_Data_Entry").Controls("frm_Quadrat_Transect").Form
+        
+        'set transect values
+        transectID = .Controls("tbxTransectID")     ' Quadrat-Transect ID
+        ObserverID = .Controls("cbxObserver")
+        Comments = Nz(.Controls("tbxComments"), "")
+        'If Not IsNull(.Controls("tbxStartTime")) Then StartTime = .Controls("tbxStartTime")
+        StartTime = .Controls("tbxStartTime")
+        
+        With vt
+            
+            .TransectQuadratID = transectID
+            .Observer = ObserverID
+            .Comments = Comments
+            
+            '.UpdateTransectData
+            
+            'update start time if it is set
+            If Not IsNull(StartTime) Then
+                
+                .StartTime = StartTime
+                
+                .UpdateStartTime
+                
+            End If
+            
+        End With
+        
+    End With
+       
+    'skip if NULL
+'    If IsNull(TempVars("Transect_ID")) Then GoTo Exit_Handler
+    
+Exit_Handler:
+    Exit Function
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - UpdateTransect[mod_App_Data])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' Sub:          UpdateMicrohabitat
+' Description:  Updates microhabitat surface cover values (Invasives)
+'               and returns the submitted value (single)
+' Assumptions:  Comboboxes of surface microhabitats set the
+'               calling control using:
+'                   =UpdateMicrohabitat([Screen].[ActiveControl])
+'               in their change event properties
+' Parameters:   caller - calling control (control)
+' Returns:      if successful - submitted cover value (single)
+'               or 0 if not
+' Throws:       none
+' References:
+'   Douglas J Steele, Dec 5, 2005
+'   https://www.pcreview.co.uk/threads/get-control-name-in-click-event-procedure.2274312/
+' Source/date:  Bonnie Campbell, April 24, 2017 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 4/24/2016 - initial version
+' ---------------------------------
+Public Function UpdateMicrohabitat(caller As Control) As Single
+', transectID As String) As Single
+', sfcID As Long, pctCover As Single)
+On Error GoTo Err_Handler
+
+'    Dim caller As Control
+    Dim strSurface As String, strControl As String
+    Dim sfcID As Integer
+    Dim PctCover As Single
+    Dim rs As DAO.Recordset
+    
+    'set surface ID (pull from global dictionary using control name - _Q#)
+    strSurface = Left(caller.Name, Len(caller.Name) - 3)
+    
+    'if global dictionary not available, set it
+    If IsNothing(g_AppSurfaces) Then GetSurfaceIDs
+    sfcID = g_AppSurfaces(strSurface)
+    
+    'retrieve values
+    PctCover = Nz(caller.Value, 0)
+    
+    'skip if NULL
+    If IsNull(TempVars("Transect_ID")) Then GoTo Exit_Handler
+    
+    Dim sfc As New SurfaceCover
+    
+    With sfc
+        '.QuadratID = CInt(Right(CStr(caller.Name), 1))
+        .PercentCover = PctCover
+        .SurfaceID = sfcID
+        
+        'fetch the appropriate QuadratID
+        strControl = "tbxQ" & Right(CStr(caller.Name), 1)
+        .QuadratID = Forms("frm_Data_Entry").Controls("frm_Quadrat_Transect").Form.Controls(strControl)
+        
+        'update values
+        .SaveToDb True
+    End With
+    
+    'SetRecord "u_surfacecover", params
+    
+Exit_Handler:
+    Exit Function
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - UpdateMicrohabitat[mod_App_Data])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' Sub:          UpdateCoverSpecies
+' Description:  Updates microhabitat surface cover values (Invasives)
+'               and returns the submitted value (single)
+' Assumptions:  Comboboxes of surface microhabitats set the
+'               calling control using:
+'                   =UpdateCoverSpecies([Screen].[ActiveControl])
+'               in their change event properties
+' Parameters:   caller - calling control (control)
+' Returns:      if successful - submitted cover value (single)
+'               or 0 if not
+' Throws:       none
+' References:
+'   Douglas J Steele, Dec 5, 2005
+'   https://www.pcreview.co.uk/threads/get-control-name-in-click-event-procedure.2274312/
+' Source/date:  Bonnie Campbell, April 24, 2017 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 4/24/2016 - initial version
+' ---------------------------------
+Public Function UpdateCoverSpecies(caller As Control) As Single
+On Error GoTo Err_Handler
+
+'    Dim caller As Control
+    Dim strQuadrat As String, strControl As String, strPosition As String
+    Dim sfcID As Integer
+    Dim PctCover As Single
+    Dim rs As DAO.Recordset
+
+    'retrieve calling control
+    
+    
+    'set quadrat # (pull from global dictionary using control name - _Q#)
+    strQuadrat = Replace(Left(caller.Name, 2), "Q", "")
+    
+    'retrieve values
+    PctCover = Nz(caller.Value, 0)
+    
+    'skip if NULL
+    If IsNull(TempVars("Transect_ID")) Then GoTo Exit_Handler
+    
+    Dim sp As New InvasiveCoverSpecies
+    
+    With sp
+        '.QuadratID = CInt(Right(CStr(caller.Name), 1))
+        .PctCover = PctCover
+        '.IsDead = cbxIsDead
+        '.Position =
+        
+        'fetch the appropriate QuadratID
+        strControl = "tbxQ" & strQuadrat
+        .QuadratID = Forms("frm_Data_Entry").Controls("frm_Quadrat_Transect").Form.Controls(strControl)
+        
+        'determine quadrat position (pull from global dictionary using control name)
+        strPosition = g_AppQuadratPositions(caller.Name)
+        
+        'update values
+        .SaveToDb True
+    End With
+    
+    'SetRecord "u_surfacecover", params
+    
+Exit_Handler:
+    Exit Function
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - UpdateCoverSpecies[mod_App_Data])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' =================================
+'   CSV Methods
+' =================================
+' ---------------------------------
+' Sub:          UploadCSVFile
+' Description:  Uploads data into database from CSV file
+' Assumptions:  -
+' Parameters:   strFilename - name of file being uploaded (string)
+' Returns:      -
+' Throws:       none
+' References:   -
+' Source/date:  Bonnie Campbell, September 1, 2016 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 9/1/2016 - initial version
+'   BLC - 10/19/2016 - renamed to UploadCSVFile from UploadSurveyFile to genericize
+' --------------------------------------------------------------------
+'   BLC - 9/7/2017  - merge uplands, invasives, big rivers dbs modifications
+' --------------------------------------------------------------------
+'                   - un-comment out
+' --------------------------------------------------------------------
+' ---------------------------------
+Public Sub UploadCSVFile(strFilename As String)
+On Error GoTo Err_Handler
+
+    'import to table
+    ImportCSV strFilename, "usys_temp_csv", True, True
+
+Exit_Handler:
+    Exit Sub
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - UploadCSVFile[mod_App_Data])"
+    End Select
+    Resume Exit_Handler
+End Sub
+
+' ---------------------------------
+' Function:     FetchAddlData
+' Description:  Retrieves additional data field(s)
+' Assumptions:
+'               fields are delimited w/ a pipe (|)
+' Parameters:   tbl - name of table to retrieve from (string)
+'               field(s) - name of field to retrieve (string)
+'               id - record to retrieve's ID (long)
+' Returns:      field value(s) for record (DAO.Recordset)
+' Throws:       none
+' References:
+'   Steven Thomas, November 28, 2011
+'   https://blogs.office.com/2011/11/28/display-real-time-information-with-the-controltip-property/
+' Source/date:  Bonnie Campbell, September 13, 2016 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 9/13/2016 - initial version
+' ---------------------------------
+Public Function FetchAddlData(tbl As String, Fields As String, ID As Long) As DAO.Recordset
+On Error GoTo Err_Handler
+    
+    'values are required --> exit if not
+    If Len(tbl) = 0 Or Len(Fields) = 0 Or Not (ID > 0) Then GoTo Exit_Handler
+    
+    'begin retrieval
+    Dim field As String
+    Dim strFields As String
+    Dim strSQL As String
+    Dim db As DAO.Database
+    Dim qdf As DAO.QueryDef
+    
+    Set db = CurrentDb
+    
+    With db
+        Set qdf = .QueryDefs("usys_temp_qdf")
+        
+        With qdf
+            
+            'check for multiple fields
+            If InStr(Fields, "|") > 0 Then
+                Dim aryFlds() As String
+                Dim i As Integer
+                
+                aryFlds = Split(Fields, "|")
+                
+                For i = 0 To UBound(aryFlds)
+                    strFields = aryFlds(i) & ","
+                Next
+                
+                'remove extra comma
+                strFields = IIf(Right(strFields, 1) = ",", RTrim(strFields), strFields)
+            
+            Else
+                
+                strFields = Fields
+            End If
+            
+            'base
+            strSQL = "SELECT " & strFields & " FROM " & tbl & " WHERE ID = " & ID & ";"
+            
+            'update the query SQL
+            .SQL = strSQL
+            
+            Dim rs As DAO.Recordset
+
+            Set rs = .OpenRecordset
+                        
+            'send results
+            Set FetchAddlData = rs
+            
+            'cleanup
+            Set rs = Nothing
+            Set qdf = Nothing
+            Set db = Nothing
+
+        End With
+    End With
+    
+
+Exit_Handler:
+    Exit Function
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - FetchAddlData[mod_App_Data])"
     End Select
     Resume Exit_Handler
 End Function

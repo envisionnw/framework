@@ -7,6 +7,9 @@ Option Explicit
 ' Version:      1.00
 ' Description:  treeview functions & procedures
 '
+' Requires:     Microsoft Common Controls 6.0 (SP6) Library reference
+'               c:\windows\SysWOW64\MSCOMCTL.OCX
+'
 ' Source/date:  Bonnie Campbell, 8/30/2016
 ' Revisions:    BLC, 8/30/2016 - 1.00 - initial version
 '               BLC, 2/17/2017 - 1.01 - added SelectedNode for public reference,

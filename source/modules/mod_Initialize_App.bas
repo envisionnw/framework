@@ -22,6 +22,17 @@ Option Explicit
 '               BLC, 6/24/2016 - 1.03 - replaced Exit_Function > Exit_Handler
 '               BLC, 9/21/2016 - 1.04 - updated AppSetup()
 '               BLC, 10/5/2016 - 1.05 - set AppVersion TempVar in AppSetup()
+'               -----------------------------------------------------------------------
+'               BLC, 8/22/2017 - 1.06 - merged in prior work:
+'
+'                   BLC, 7/7/2015  - 1.03 - added SafeStart() to set error trapping for the application
+'                                           to "Break in Class Module"
+'                   BLC, 6/6/2017  - 1.04 - added strUser = UserName() [from mod_User] for logging user actions in
+'                                           initApp(), fixed SQL syntax in INSERT INTO tsys_Logins()
+'                   BLC, 6/19/2017 - 1.05 - updated cmdBackup reference frm!fsub_DbAdmin.Form!cmdBackup.visible
+'                                           to frm!fsub_DbAdmin.Form!btnBackup.visible, added existance
+'                                           check for lbxLinkedDbs control
+'               -----------------------------------------------------------------------
 ' =================================
 ' HISTORY:
 ' MERGED MODULE: mod_Global_Variables (merged with mod_Initialize_App)
@@ -72,6 +83,39 @@ Public blnUpdateAll As Boolean      ' flag to indicate whether to run all querie
 ' ---------------------------------
 
 ' ---------------------------------
+' SUB:          SafeStart
+' Description:  Sets error trapping/handling for database to ensure clear error trapping.
+' Note:         Trapping is set to "Break in Class Module" (1) vs. "Break on Unhandled Errors" (1) since
+'               the latter breaks on class calling code vs. class code. "Break on All Errors" (0) is not
+'               used since this breaks even on handled errors.
+' Assumptions:  -
+' Parameters:   -
+' Returns:      -
+' Throws:       -
+' References:   -
+' Source/date:  Luke Chung, date unkown
+'               http://www.fmsinc.com/tpapers/vbacode/debug.asp
+' Adapted:      Bonnie Campbell, July 7, 2015 for NCPN WQ Utilities tool
+' Revisions:    BLC, 7/7/2015 - initial version
+' ---------------------------------
+Sub SafeStart()
+On Error GoTo Err_Handler
+
+  Application.SetOption "Error Trapping", 1
+
+Exit_Procedure:
+    Exit Sub
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - SafeStart[mod_Initialize_App])"
+    End Select
+    Resume Exit_Procedure
+End Sub
+
+' ---------------------------------
 ' SUB:          initGlobalTempVars
 ' Description:  Initializes database TempVars which cannot be initialized outside of sub/function
 ' Assumptions:  -
@@ -102,7 +146,7 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - initGlobalTempVars[mod_Global_Variables])"
+            "Error encountered (#" & Err.Number & " - initGlobalTempVars[mod_Initialize_App])"
     End Select
     Resume Exit_Procedure
 End Sub
@@ -118,6 +162,7 @@ End Sub
 ' Source/date:  Bonnie Campbell, July 31, 2014 for NCPN WQ Utilities tool
 ' Adapted:      -
 ' Revisions:    BLC, 7/31/2014 - initial version
+'               BLC, 6/12/2015 - replaced TempVars.item("... with TempVars("...
 ' ---------------------------------
 Public Sub initApp()
 On Error GoTo Err_Handler:
@@ -191,6 +236,17 @@ End Sub
 '                               new tsys_App_Releases structure via iIsSupported
 '               BLC, 9/21/2016 - adjusted to record accesslevel & release version
 '               BLC, 10/5/2016 - set AppVersion TempVar
+'                               -----------------------------------------------------------------------
+'                               BLC, 8/22/2017 - 1.06 - merged in prior work:
+'
+'                              BLC, 6/12/2015 - replaced TempVars.item("... with TempVars("...
+'                              BLC, 6/6/2017  - revised to capture Logged in Username (strUser using mod_User's UserName()) to avoid Error #3141
+'                                                pointing to the SQL query to insert into tsys_Logins, fixed SQL
+'                                                syntax in INSERT INTO tsys_Logins()
+'                              BLC, 6/19/2017 - updated cmdBackup reference frm!fsub_DbAdmin.Form!cmdBackup.visible
+'                                                to frm!fsub_DbAdmin.Form!btnBackup.visible, added existance
+'                                                check for lbxLinkedDbs control
+'                               -----------------------------------------------------------------------
 ' =================================
 Public Function AppSetup()
     On Error GoTo Err_Handler
@@ -201,6 +257,7 @@ Public Function AppSetup()
     Dim strSQL As String, strCaption As String, strReleaseVersion As String, strReleaseID As String
     Dim iIsSupported As Integer
 
+        'DB_ADMIN_FORM or MAIN_APP_FORM?
     If Not FormIsOpen(DB_ADMIN_FORM) Then
         DoCmd.OpenForm DB_ADMIN_FORM, acNormal, , , , acHidden
     End If
@@ -281,6 +338,9 @@ Public Function AppSetup()
 ' FIX: adding login data to tsys_Logins
 '**********************************************
     ' Log the user, login time, release number, and application mode in the systems table
+        'strUser = UserName
+    'strRelease = Left(strReleaseID, 8) & " / " & TempVars("UserAccessLevel")
+
     strRelease = Left(strRelease, InStr(strRelease, "(") - 2) & " / " & TempVars.Item("UserAccessLevel")
     'strReleaseVersion = Replace(Left(strReleaseID, InStr(strReleaseID, "(") - 2), "Version ", "")
     strReleaseVersion = Replace(Left(strRelease, InStr(strRelease, "/") - 2), "Version ", "")
@@ -367,10 +427,11 @@ Update_Settings:
         If TempVars.Item("HasAccessBE") Then DoCmd.OpenForm "frm_Lock_BE", , , , , acHidden
     
         ' If there is an Access back-end, make the backups button visible
-        frm!fsub_DbAdmin.Form!cmdBackup.visible = TempVars.Item("HasAccessBE")
+        frm!fsub_DbAdmin.Form!btnBackup.visible = TempVars.Item("HasAccessBE")
     
         ' Requery the control that shows the linked back-ends
-        frm!lbxLinkedDbs.Requery
+                If ControlExists("lbxLinkedDbs", frm) Then _
+                frm!lbxLinkedDbs.Requery
     
         Resume Exit_Procedure
     End If

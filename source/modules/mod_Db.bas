@@ -4,14 +4,15 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Db
 ' Level:        Framework module
-' Version:      1.18
+' Version:      1.20
 ' Description:  Database related functions & subroutines
+' Requires:     Microsoft Scripting Runtime (scrrun.dll) for Scripting.Dictionary
 '
 ' Source/date:  Bonnie Campbell, April 2015
 ' Revisions:    BLC, 4/30/2015 - 1.00 - initial version
 '               BLC, 5/26/2015 - 1.01 - added mod_db_Templates subs/functions - qryExists
 '               BLC, 5/26/2016 - 1.02 - added VirtualDAORecordset()
-'               BLC, 6/6/2016  - 1.03 - added error handling for duplicate templates, renamed global to g_AppTemplates
+'               BLC, 6/6/2016  - 1.03 - added error handling for duplicate Templates, renamed global to g_AppTemplates
 '                                       also added SQL sanitization (escape/replace special chars)
 '               BLC, 6/9/2016  - 1.04 - added CreateTempRecords()
 '               BLC, 10/4/2016 - 1.05 - added GetParamsFromSQL()
@@ -25,26 +26,56 @@ Option Explicit
 '                                        to allow re-definition w/o restarting db
 '               BLC, 2/22/2017 - 1.12  - added DbObjectExists() to validate db objects
 ' --------------------------------------------------------------------
+'               BLC, 3/8/2017          added to Invasives db
+' --------------------------------------------------------------------
+'               BLC, 3/8/2017 - 1.13a - imported into invasives,
+'                                      subs/functions not available in invasives
+'                                      (missing reference/function):
+'                                       g_AppTemplates, GetTemplate(), GetTemplates(),
+'                                       CreateTempRecords(), GetParamsFromSQL(),
+' --------------------------------------------------------------------
 '               BLC, 3/22/2017          added to Upland db
 ' --------------------------------------------------------------------
 '               BLC, 3/23/2017 - 1.13  - revised GetTemplates() to use "SQL" vs. "T-SQL" syntax
 '               BLC, 3/28/2017 - 1.14  - added CloseObject()
-'               BLC, 3/30/2017 - 1.15  - added template dependent query function
+'               BLC, 3/30/2017 - 1.15  - added Template dependent query function
 '                                        HandleDependentQueries(), SetQueryProperty(),
 '                                        DeleteRecord() moved from mod_UI
-'               BLC, 3/31/2017 - 1.16  - added g_AppTemplateIDs global for template/ID matches
+'               BLC, 3/31/2017 - 1.16  - added g_AppTemplateIDs global for Template/ID matches
 '               BLC, 4/3/2017  - 1.17  - code cleanup
-'               BLC, 8/10/2017 - 1.18  - add OpenAllDatabases(), CurrDb property
+' --------------------------------------------------------------------
+'               BLC, 4/18/2017          added updated version to Invasives db
+' --------------------------------------------------------------------
+'               BLC, 4/18/2017 - 1.18 - adjusted for invasives, added Scripting.Dictionary reference,
+'                                       revised GetTemplates to avoid error on dictTemplates.Add
+'               BLC, 6/19/2017 - 1.19 - updated SQL for OpenRecordset to properly order by tsys_BE_Updates.Update_ID vs.
+'                                       tsys_BE_Updates.ID which does not exist
+'               BLC, 6/22/2017 - 1.20 - added SetColumnOrdinalPosition(), CombineTableSQL()
+' --------------------------------------------------------------------
+'                               BLC, 8/22/2017 - 1.21 - merged prior work:
+'                               Invasives db
+'                               BLC, 4/28/2017 - 1.19 - added Delete_All_Records() moved from mod_Temp,
+'                                                       reorganized sections, moved SQL_encode(), GetParamsFromSQL()
+'                                                       to mod_SQL
+'                                                       moved SetTempVar(), GetTempVarIndex(),
+'                                                       CreateTempTable(), RemoveTempTable(),
+'                                                       CreateTempRecordset(), CreateTempRecords()
+'                                                       to mod_Temp
+'                               BLC, 7/18/2017 - 1.20 - Add RefreshTempTable for updating usys_temp_transect,
+'                                       usys_temp_speciescover & other Temp tables w/ std naming
+'                               Uplands db
+'                              BLC, 8/10/2017 - 1.18  - add OpenAllDatabases(), CurrDb property
+' --------------------------------------------------------------------
 ' =================================
 
 ' ---------------------------------
 ' Declarations
 ' ---------------------------------
-'   AppTemplates global dictionary --> defined in std template [mod_Db]
+'   AppTemplates global dictionary --> defined in std Template [mod_Db]
 Public g_AppTemplates As Scripting.Dictionary
 Public g_AppTemplateIDs As Scripting.Dictionary
 Public Const PARAM_SEPARATOR As String = ">>"
-Public g_OpenQueries As String                  'queries generated by templates (close @ end)
+Public g_OpenQueries As String                  'queries generated by Templates (close @ end)
 
 ' ---------------------------------
 '  Database-wide Properties
@@ -105,7 +136,7 @@ End Property
 Public Sub OpenAllDatabases(pfInit As Boolean)
 On Error GoTo Err_Handler
 
-  Dim x As Integer
+  Dim X As Integer
   Dim strName As String
   Dim strMsg As String
  
@@ -117,9 +148,9 @@ On Error GoTo Err_Handler
  
   If pfInit Then
     ReDim dbsOpen(1 To cintMaxDatabases)
-    For x = 1 To cintMaxDatabases
+    For X = 1 To cintMaxDatabases
       ' Specify your back end databases
-      Select Case x
+      Select Case X
         Case 1:
           strName = "H:\folder\Backend1.mdb"
         Case 2:
@@ -128,7 +159,7 @@ On Error GoTo Err_Handler
       strMsg = ""
 
       On Error Resume Next
-      Set dbsOpen(x) = OpenDatabase(strName)
+      Set dbsOpen(X) = OpenDatabase(strName)
       If Err.Number > 0 Then
         strMsg = "Trouble opening database: " & strName & vbCrLf & _
                  "Make sure the drive is available." & vbCrLf & _
@@ -140,12 +171,12 @@ On Error GoTo Err_Handler
         MsgBox strMsg
         Exit For
       End If
-    Next x
+    Next X
   Else
     On Error Resume Next
-    For x = 1 To cintMaxDatabases
-      dbsOpen(x).Close
-    Next x
+    For X = 1 To cintMaxDatabases
+      dbsOpen(X).Close
+    Next X
   End If
 
 Exit_Handler:
@@ -160,7 +191,7 @@ Err_Handler:
 End Sub
 
 ' ---------------------------------
-'  Database & Recordset Actions
+'  Database Object Methods/Functions
 ' ---------------------------------
 
 ' =================================
@@ -182,6 +213,8 @@ End Sub
 '                                 added check for BOF & EOF to avoid Error #3021 no current record on rs.MoveLast when no records exist
 '               BLC, 5/18/2015 - renamed & removed fxn prefix
 '               BLC, 6/5/2016  - adapted for Big Rivers App naming revisions (removed field underscores)
+'               BLC, 6/19/2017 - updated SQL for OpenRecordset to properly order by tsys_BE_Updates.Update_ID vs.
+'                                tsys_BE_Updates.ID which does not exist
 ' =================================
 Public Function BEUpdates(Optional ByVal bRunAll As Boolean = True)
     On Error GoTo Err_Handler
@@ -254,6 +287,52 @@ Err_Handler:
     Resume Exit_Procedure
 
 End Function
+
+' ---------------------------------
+'  Database & Recordset Actions
+' ---------------------------------
+
+' ---------------------------------
+' FUNCTION:     ClearTable
+' Description:  Deletes records from table
+' Assumptions:  Table is in the current database (not linked)
+' Parameters:   strTable - table name (string)
+' Returns:      -
+' Throws:       none
+' References:   none
+' Source/date:  Bonnie Campbell, May 27, 2015 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 5/27/2015  - initial version
+' ---------------------------------
+Public Sub ClearTable(strTable As String)
+
+On Error GoTo Err_Handler
+    
+    Dim strSQL As String
+    
+    'clear table
+    strSQL = "DELETE * FROM " & strTable & ";"
+    
+    DoCmd.SetWarnings False
+    DoCmd.RunSQL strSQL
+    DoCmd.SetWarnings True
+    
+Exit_Handler:
+    Exit Sub
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - ClearTable[mod_Db])"
+    End Select
+    Resume Exit_Handler
+End Sub
+
+' ---------------------------------
+'  Recordset Level Methods/Functions
+' ---------------------------------
 
 ' ---------------------------------
 ' FUNCTION:     MergeRecordsets
@@ -351,44 +430,6 @@ Err_Handler:
     End Select
     Resume Exit_Handler
 End Function
-
-' ---------------------------------
-' FUNCTION:     ClearTable
-' Description:  Deletes records from table
-' Assumptions:  Table is in the current database (not linked)
-' Parameters:   strTable - table name (string)
-' Returns:      -
-' Throws:       none
-' References:   none
-' Source/date:  Bonnie Campbell, May 27, 2015 - for NCPN tools
-' Adapted:      -
-' Revisions:
-'   BLC - 5/27/2015  - initial version
-' ---------------------------------
-Public Sub ClearTable(strTable As String)
-
-On Error GoTo Err_Handler
-    
-    Dim strSQL As String
-    
-    'clear table
-    strSQL = "DELETE * FROM " & strTable & ";"
-    
-    DoCmd.SetWarnings False
-    DoCmd.RunSQL strSQL
-    DoCmd.SetWarnings True
-    
-Exit_Handler:
-    Exit Sub
-    
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - ClearTable[mod_Db])"
-    End Select
-    Resume Exit_Handler
-End Sub
 
 ' ---------------------------------
 '  Validate Database Objects
@@ -520,7 +561,7 @@ End Function
 '   http://stackoverflow.com/questions/2985513/check-if-access-table-exists
 '   Based on testing, when passed an existing db variable, this function is fastest
 '   Tony Toews, unknown
-'   http://www.granite.ab.ca/access/temptables.htm
+'   http://www.granite.ab.ca/access/Temptables.htm
 '   David Fenton's functino originally based on Tony Toew's function in TempTables.MDB
 ' Source/date:  Bonnie Campbell, June 2016
 ' Revisions:    BLC, 6/8/2016 - initial version
@@ -600,6 +641,7 @@ End Function
 ' ---------------------------------
 ' SUB:          qryExists
 ' Description:  Checks if query exists in database as a permanent query(QueryDefs)
+'               Function retained for backward compatibility
 ' Parameters:   strQueryName - query name as a string
 ' Returns:      true - if found (boolean); false - if not found
 ' Throws:       -
@@ -660,7 +702,7 @@ End Function
 
 ' Source/date:  Bonnie Campbell August 20, 2014 - NCPN tools
 ' Adapted:      -
-' Revisions:    BLC, 8/20/2014 - initial vesrion
+' Revisions:    BLC, 8/20/2014 - initial version
 '               BLC, 4/30/2015 - moved from mod_Common_UI
 ' ---------------------------------
 Public Function getAccessObjectType(strObject As String)
@@ -679,6 +721,102 @@ Err_Handler:
     End Select
     Resume Exit_Handler
 End Function
+
+' ---------------------------------
+' FUNCTION:     IsRecordset
+' Description:  Determines if the object is a recordset or not
+' Assumptions:
+'               Error handling is ignored since rs.Recordcount would produce
+'               an error if rs is not a recordset. In that case isRS remains
+'               false and that is returned through the Exit_Handler
+' Parameters:   rs - recordset object (object)
+' Returns:      isRS - if object was determined to be a recordset (boolean)
+'                      true = is a recordset object, false = is not a recordset object
+' References:   -
+' Source/date:  Bonnie Campbell, October 11 2016
+' Revisions:    BLC, 10/11/2016 - initial version
+' ---------------------------------
+Public Function IsRecordset(rs As Object)
+On Error GoTo Err_Handler
+
+    Dim isRS As Boolean
+    
+    isRS = False
+    
+    If Not rs Is Nothing Then
+            
+'        If Not IsError(IsNumeric(rs.RecordCount)) Then isRS = True
+        If IsNumeric(rs.RecordCount) Then isRS = True
+    
+    End If
+
+Exit_Handler:
+    IsRecordset = isRS
+    Exit Function
+Err_Handler:
+'    Select Case Err.Number
+'      Case Else
+'        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+'            "Error encountered (#" & Err.Number & " - IsRecordset[mod_Db])"
+'    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+'  Db Property Methods/Functions
+' ---------------------------------
+
+' ---------------------------------
+' SUB:          SetQueryProperty
+' Description:  Sets query properties
+' Assumptions:  -
+' Parameters:   qdf - query to modify (DAO.QueryDef)
+'               prop - name of property to add (string)
+'               val - value of new property (variant)
+' Returns:      -
+' Throws:       none
+' References:
+'   LPurvis, September 13, 2008
+'   http://www.utteraccess.com/forum/Set-query-property-VBA-t1713084.html
+' Source/date:  -
+' Adapted:      Bonnie Campbell, March 30, 2017 - for NCPN tools
+' Revisions:
+'   BLC - 3/30/2017 - initial version
+' ---------------------------------
+Sub SetQueryProperty(qdf As DAO.QueryDef, prop As String, val As Variant) 'qry As String, prop As String, val As Variant)
+On Error Resume Next
+'    Dim db As Database
+'    Dim qdf As QueryDef
+    Dim prp As DAO.Property
+    
+'    Set db = CurrentDb
+'    Set qdf = db.QueryDefs(qry)
+    
+    With qdf
+        Set prp = qdf.Properties(prop)
+        If Err Then
+            Set prp = .CreateProperty(prop, dbText, val)
+            .Properties.Append prp
+        Else
+            prp.Value = val
+        End If
+    End With
+    
+Exit_Handler:
+    'cleanup
+'    Set prp = Nothing
+'    Set qdf = Nothing
+'    Set db = Nothing
+    Exit Sub
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - SetQueryProperty[mod_Db])"
+    End Select
+    Resume Exit_Handler
+End Sub
 
 ' ---------------------------------
 ' FUNCTION:     GetDescription
@@ -706,6 +844,214 @@ Err_Handler:
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - GetDescription[mod_Db])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' FUNCTION:     FieldCount
+' Description:  Determines the number of fields in a table/query
+' Assumptions:  -
+' Parameters:   TableName - name of table/query (variant)
+' Returns:      FieldCount - number of fields (variant)
+' References:
+'   Sinndho, May 8, 2012
+'   http://www.dbforums.com/showthread.php?1678970-Count-the-number-of-columns-(fields)-in-a-table
+' Source/date:  Bonnie Campbell, October 11 2016
+' Revisions:    BLC, 10/11/2016 - initial version
+' ---------------------------------
+Public Function FieldCount(ByVal TableName As String) As Long
+'Public Function FIeldCount(ByVal TableName As Variant) As Variant <<-- if including in query
+On Error GoTo Err_Handler
+
+    Dim rs As DAO.Recordset
+
+    Set rs = CurrentDb.OpenRecordset(TableName, dbOpenSnapshot)
+    
+    FieldCount = rs.Fields.Count
+
+Exit_Handler:
+    'cleanup
+    rs.Close
+    Set rs = Nothing
+    
+    Exit Function
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - FieldCount[mod_Db])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' FUNCTION:     MaxDbFieldCount
+' Description:  Determines the maximum number of fields in Db tables/queries
+' Assumptions:  -
+' Parameters:   -
+' Returns:      MaxDbFieldCount - maximum number of fields (variant)
+' References:
+'   Sinndho, May 8, 2012
+'   http://www.dbforums.com/showthread.php?1678970-Count-the-number-of-columns-(fields)-in-a-table
+' Source/date:  Bonnie Campbell, October 11 2016
+' Revisions:    BLC, 10/11/2016 - initial version
+' ---------------------------------
+Public Function MaxDbFieldCount() As Long
+On Error GoTo Err_Handler
+    
+    Dim db As DAO.Database
+    Dim tdf As DAO.TableDef
+    Dim qdf As DAO.QueryDef
+    Dim max As Long
+    Dim qtName As String
+    
+    Set db = CurrentDb
+    
+    'default
+    max = 0
+    
+    For Each tdf In db.TableDefs
+        
+        If tdf.Fields.Count > max Then
+            max = tdf.Fields.Count
+            qtName = tdf.Name
+        End If
+
+    Next
+    
+    For Each qdf In db.QueryDefs
+    
+        If qdf.Fields.Count > max Then
+            max = qdf.Fields.Count
+            qtName = qdf.Name
+        End If
+
+    Next
+    
+    Debug.Print qtName
+    
+    MaxDbFieldCount = max
+
+Exit_Handler:
+    'cleanup
+    Set tdf = Nothing
+    Set qdf = Nothing
+    Set db = Nothing
+    Exit Function
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - MaxDbFieldCount[mod_Db])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' FUNCTION:     IsLinked
+' Description:  Determines if a table is linked
+' Assumptions:  -
+' Parameters:   tblName - name of table to evaluate (string)
+' Returns:      IsLinked - whether table is linked (boolean)
+'                          returns true for types 4 (ODBC linked), 6 (other linked)
+'                                  false for type 1 (non-linked tables)
+' References:
+'   Douglas J. Steele, February 20, 2009
+'   http://www.pcreview.co.uk/threads/check-if-a-table-is-linked.3748757/
+' Source/date:  Bonnie Campbell, October 20, 2016
+' Revisions:    BLC, 10/20/2016 - initial version
+' ---------------------------------
+Public Function IsLinked(tblName As String) As Boolean
+On Error GoTo Err_Handler
+    
+    IsLinked = Nz(DLookup("Type", "MSysObjects", "Name='" & tblName & "'"), 0) <> 1
+
+Exit_Handler:
+    'cleanup
+    Exit Function
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - IsLinked[mod_Db])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' SUB:          RetrieveTableColumnData
+' Description:  Retrieves table column names & attributes
+' Assumptions:  -
+' Parameters:   tbl - table name (string)
+' Returns:      array of column data (variant, 2-element array)
+'                 0 - column data recordset (rs)
+'                 1 - table column data as a comma separated string (string)
+' Throws:       none
+' References:   none
+' Source/date:  -
+' Adapted:      Bonnie Campbell, January 19, 2017 - for NCPN tools
+' Revisions:
+'   BLC - 1/19/2017 - initial version
+' ---------------------------------
+Public Function RetrieveTableColumnData(tbl As String) As Variant
+On Error GoTo Err_Handler
+
+    'retrieve field info
+    Dim aryFieldInfo() As Variant 'string
+    
+    aryFieldInfo = FetchDbTableFieldInfo(tbl)
+    
+    'clear table
+    ClearTable "usys_temp_rs"
+
+    'populate w/ table data
+    Dim rs As DAO.Recordset
+    Dim aryRecord() As String
+    Dim i As Integer
+    Dim strTableColumns As String
+    
+    'default
+    strTableColumns = ""
+    
+    Set rs = CurrentDb.OpenRecordset("usys_temp_rs", dbOpenDynaset)
+    
+    For i = 0 To UBound(aryFieldInfo)
+        
+        'create new record
+        rs.AddNew
+        
+        aryRecord = Split(aryFieldInfo(i), "|")
+        
+        rs!Column = aryRecord(0)
+        rs!ColType = aryRecord(5)
+        rs!IsReqd = IIf(aryRecord(3) = False, 0, 1)
+        rs!Length = aryRecord(2)
+        rs!AllowZLS = IIf(aryRecord(4) = False, 0, 1)
+    
+        'add the new record
+        rs.Update
+        
+        'prepare table columns list
+        strTableColumns = strTableColumns & aryRecord(0) & ", "
+        
+    Next
+    
+    Dim ary() As Variant
+    ary = Array(rs, strTableColumns)
+    
+    RetrieveTableColumnData = ary
+    
+Exit_Handler:
+    'cleanup
+    Set rs = Nothing
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - RetrieveTableColumnData[mod_Db])"
     End Select
     Resume Exit_Handler
 End Function
@@ -1042,49 +1388,79 @@ Err_Handler:
     End Select
     Resume Exit_Handler
 End Function
-
+    
 ' ---------------------------------
-' FUNCTION:     GetTempVarIndex
-' Description:  Retrieves the index of a TempVar item
-' Parameters:   strItem - item name(string)
-' Returns:      index of item, if found (integer); not found returns -1
-' Throws:       -
+' FUNCTION:     ListTables
+' Description:  List database tables
+' Assumptions:  -
+' Parameters:   ShowMSysTables - whether or not to show msys_ tables (boolean)
+'               ShowTsysTables - whether or not to show tsys_ tables (boolean)
+'               ShowUsysTables - whether or not to show usys_ tables (boolean)
+'               ShowLinkedTables - whether or not to show linked tables (boolean)
+' Returns:      tables - delimited string of tables (string)
 ' References:   -
-' Source/date:  Dal Jeanis, 7/11/2013
-'               http://www.accessforums.net/modules/demo-module-vba-code-syntax-using-tempvars-36353.html
-' Adapted:      Bonnie Campbell, Sep 1, 2014
-' Revisions:    BLC, 9/1/2014 - initial version
-'               BLC, 4/30/2015 - moved from mod_Utilities to mod_Db
+'   Daniel Pineault, June 10, 2010
+'   http://www.devhut.net/2010/06/10/ms-access-vba-list-the-tables-in-a-database/
+'   HansUp, December 17, 2013
+'   http://stackoverflow.com/questions/20643263/how-can-one-search-tabledefs-for-linked-tables
+' Source/date:  Bonnie Campbell, October 6 2016
+' Revisions:    BLC, 10/6/2016 - initial version
+'               BLC, 10/20/2016 - revised to include linked tables, added Tsys, Usys parameters
 ' ---------------------------------
-Public Function GetTempVarIndex(stritem) As String
+Public Function ListTables(ShowMSysTables As Boolean, _
+                            ShowTSysTables As Boolean, _
+                            ShowUSysTables As Boolean, _
+                            ShowLinkedTables As Boolean) As String
 On Error GoTo Err_Handler
 
-Dim i As Integer
-
-    For i = 0 To [TempVars].Count - 1
-        If [TempVars].Item(i).Name = stritem Then
-            'fetch the index and exit
-            GetTempVarIndex = i
-            Exit Function
-        End If
-    Next i
+    Dim tdf As DAO.TableDef
+    Dim tbls As String
     
-    'none found -> return -1
-    GetTempVarIndex = -1
+    'default
+    tbls = ""
+    
+    'fetch tables
+    For Each tdf In CurrentDb.TableDefs
+'Debug.Print tdf.Name
+        'handle MSys tables
+        If Len(tdf.Name) > Len(Replace(tdf.Name, "MSys", "")) And ShowMSysTables = False Then GoTo Continue
+        
+        'handle tsys tables
+        If Len(tdf.Name) > Len(Replace(tdf.Name, "tsys", "")) And ShowMSysTables = False Then GoTo Continue
+                
+        'handle usys tables
+        If Len(tdf.Name) > Len(Replace(tdf.Name, "usys", "")) And ShowMSysTables = False Then GoTo Continue
+        
+        'handle linked tables
+        If Len(tdf.connect) > 0 And ShowLinkedTables = False Then GoTo Continue
+        
+        tbls = tbls & "|" & tdf.Name
+        
+Continue:
+    Next
+    
+    'trim starting delimiter
+    tbls = Right(tbls, Len(tbls) - 1)
+'    Debug.Print tbls
     
 Exit_Handler:
+    ListTables = tbls
     Exit Function
 
 Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - GetTempVarIndex[mod_Db])"
+            "Error encountered (#" & Err.Number & " - ListTables[mod_Db])"
     End Select
     Resume Exit_Handler
 End Function
 
-' =================================
+' ---------------------------------
+'  Object Level Methods/Functions
+' ---------------------------------
+
+' ---------------------------------
 ' FUNCTION:     HasRecords
 ' Description:  Returns whether the specified table has records or not
 ' Parameters:   strName - string for the name of the table or query to check
@@ -1094,7 +1470,7 @@ End Function
 '               http://stackoverflow.com/questions/3994956/meaning-of-msysobjects-values-32758-32757-and-3-microsoft-access
 ' Source/date:  Bonnie Campbell, May 26, 2015
 ' Revisions:    BLC, 5/26/2015 - initial version
-' =================================
+' ---------------------------------
 Public Function HasRecords(ByVal strName As String) As Boolean
     On Error GoTo Err_Handler
     
@@ -1130,30 +1506,80 @@ Err_Handler:
 End Function
 
 ' ---------------------------------
+' SUB:          CloseObject
+' Description:  Checks if object exists, closes it if it does
+' Assumptions:  Object does not require saving (acSaveNo)
+' Parameters:   obj - object to close (variant)
+'               oType - object type (string)
+' Returns:      -
+' Throws:       none
+' References:   none
+' Source/date:  -
+' Adapted:      Bonnie Campbell, March 28, 2017 - for NCPN tools
+' Revisions:
+'   BLC - 3/28/2017 - initial version
+' ---------------------------------
+Public Sub CloseObject(obj As Variant, oType As String)
+On Error GoTo Err_Handler
+
+    Dim oGrp As AcObjectType
+    
+    Select Case LCase(oType)
+        Case "qry"
+            oGrp = acQuery
+        Case "tbl"
+            oGrp = acTable
+        Case "frm"
+            oGrp = acForm
+        Case "rpt"
+            oGrp = acReport
+    End Select
+
+    DoCmd.Close oGrp, obj, acSaveNo
+    
+Exit_Handler:
+    Exit Sub
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - CloseObject[mod_Db])"
+    End Select
+    Resume Exit_Handler
+End Sub
+
+' ---------------------------------
+'  Template Related Methods/Functions
+' ---------------------------------
+
+' ---------------------------------
 ' SUB:     GetTemplates
-' Description:  loads templates into memory as a global dictionary object (dictTemplates)
-'               makes current templates available without querying the db tsys_SQL_templates table
-' Parameters:   strSyntax - specifies syntax of the template to retrieve (T-SQL, JET, etc.)
-'               strParams - specifies the parameters & their datatypes for the template
+' Description:  loads Templates into memory as a global dictionary object (dictTemplates)
+'               makes current Templates available without querying the db tsys_SQL_Templates table
+' Parameters:   strSyntax - specifies syntax of the Template to retrieve (T-SQL, JET, etc.)
+'               strParams - specifies the parameters & their datatypes for the Template
 ' Returns:      -
 ' Assumptions:  -
 ' Throws:       none
-' References:   tsys_Db_templates, Microsoft Scripting Runtime (dictionary object)
+' References:   tsys_Db_Templates, Microsoft Scripting Runtime (dictionary object)
 '   HansUp, June 27, 2013
-'   http://stackoverflow.com/questions/17328092/how-to-display-access-query-results-without-having-to-create-temporary-query
+'   http://stackoverflow.com/questions/17328092/how-to-display-access-query-results-without-having-to-create-Temporary-query
 ' Source/date:  Bonnie Campbell, June 2014
 ' Revisions:    BLC, 6/16/2014 - initial version
 '               BLC, 5/13/2016 - shifted from mod_Db_Templates to mod_Db & adjusted to match tsys_Db_Templates
 '               BLC, 5/19/2016 - revised documentation & renamed GetTemplates() vs. GetSQLTemplates() since tsys_Db_Templates
 '                                can accommodate more than SQL
 '               BLC, 6/5/2016  - revised to set strSyntax to "T-SQL" to avoid error due to multiple items of same name in dict
-'               BLC, 6/6/2016  - added error handling for duplicate templates, renamed global to g_AppTemplates
+'               BLC, 6/6/2016  - added error handling for duplicate Templates, renamed global to g_AppTemplates
 '               BLC, 2/1/2017  - added error handling for improper parameter syntax (param name:param type)
 '               BLC, 2/2/2017  - added clearing of global g_AppTemplates to allow re-definition
 '                                without restarting db
 '               BLC, 3/23/2017 - revised to use "SQL" for default syntax (most should be "SQL" i.e. usable in SQL server & Access)
 '               BLC, 3/30/2017 - added ID, Dependencies, FieldCheck, FieldOK values to dictionary object
-'                                to capture these properties of a template
+'                                to capture these properties of a Template
+'               BLC, 4/18/2017 - revised Dim to set dictTemplates as Scripting.Dictionary vs. Dictionary (latter
+'                                produces compile error on .Add - Method or Data Member not found)
 ' ---------------------------------
 Public Sub GetTemplates(Optional strSyntax As String = "", Optional Params As String = "")
 
@@ -1180,7 +1606,7 @@ Public Sub GetTemplates(Optional strSyntax As String = "", Optional Params As St
     
     'handle no records
     If rs.EOF Then
-        MsgBox "Sorry, no templates were found for this database version.", vbExclamation, _
+        MsgBox "Sorry, no Templates were found for this database version.", vbExclamation, _
             "Linked Database Templates Not Found"
         DoCmd.CancelEvent
         GoTo Exit_Handler
@@ -1194,7 +1620,7 @@ Public Sub GetTemplates(Optional strSyntax As String = "", Optional Params As St
     'prepare the dictionary key array
     ary(1) = "Context"
     ary(2) = "TemplateName"
-    ary(3) = "Template" 'template
+    ary(3) = "Template" 'Template
     ary(4) = "Params"
     ary(5) = "Syntax"
     ary(6) = "ID"
@@ -1205,7 +1631,7 @@ Public Sub GetTemplates(Optional strSyntax As String = "", Optional Params As St
     ary(11) = "Version"
     
     'prepare array of dictionaries
-    Dim dictTemplates As Dictionary
+    Dim dictTemplates As Scripting.Dictionary
     Set dictTemplates = New Scripting.Dictionary
     
     rs.MoveLast
@@ -1245,7 +1671,7 @@ Public Sub GetTemplates(Optional strSyntax As String = "", Optional Params As St
                             & "|Type" & PARAM_SEPARATOR & "caution" _
                             & "|Caption" & PARAM_SEPARATOR & "Invalid SQL Template Parameters for the '" & dict("TemplateName") & "' Template"
                             
-                            'exit database since application won't function w/o valid templates
+                            'exit database since application won't function w/o valid Templates
                             DoCmd.CloseDatabase
                         End If
                             
@@ -1270,15 +1696,14 @@ Public Sub GetTemplates(Optional strSyntax As String = "", Optional Params As St
         
         Next
         
-        
-        'add template dictionary to dictionary of templates
+        'add Template dictionary to dictionary of Templates
         dictTemplates.Add dict("TemplateName"), dict
         
 '        Debug.Print dict("TemplateName") & " " & dict.Item("ID")
         rs.MoveNext
     Loop
     
-    'load global AppTemplates As Scripting.Dictionary of templates
+    'load global AppTemplates As Scripting.Dictionary of Templates
     Set g_AppTemplates = Nothing    'clear first
     
     Set g_AppTemplates = dictTemplates
@@ -1292,9 +1717,9 @@ Exit_Handler:
 
 Err_Handler:
     Select Case Err.Number
-      Case 457  'Duplicate template -- tsys_Db_Templates finds more than one w/ same name
-        MsgBox "A duplicate template was found." & vbCrLf & vbCrLf & _
-            "When you click 'OK' a query will run to identify the problem template." & vbCrLf & vbCrLf & _
+      Case 457  'Duplicate Template -- tsys_Db_Templates finds more than one w/ same name
+        MsgBox "A duplicate Template was found." & vbCrLf & vbCrLf & _
+            "When you click 'OK' a query will run to identify the problem Template." & vbCrLf & vbCrLf & _
             "You can close the query after it runs (save it if you like)." & vbCrLf & vbCrLf & _
             "Please contact your data manager to resolve this issue." & vbCrLf & vbCrLf & _
             "Error #" & Err.Number & " - GetTemplates[mod_Db]:" & vbCrLf & _
@@ -1332,21 +1757,21 @@ End Sub
 
 ' ---------------------------------
 ' FUNCTION:     GetTemplateIDs
-' Description:  retrieves template numeric IDs from templates global template dictionary (AppTemplates)
-'               returns them as a dictionary object with ID:template name as key:value pair
+' Description:  retrieves Template numeric IDs from Templates global Template dictionary (AppTemplates)
+'               returns them as a dictionary object with ID:Template name as key:value pair
 ' Parameters:   -
-' Returns:      template IDs - template IDs (dictionary object, key=ID, value=template name)
-' Assumptions:  tsys_Db_templates contains all desired templates
-'               g_AppTemplates contains template info searchable by TemplateName which is its key
+' Returns:      Template IDs - Template IDs (dictionary object, key=ID, value=Template name)
+' Assumptions:  tsys_Db_Templates contains all desired Templates
+'               g_AppTemplates contains Template info searchable by TemplateName which is its key
 '               each of the values in that pair is itself a dictionary object containing
-'               the various template properties (ID, SQL, Version, etc.)
+'               the various Template properties (ID, SQL, Version, etc.)
 ' Throws:       none
-' References:   tsys_Db_templates, Microsoft Scripting Runtime (dictionary object)
+' References:   tsys_Db_Templates, Microsoft Scripting Runtime (dictionary object)
 '   Craig Hatmaker, December 5, 2012
 '   http://stackoverflow.com/questions/11296522/looping-through-a-scripting-dictionary-using-index-item-number
 ' Source/date:  Bonnie Campbell, March 30, 2017
 ' Revisions:    BLC, 3/30/2017 - initial version
-'               BLC, 3/31/2017 - fix issue which caused g_AppTemplateIDs to report wrong ID for a template
+'               BLC, 3/31/2017 - fix issue which caused g_AppTemplateIDs to report wrong ID for a Template
 ' ---------------------------------
 Public Function GetTemplateIDs() As Scripting.Dictionary
 On Error GoTo Err_Handler
@@ -1356,22 +1781,22 @@ On Error GoTo Err_Handler
     
     Dim d As Scripting.Dictionary, tIDs As Scripting.Dictionary
     Dim i As Integer
-    Dim x As Variant
+    Dim X As Variant
     
     Set d = g_AppTemplates
     
     Set tIDs = CreateObject("Scripting.Dictionary")
     
-    'iterate through the global template dictionary
+    'iterate through the global Template dictionary
     'For i = 0 To d.Count - 1
-    For Each x In d
+    For Each X In d
     
-        'add @ template to the dictionary
+        'add @ Template to the dictionary
         '--------------------------------------------------------------
-        ' Note: @ of the global template dictionary's items is itself a dictionary
+        ' Note: @ of the global Template dictionary's items is itself a dictionary
         '       so reference them via d.Items()(i).Item("keyname")
         '--------------------------------------------------------------
-        tIDs.Add d.Item(x).Item("ID"), d.Item(x).Item("TemplateName")
+        tIDs.Add d.Item(X).Item("ID"), d.Item(X).Item("TemplateName")
         'tIDs.Add d.Items()(x).Item("ID"), d.Items()(x).Item("TemplateName")
         'tIDs.Add d.Items()(i).Item("ID"), d.Items()(i).Item("TemplateName")
         'tIDs.Add d.Items()(i).Item("ID"), d.Keys()(i)
@@ -1397,21 +1822,21 @@ End Function
 
 ' ---------------------------------
 ' FUNCTION:     GetTemplate
-' Description:  retrieves template from templates global template dictionary (AppTemplates)
-' Parameters:   strTemplate - name of template to fetch (string)
+' Description:  retrieves Template from Templates global Template dictionary (AppTemplates)
+' Parameters:   strTemplate - name of Template to fetch (string)
 '               params - pipe (|) separated parameter listing w/ parameter name:value pairs (: separated) (string)
-' Returns:      template - value of the template (string)
-'               most templates are SQL strings, so the SQL string (template) field of the given
-'               template name is retrieved
-' Assumptions:  tsys_Db_templates correctly list parameter:parameter type values & AppTemplates contain them
+' Returns:      Template - value of the Template (string)
+'               most Templates are SQL strings, so the SQL string (Template) field of the given
+'               Template name is retrieved
+' Assumptions:  tsys_Db_Templates correctly list parameter:parameter type values & AppTemplates contain them
 '               params do not include PARAM_SEPARATOR w/in them as this is considered a separator
 ' Throws:       none
-' References:   tsys_Db_templates, Microsoft Scripting Runtime (dictionary object)
+' References:   tsys_Db_Templates, Microsoft Scripting Runtime (dictionary object)
 '   HansUp, June 27, 2013
-'   http://stackoverflow.com/questions/17328092/how-to-display-access-query-results-without-having-to-create-temporary-query
+'   http://stackoverflow.com/questions/17328092/how-to-display-access-query-results-without-having-to-create-Temporary-query
 ' Source/date:  Bonnie Campbell, May 2016
 ' Revisions:    BLC, 5/19/2016 - initial version
-'               BLC, 6/6/2016  - added error handling for duplicate templates, renamed global to g_AppTemplates
+'               BLC, 6/6/2016  - added error handling for duplicate Templates, renamed global to g_AppTemplates
 ' ---------------------------------
 Public Function GetTemplate(strTemplate As String, Optional Params As String = "") As String
 On Error GoTo Err_Handler
@@ -1440,7 +1865,7 @@ Debug.Print strTemplate
             'ary = Split(params, PARAM_SEPARATOR)
         End If
         
-        'prepare array of template parameters w/ their data type
+        'prepare array of Template parameters w/ their data type
         'aryParams = Split(AppTemplates(strTemplate).item("Params"), "|")
         'AppTemplates("s_tagline").Item("Params").Item("SourceID") --> integer
     
@@ -1463,7 +1888,7 @@ Debug.Print strTemplate
                 'SQL-ize parameter values to avoid SQL syntax errors
                 param = SQLencode(ary2(1))
 'Debug.Print param
-                'swap out the placeholder in the template
+                'swap out the placeholder in the Template
                 Template = Replace(Template, swap, ary2(1))
                 
             End If
@@ -1481,9 +1906,9 @@ Exit_Handler:
 
 Err_Handler:
     Select Case Err.Number
-      Case 457  'Duplicate template -- tsys_Db_Templates finds more than one w/ same name
-        MsgBox "A duplicate template was found." & vbCrLf & vbCrLf & _
-            "When you click 'OK' a query will run to identify the problem template." & vbCrLf & vbCrLf & _
+      Case 457  'Duplicate Template -- tsys_Db_Templates finds more than one w/ same name
+        MsgBox "A duplicate Template was found." & vbCrLf & vbCrLf & _
+            "When you click 'OK' a query will run to identify the problem Template." & vbCrLf & vbCrLf & _
             "You can close the query after it runs (save it if you like)." & vbCrLf & vbCrLf & _
             "Please contact your data manager to resolve this issue." & vbCrLf & vbCrLf & _
             "Error #" & Err.Number & " - GetTemplate[mod_Db]:" & vbCrLf & _
@@ -1533,7 +1958,7 @@ End Function
 ' Source/date:  Bonnie Campbell, May 2016
 ' Revisions:    BLC, 5/26/2016 - initial version
 ' ---------------------------------
-Public Function VirtualDAORecordset(iCount As Integer, Optional strTable As String = "temp") As Recordset
+Public Function VirtualDAORecordset(iCount As Integer, Optional strTable As String = "Temp") As Recordset
 On Error GoTo Err_Handler
 
     Dim Counter As Long
@@ -1572,66 +1997,11 @@ Err_Handler:
     Select Case Err.Number
       Case 3010
         Counter = Counter + 1
-        strTable = "temp" & CStr(Counter)
+        strTable = "Temp" & CStr(Counter)
         Resume Next
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - VirtualDAORecordset[mod_Db])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' FUNCTION:     SQLencode
-' Description:  sanitizes SQL to remove special characters
-' Parameters:   strSQL - SQL to sanitize (string)
-' Returns:      strSanitized - sanitized SQL (string)
-' Assumptions:
-' Throws:       none
-' References:
-'   Susan Harkins, March 2, 2011
-'   http://www.techrepublic.com/blog/microsoft-office/5-rules-for-embedding-strings-in-vba-code/
-' Source/date:  Bonnie Campbell, June 2016
-' Revisions:    BLC, 6/6/2016 - initial version
-' ---------------------------------
-Public Function SQLencode(strSQL)
-On Error GoTo Err_Handler
-    
-    Dim aryReplace(1, 2) As String
-    Dim i As Integer
-    Dim strNewSQL As String
-    
-    'default
-    strNewSQL = ""
-    
-    'exit if no description
-    If Len(strSQL) = 0 Then GoTo Exit_Handler
-    
-    '--------------------------
-    ' replacement characters
-    '--------------------------
-    '   "   Chr(34)
-    '   '   Chr(39)
-    '--------------------------
-    aryReplace(0, 0) = """"
-    aryReplace(0, 1) = 34
-    aryReplace(1, 0) = "'"
-    aryReplace(1, 1) = 39
-    
-    For i = 0 To UBound(aryReplace, 1)
-        strNewSQL = Replace(strSQL, aryReplace(i, 0), "Chr(" & aryReplace(i, 1) & ")")
-    Next
-
-    SQLencode = strNewSQL
-    
-Exit_Handler:
-    Exit Function
-
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - SQLencode[mod_Db])"
     End Select
     Resume Exit_Handler
 End Function
@@ -1714,226 +2084,6 @@ Err_Handler:
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - CreateVirtualADORecordset[mod_Db])"
-    End Select
-    Resume Exit_Handler
-End Sub
-
-' ---------------------------------
-' FUNCTION:     CreateTempRecordset
-' Description:  creates a temporary DAO recordset
-' Parameters:   strTemplate - name of virtual table (string)
-'               iCount - number of records (integer)
-' Returns:      rs - recordset containing # of records = iCount (DAO.recordset)
-' Assumptions:  the temporary recordset is used in limited instances when
-'               a recordset is needed but doesn't exist
-' Throws:       none
-' References:
-' Source/date:  Bonnie Campbell, June 2016
-' Revisions:    BLC, 6/8/2016 - initial version
-' ---------------------------------
-Public Function CreateTempRecordset(iCount As Integer) As DAO.Recordset
-On Error GoTo Err_Handler
-
-    Dim rs As DAO.Recordset
-    Dim strSQL As String
-    Dim i As Integer
-    
-'    strSQL = "SELECT * FROM usys_Temp_Table;"
-    
-    Set rs = CurrentDb.OpenRecordset("usys_Temp_Table") 'strSQL, dbOpenSnapshot)
-
-    'add records to recordset
-    For i = 1 To iCount
-
-        rs.AddNew
-        rs.Fields(0) = i 'number integer field
-        rs.Update
-    Next
-    
-       
-    Set CreateTempRecordset = rs
-
-Exit_Handler:
-    Exit Function
-
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - CreateTempRecordset[mod_Db])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' SUB:          CreateTempRecords
-' Description:  fills a temporary table of numbers
-'               first clears usys_temp_table of values, then populates w/ desired set of #s
-' Parameters:   iCount - number of records (integer)
-'               iStart - starting point (integer)
-' Returns:      rs - recordset containing # of records = iCount (DAO.recordset)
-' Assumptions:  used for reports when a recordset doesn't exist for the report
-'               but it is necessary to repeat the report detail
-' Throws:       none
-' References:
-' Source/date:  Bonnie Campbell, June 2016
-' Revisions:    BLC, 6/8/2016 - initial version
-' ---------------------------------
-Public Sub CreateTempRecords(iStart As Integer, iCount As Integer)
-On Error GoTo Err_Handler
-
-    Dim strSQL As String, strSQLDelete As String, strSQLInsert As String
-    Dim i As Integer
-    
-    'clear table
-    strSQLDelete = GetTemplate("d_usys_temp_table")
-    
-    DoCmd.SetWarnings False
-    DoCmd.RunSQL strSQLDelete
-    DoCmd.SetWarnings True
-    
-    'prep for inserts
-    strSQL = GetTemplate("i_usys_temp_table")
-     
-    'add records to table
-    For i = iStart To iCount
-
-        strSQLInsert = Replace(strSQL, "[i]", i)
-
-        DoCmd.SetWarnings False
-        DoCmd.RunSQL strSQLInsert
-        DoCmd.SetWarnings True
-    
-    Next
-
-Exit_Handler:
-    Exit Sub
-
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - CreateTempRecords[mod_Db])"
-    End Select
-    Resume Exit_Handler
-End Sub
-
-' ---------------------------------
-' SUB:          CreateTempTable
-' Description:  creates a temp table from an array containing table field definitions
-' Assumptions:  field array is 1-dimensional
-'               fields are represented with name|type|length/size|required|allowZLS
-'               only name|type are required (except for dbText where length/size is also reqd)
-'               ex: "col1|CStr(dbText)|2|True|False"
-'               data array includes same # of columns as fields array
-' Parameters:   tblName - table name (string)
-'               aryFields - array containing field definitions (variant)
-' Returns:
-' References:
-' Source/date:  Bonnie Campbell, September 20 2016
-' Revisions:    BLC, 9/20/2016 - initial version
-' ---------------------------------
-Public Sub CreateTempTable(tblName As String, aryFields() As Variant)
-On Error GoTo Err_Handler
-
-    'check for blank table name or no fields
-    If Not IsArray(aryFields) Or Len(tblName) = 0 Then GoTo Exit_Handler
-    
-    Dim db As DAO.Database
-    Dim tdf As DAO.TableDef
-    Dim fld As DAO.field
-    Dim Item As Variant, fldDef As Variant
-    Dim i As Integer
-
-    Set db = CurrentDb()
-    
-    'delete it if it already exists
-    If TableExists(tblName) Then RemoveTempTable (tblName)
-    
-    Set tdf = db.CreateTableDef(tblName)
-    
-    'prepare array
-    For Each Item In aryFields
-    
-        'fldDef(0) = name, fldDef(1) = type, fldDef(2) = length (as applicable)
-        fldDef = Split(Item, "|")
-        
-        'establish field w/ name & type
-        Set fld = tdf.CreateField(fldDef(0), CLng(fldDef(1)))
-        
-        'add attributes - size (if applicable), required & allow ZLS
-        For i = LBound(fldDef) To UBound(fldDef)
-            Select Case i
-                Case 0  'column name
-                Case 1  'column type
-                Case 2  'column size
-                    fld.Size = fldDef(2)
-                Case 3  'column required
-                    fld.Required = fldDef(3)
-                Case 4  'column allow ZLS
-                    fld.AllowZeroLength = fldDef(4)
-                Case 5
-                Case Else
-            End Select
-        Next
-        tdf.Fields.Append fld
-        tdf.Fields.Refresh
-    Next
-    
-    'add table
-    db.TableDefs.Append tdf
-    
-    'update window
-    db.TableDefs.Refresh
-    RefreshDatabaseWindow
-    
-    'cleanup
-'    db.Close
-
-Exit_Handler:
-    Exit Sub
-
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - CreateTempTable[mod_Db])"
-    End Select
-    Resume Exit_Handler
-End Sub
-
-' ---------------------------------
-' SUB:          RemoveTempTable
-' Description:  removes a temp table from database
-' Assumptions:  -
-' Parameters:   tblName - table name (string)
-' Returns:      -
-' References:   -
-' Source/date:  Bonnie Campbell, September 20 2016
-' Revisions:    BLC, 9/20/2016 - initial version
-' ---------------------------------
-Public Sub RemoveTempTable(tblName As String)
-On Error GoTo Err_Handler
-
-    'check for blank table name
-    If Len(tblName) = 0 Then GoTo Exit_Handler
-
-    'check if table exists
-    If TableExists(tblName) Then
-    
-        'delete table
-        DoCmd.DeleteObject acTable, tblName
-    
-    End If
-    
-Exit_Handler:
-    Exit Sub
-
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - RemoveTempTable[mod_Db])"
     End Select
     Resume Exit_Handler
 End Sub
@@ -2049,440 +2199,50 @@ Err_Handler:
 End Sub
 
 ' ---------------------------------
-' FUNCTION:     GetParamsFromSQL
-' Description:  extracts parameters from SQL string
-' Assumptions:  -
-' Parameters:   sql - SQL to retrieve parameters from(string)
-' Returns:      params - delimited string of parameters and parameter types (string)
-' References:   -
-' Source/date:  Bonnie Campbell, September 20 2016
-' Revisions:    BLC, 9/20/2016 - initial version
-' ---------------------------------
-Public Function GetParamsFromSQL(SQL As String) As String
-On Error GoTo Err_Handler
-
-    Dim Params As String
-    
-    'default
-    Params = ""
-    
-    If Len(SQL) > 0 Then
-        If InStr(SQL, "PARAMETERS ") Then
-            Dim delimPos As Integer
-            
-            Params = Replace(SQL, "PARAMETERS ", "")
-            delimPos = InStr(Params, ";")
-            Params = Left(Params, delimPos - 1)
-            Params = Replace(Params, ", ", "|")
-            Params = Replace(Params, " ", ":")
-            
-            'convert TEXT(#) values to STRING
-            If InStr(Params, "TEXT(") Then
-                'remove TEXT( )
-                Params = Replace(Params, "TEXT(", "STRING")
-                Params = Replace(Params, ")", "")
-                'remove numerics
-                Params = RemoveChars(Params, False)
-            End If
-            
-        End If
-    End If
-    
-Exit_Handler:
-    GetParamsFromSQL = Params
-    Exit Function
-
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - GetParamsFromSQL[mod_Db])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' FUNCTION:     ListTables
-' Description:  List database tables
-' Assumptions:  -
-' Parameters:   ShowMSysTables - whether or not to show msys_ tables (boolean)
-'               ShowTsysTables - whether or not to show tsys_ tables (boolean)
-'               ShowUsysTables - whether or not to show usys_ tables (boolean)
-'               ShowLinkedTables - whether or not to show linked tables (boolean)
-' Returns:      tables - delimited string of tables (string)
-' References:   -
-'   Daniel Pineault, June 10, 2010
-'   http://www.devhut.net/2010/06/10/ms-access-vba-list-the-tables-in-a-database/
-'   HansUp, December 17, 2013
-'   http://stackoverflow.com/questions/20643263/how-can-one-search-tabledefs-for-linked-tables
-' Source/date:  Bonnie Campbell, October 6 2016
-' Revisions:    BLC, 10/6/2016 - initial version
-'               BLC, 10/20/2016 - revised to include linked tables, added Tsys, Usys parameters
-' ---------------------------------
-Public Function ListTables(ShowMSysTables As Boolean, _
-                            ShowTSysTables As Boolean, _
-                            ShowUSysTables As Boolean, _
-                            ShowLinkedTables As Boolean) As String
-On Error GoTo Err_Handler
-
-    Dim tdf As DAO.TableDef
-    Dim tbls As String
-    
-    'default
-    tbls = ""
-    
-    'fetch tables
-    For Each tdf In CurrentDb.TableDefs
-'Debug.Print tdf.Name
-        'handle MSys tables
-        If Len(tdf.Name) > Len(Replace(tdf.Name, "MSys", "")) And ShowMSysTables = False Then GoTo Continue
-        
-        'handle tsys tables
-        If Len(tdf.Name) > Len(Replace(tdf.Name, "tsys", "")) And ShowMSysTables = False Then GoTo Continue
-                
-        'handle usys tables
-        If Len(tdf.Name) > Len(Replace(tdf.Name, "usys", "")) And ShowMSysTables = False Then GoTo Continue
-        
-        'handle linked tables
-        If Len(tdf.connect) > 0 And ShowLinkedTables = False Then GoTo Continue
-        
-        tbls = tbls & "|" & tdf.Name
-        
-Continue:
-    Next
-    
-    'trim starting delimiter
-    tbls = Right(tbls, Len(tbls) - 1)
-'    Debug.Print tbls
-    
-Exit_Handler:
-    ListTables = tbls
-    Exit Function
-
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - ListTables[mod_Db])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' FUNCTION:     IsRecordset
-' Description:  Determines if the object is a recordset or not
-' Assumptions:
-'               Error handling is ignored since rs.Recordcount would produce
-'               an error if rs is not a recordset. In that case isRS remains
-'               false and that is returned through the Exit_Handler
-' Parameters:   rs - recordset object (object)
-' Returns:      isRS - if object was determined to be a recordset (boolean)
-'                      true = is a recordset object, false = is not a recordset object
-' References:   -
-' Source/date:  Bonnie Campbell, October 11 2016
-' Revisions:    BLC, 10/11/2016 - initial version
-' ---------------------------------
-Public Function IsRecordset(rs As Object)
-On Error GoTo Err_Handler
-
-    Dim isRS As Boolean
-    
-    isRS = False
-    
-    If Not rs Is Nothing Then
-            
-'        If Not IsError(IsNumeric(rs.RecordCount)) Then isRS = True
-        If IsNumeric(rs.RecordCount) Then isRS = True
-    
-    End If
-
-Exit_Handler:
-    IsRecordset = isRS
-    Exit Function
-Err_Handler:
-'    Select Case Err.Number
-'      Case Else
-'        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-'            "Error encountered (#" & Err.Number & " - IsRecordset[mod_Db])"
-'    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' FUNCTION:     FieldCount
-' Description:  Determines the number of fields in a table/query
-' Assumptions:  -
-' Parameters:   TableName - name of table/query (variant)
-' Returns:      FieldCount - number of fields (variant)
-' References:
-'   Sinndho, May 8, 2012
-'   http://www.dbforums.com/showthread.php?1678970-Count-the-number-of-columns-(fields)-in-a-table
-' Source/date:  Bonnie Campbell, October 11 2016
-' Revisions:    BLC, 10/11/2016 - initial version
-' ---------------------------------
-Public Function FieldCount(ByVal TableName As String) As Long
-'Public Function FIeldCount(ByVal TableName As Variant) As Variant <<-- if including in query
-On Error GoTo Err_Handler
-
-    Dim rs As DAO.Recordset
-
-    Set rs = CurrentDb.OpenRecordset(TableName, dbOpenSnapshot)
-    
-    FieldCount = rs.Fields.Count
-
-Exit_Handler:
-    'cleanup
-    rs.Close
-    Set rs = Nothing
-    
-    Exit Function
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - FieldCount[mod_Db])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' FUNCTION:     MaxDbFieldCount
-' Description:  Determines the maximum number of fields in Db tables/queries
-' Assumptions:  -
+' SUB:          Delete_All_Records
+' Description:  Cleanup function deletes all records in a basic table set
+'               Tables included:
+'                   tbl_Db_Revisions        tlu_Contacts
+'                   tbl_Db_Meta             tbl_Events
+'                   tbl_Event_Details       tbl_Event_Group
+'                   tbl_Field_Data          tbl_Locations
+'                   tbl_Data_Locations      tbl_Sites
+'                   xref_Event_Contacts
+'
 ' Parameters:   -
-' Returns:      MaxDbFieldCount - maximum number of fields (variant)
-' References:
-'   Sinndho, May 8, 2012
-'   http://www.dbforums.com/showthread.php?1678970-Count-the-number-of-columns-(fields)-in-a-table
-' Source/date:  Bonnie Campbell, October 11 2016
-' Revisions:    BLC, 10/11/2016 - initial version
-' ---------------------------------
-Public Function MaxDbFieldCount() As Long
-On Error GoTo Err_Handler
-    
-    Dim db As DAO.Database
-    Dim tdf As DAO.TableDef
-    Dim qdf As DAO.QueryDef
-    Dim max As Long
-    Dim qtName As String
-    
-    Set db = CurrentDb
-    
-    'default
-    max = 0
-    
-    For Each tdf In db.TableDefs
-        
-        If tdf.Fields.Count > max Then
-            max = tdf.Fields.Count
-            qtName = tdf.Name
-        End If
-
-    Next
-    
-    For Each qdf In db.QueryDefs
-    
-        If qdf.Fields.Count > max Then
-            max = qdf.Fields.Count
-            qtName = qdf.Name
-        End If
-
-    Next
-    
-    Debug.Print qtName
-    
-    MaxDbFieldCount = max
-
-Exit_Handler:
-    'cleanup
-    Set tdf = Nothing
-    Set qdf = Nothing
-    Set db = Nothing
-    Exit Function
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - MaxDbFieldCount[mod_Db])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' FUNCTION:     IsLinked
-' Description:  Determines if a table is linked
-' Assumptions:  -
-' Parameters:   tblName - name of table to evaluate (string)
-' Returns:      IsLinked - whether table is linked (boolean)
-'                          returns true for types 4 (ODBC linked), 6 (other linked)
-'                                  false for type 1 (non-linked tables)
-' References:
-'   Douglas J. Steele, February 20, 2009
-'   http://www.pcreview.co.uk/threads/check-if-a-table-is-linked.3748757/
-' Source/date:  Bonnie Campbell, October 20, 2016
-' Revisions:    BLC, 10/20/2016 - initial version
-' ---------------------------------
-Public Function IsLinked(tblName As String) As Boolean
-On Error GoTo Err_Handler
-    
-    IsLinked = Nz(DLookup("Type", "MSysObjects", "Name='" & tblName & "'"), 0) <> 1
-
-Exit_Handler:
-    'cleanup
-    Exit Function
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - IsLinked[mod_Db])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' SUB:          SetTempVar
-' Description:  Checks if TempVar exists, creates it if not, & sets value
-' Assumptions:  -
-' Parameters:   strVar - TempVar name (string)
-'               Val - value to set (variant)
 ' Returns:      -
-' Throws:       none
-' References:   none
-' Source/date:  -
-' Adapted:      Bonnie Campbell, January 9, 2017 - for NCPN tools
-' Revisions:
-'   BLC - 1/9/2017 - initial version
+' Throws:       -
+' References:   -
+' Source/date:  NCPN, unknown
+' Adapted:      Bonnie Campbell, April 28, 2017 for NCPN tools
+' Revisions:    NCPN, unknown - initial version
+'               BLC, 4/28/2017 - moved to mod_Db
 ' ---------------------------------
-Public Sub SetTempVar(strVar As String, val As Variant)
-On Error GoTo Err_Handler
+Public Sub Delete_All_Records()
+On Error GoTo Err_Handler:
 
-    If Not TempVars(strVar) Is Nothing Then
-        TempVars(strVar) = val
-    Else
-        TempVars.Add strVar, val
-    End If
-    
-Exit_Handler:
-    Exit Sub
-
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - SetTempVar[mod_Db])"
-    End Select
-    Resume Exit_Handler
-End Sub
-
-' ---------------------------------
-' SUB:          RetrieveTableColumnData
-' Description:  Retrieves table column names & attributes
-' Assumptions:  -
-' Parameters:   tbl - table name (string)
-' Returns:      array of column data (variant, 2-element array)
-'                 0 - column data recordset (rs)
-'                 1 - table column data as a comma separated string (string)
-' Throws:       none
-' References:   none
-' Source/date:  -
-' Adapted:      Bonnie Campbell, January 19, 2017 - for NCPN tools
-' Revisions:
-'   BLC - 1/19/2017 - initial version
-' ---------------------------------
-Public Function RetrieveTableColumnData(tbl As String) As Variant
-On Error GoTo Err_Handler
-
-    'retrieve field info
-    Dim aryFieldInfo() As Variant 'string
-    
-    aryFieldInfo = FetchDbTableFieldInfo(tbl)
-    
-    'clear table
-    ClearTable "usys_temp_rs"
-
-    'populate w/ table data
-    Dim rs As DAO.Recordset
-    Dim aryRecord() As String
+    Dim strSQL As String
+    Dim strTables(11) As String
+    Const cstrSQL As String = "DELETE * FROM "
     Dim i As Integer
-    Dim strTableColumns As String
     
-    'default
-    strTableColumns = ""
+    strTables(0) = "tbl_Db_Revisions"
+    strTables(1) = "tbl_Db_Meta"
+    strTables(2) = "tbl_Event_Details"
+    strTables(3) = "tbl_Field_Data"
+    strTables(4) = "tbl_Data_Locations"
+    strTables(5) = "xref_Event_Contacts"
+    strTables(6) = "tlu_Contacts"
+    strTables(7) = "tbl_Events"
+    strTables(8) = "tbl_Event_Group"
+    strTables(9) = "tbl_Locations"
+    strTables(10) = "tbl_Sites"
     
-    Set rs = CurrentDb.OpenRecordset("usys_temp_rs", dbOpenDynaset)
-    
-    For i = 0 To UBound(aryFieldInfo)
-        
-        'create new record
-        rs.AddNew
-        
-        aryRecord = Split(aryFieldInfo(i), "|")
-        
-        rs!Column = aryRecord(0)
-        rs!ColType = aryRecord(5)
-        rs!IsReqd = IIf(aryRecord(3) = False, 0, 1)
-        rs!Length = aryRecord(2)
-        rs!AllowZLS = IIf(aryRecord(4) = False, 0, 1)
-    
-        'add the new record
-        rs.Update
-        
-        'prepare table columns list
-        strTableColumns = strTableColumns & aryRecord(0) & ", "
-        
-    Next
-    
-    Dim ary() As Variant
-    ary = Array(rs, strTableColumns)
-    
-    RetrieveTableColumnData = ary
-    
-Exit_Handler:
-    'cleanup
-    Set rs = Nothing
-    Exit Function
+    For i = 0 To UBound(strTables) - 1
+        strSQL = cstrSQL & strTables(i)
+        CurrentDb.Execute strSQL
+    Next i
 
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - SetTempVar[mod_Db])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' SUB:          CloseObject
-' Description:  Checks if object exists, closes it if it does
-' Assumptions:  Object does not require saving (acSaveNo)
-' Parameters:   obj - object to close (variant)
-'               oType - object type (string)
-' Returns:      -
-' Throws:       none
-' References:   none
-' Source/date:  -
-' Adapted:      Bonnie Campbell, March 28, 2017 - for NCPN tools
-' Revisions:
-'   BLC - 3/28/2017 - initial version
-' ---------------------------------
-Public Sub CloseObject(obj As Variant, oType As String)
-On Error GoTo Err_Handler
-
-    Dim oGrp As AcObjectType
-    
-    Select Case LCase(oType)
-        Case "qry"
-            oGrp = acQuery
-        Case "tbl"
-            oGrp = acTable
-        Case "frm"
-            oGrp = acForm
-        Case "rpt"
-            oGrp = acReport
-    End Select
-
-    DoCmd.Close oGrp, obj, acSaveNo
-    
 Exit_Handler:
     Exit Sub
 
@@ -2490,14 +2250,14 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - CloseObject[mod_Db])"
+            "Error encountered (#" & Err.Number & " - Delete_All_Records[mod_Db])"
     End Select
     Resume Exit_Handler
 End Sub
 
 ' ---------------------------------
 ' SUB:          HandleDependentQueries
-' Description:  Runs or closes template dependent queries
+' Description:  Runs or closes Template dependent queries
 ' Assumptions:  Recursion is supported -> if a query is run & has dependencies this
 '                                         routine will recurse & open the
 '                                         dependent queries dependent queries
@@ -2540,7 +2300,7 @@ End If
         
         Set db = CurrentDb
         
-        'retrieve template ID dictionary
+        'retrieve Template ID dictionary
         'initialize AppTemplates if not populated
         If g_AppTemplateIDs Is Nothing Then GetTemplateIDs
         Set ids = g_AppTemplateIDs
@@ -2562,7 +2322,7 @@ End If
 
                     If Len(deps2) > 0 Then HandleDependentQueries deps2, "run"
                 
-                    'retrieve template SQL
+                    'retrieve Template SQL
                     strSQL = g_AppTemplates(strTemplate).Item("Template")
                 
                     'create & run query
@@ -2622,7 +2382,7 @@ End Sub
 
 ' ---------------------------------
 ' SUB:          RemoveTemplateQueries
-' Description:  Removes queries created from templates
+' Description:  Removes queries created from Templates
 ' Assumptions:  -
 ' Parameters:   -
 ' Returns:      -
@@ -2678,53 +2438,173 @@ Err_Handler:
 End Sub
 
 ' ---------------------------------
-' SUB:          RemoveTemplateQueries
-' Description:  Removes queries created from templates
-' Assumptions:  -
-' Parameters:   qdf - query to modify (DAO.QueryDef)
-'               prop - name of property to add (string)
-'               val - value of new property (variant)
+' Sub:          RefreshTempTable
+' Description:  Refreshes Temp table data
+' Assumptions:  Temp table is generated by a query
+'               w/ name Create_* where * = Temp table name
+' Parameters:   tbl - Temp table name (string)
+'               nav - nav group to put table into (string, default "Queries - Application", optional)
 ' Returns:      -
 ' Throws:       none
-' References:
-'   LPurvis, September 13, 2008
-'   http://www.utteraccess.com/forum/Set-query-property-VBA-t1713084.html
-' Source/date:  -
-' Adapted:      Bonnie Campbell, March 30, 2017 - for NCPN tools
+' References:   -
+' Source/date:  Bonnie Campbell, July 18, 2017 - for NCPN tools
+' Adapted:      -
 ' Revisions:
-'   BLC - 3/30/2017 - initial version
+'   BLC - 7/18/2017 - initial version
 ' ---------------------------------
-Sub SetQueryProperty(qdf As DAO.QueryDef, prop As String, val As Variant) 'qry As String, prop As String, val As Variant)
-On Error Resume Next
-'    Dim db As Database
-'    Dim qdf As QueryDef
-    Dim prp As DAO.Property
-    
-'    Set db = CurrentDb
-'    Set qdf = db.QueryDefs(qry)
-    
-    With qdf
-        Set prp = qdf.Properties(prop)
-        If Err Then
-            Set prp = .CreateProperty(prop, dbText, val)
-            .Properties.Append prp
-        Else
-            prp.Value = val
-        End If
-    End With
-    
-Exit_Handler:
-    'cleanup
-'    Set prp = Nothing
-'    Set qdf = Nothing
-'    Set db = Nothing
-    Exit Sub
+Public Sub RefreshTempTable(tbl As String, _
+            Optional nav As String = "Queries - Application")
+On Error GoTo Err_Handler
 
+    Dim CreateQuery As String
+    
+    CreateQuery = "Create_" & tbl
+
+    're-generate the Temp table source
+    DoCmd.SetWarnings False
+    If TableExists(tbl) Then
+        DoCmd.DeleteObject acTable, tbl
+    End If
+    
+    DoCmd.OpenQuery CreateQuery
+    
+    If Not Len(nav) = 0 Then
+        'move tables to nav group
+        SetNavGroup nav, tbl, "table"
+    End If
+    
+    DoCmd.SetWarnings True
+
+Exit_Handler:
+    Exit Sub
 Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - RemoveTemplateQueries[mod_Db])"
+            "Error encountered (#" & Err.Number & " - RefreshTempTable[mod_Db])"
     End Select
     Resume Exit_Handler
 End Sub
+
+' ---------------------------------
+' SUB:          CombineTableSQL
+' Description:  Combines two tables into a resulting table
+' Assumptions:  -
+' Parameters:   tbl - table being modified (TableDef)
+'               MoveCol - name of column to position (move) (string)
+'               AfterCol - name of column to position after (string)
+' Returns:      -
+' Throws:       none
+' References:
+'   Laurence, September 13, 2013
+'   https://stackoverflow.com/questions/18795263/how-to-merge-two-database-tables-when-only-some-fields-are-common
+' Source/date:  -
+' Adapted:      Bonnie Campbell, June 22, 2017 - for NCPN tools
+' Revisions:
+'   BLC - 6/22/2017 - initial version
+' ---------------------------------
+Function CombineTableSQL(Table1 As String, Table2 As String, Destination As String)
+    Dim lDb As Database
+    Dim lTd1 As TableDef, lTd2 As TableDef
+    Dim lField As field, lF2 As field
+    Dim lS1 As String, lS2 As String, lSep As String
+
+    CombineTableSQL = "Select "
+    lS1 = "Select "
+    lS2 = "Select "
+
+    Set lDb = CurrentDb
+    Set lTd1 = lDb.TableDefs(Table1)
+    Set lTd2 = lDb.TableDefs(Table2)
+
+    For Each lField In lTd1.Fields
+        CombineTableSQL = CombineTableSQL & lSep & "x.[" & lField.Name & "]"
+        lS1 = lS1 & lSep & "a.[" & lField.Name & "]"
+        Set lF2 = Nothing
+        On Error Resume Next
+        Set lF2 = lTd2.Fields(lField.Name)
+        On Error GoTo 0
+        If lF2 Is Nothing Then
+            lS2 = lS2 & lSep & "Null"
+        Else
+            lS2 = lS2 & lSep & "b.[" & lField.Name & "]"
+        End If
+        lSep = ", "
+    Next
+
+    For Each lField In lTd2.Fields
+        Set lF2 = Nothing
+        On Error Resume Next
+        Set lF2 = lTd1.Fields(lField.Name)
+        On Error GoTo 0
+        If lF2 Is Nothing Then
+            CombineTableSQL = CombineTableSQL & lSep & "x.[" & lField.Name & "]"
+            lS1 = lS1 & lSep & "Null as [" & lField.Name & "]"
+            lS2 = lS2 & lSep & "b.[" & lField.Name & "]"
+        End If
+        lSep = ", "
+    Next
+
+    CombineTableSQL = CombineTableSQL & " Into [" & Destination & "] From ( " & lS1 & " From [" & Table1 & "] a Union All " & lS2 & " From [" & Table2 & "] b ) x"
+
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - CombineTableSQL[mod_Db])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' SUB:          SetColumnOrdinalPosition
+' Description:  Sets the position for a column in a table
+' Assumptions:  -
+' Parameters:   tdf - table being modified (TableDef)
+'               MoveCol - name of column to position (move) (string)
+'               AfterCol - name of column to position after (string)
+' Returns:      True or False depending on whether move occurred
+' Throws:       none
+' References:
+'   Paul Shapiro, Jan 6,2010
+'   https://www.pcreview.co.uk/threads/how-can-i-change-the-column-order-using-vba.3948127/
+' Source/date:  -
+' Adapted:      Bonnie Campbell, June 22, 2017 - for NCPN tools
+' Revisions:
+'   BLC - 6/22/2017 - initial version
+' ---------------------------------
+Public Function SetColumnOrdinalPosition( _
+    tdf As DAO.TableDef, MoveCol As String, AfterCol As String) As Boolean
+    
+    'move MoveCol from tbl to the position immediately following AfterCol
+    Dim fldNew As DAO.field
+    Dim MoveTo As Long
+    
+    'Get the ordinal position desired for the field
+    Set fldNew = tdf.Fields(AfterCol)
+    MoveTo = fldNew.OrdinalPosition + 1
+    Set fldNew = Nothing
+    
+    'Increment ordinal positions and make space for the newly-assigned field
+    For Each fldNew In tdf.Fields
+        If fldNew.Name = MoveCol Then
+            fldNew.OrdinalPosition = MoveTo
+        ElseIf fldNew.OrdinalPosition >= MoveTo Then
+            fldNew.OrdinalPosition = fldNew.OrdinalPosition + 1
+        End If
+    Next
+    
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - SetColumnOrdinalPosition[mod_Db])"
+    End Select
+    Resume Exit_Handler
+End Function

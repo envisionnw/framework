@@ -72,12 +72,12 @@ Public Property Get Path() As String
     Path = m_Path
 End Property
 
-Public Property Let fullPath(Value As String)
+Public Property Let FullPath(Value As String)
     m_FullPath = Value
 End Property
 
-Public Property Get fullPath() As String
-    fullPath = m_FullPath
+Public Property Get FullPath() As String
+    FullPath = m_FullPath
 End Property
 
 Public Property Let SurveyType(Value As String)

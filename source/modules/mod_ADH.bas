@@ -118,7 +118,7 @@ Function adhCommonFileOpenSave( _
     On Error GoTo Err_Handler
 
     Dim ofn As tagOPENFILENAME
-    Dim strFileName As String
+    Dim strFilename As String
     Dim strFileTitle As String
     Dim fResult As Boolean
 
@@ -132,7 +132,7 @@ Function adhCommonFileOpenSave( _
     If IsMissing(OpenFile) Then OpenFile = True
 
     ' Allocate string space for the returned string.
-    strFileName = Left(FileName & String(256, 0), 256)
+    strFilename = Left(FileName & String(256, 0), 256)
     strFileTitle = String(256, 0)
 
     ' Set up the data structure before you call the function
@@ -141,8 +141,8 @@ Function adhCommonFileOpenSave( _
         .hwndOwner = Application.hWndAccessApp
         .strFilter = filter
         .nFilterIndex = FilterIndex
-        .strFile = strFileName
-        .nMaxFile = Len(strFileName)
+        .strFile = strFilename
+        .nMaxFile = Len(strFilename)
         .strFileTitle = strFileTitle
         .nMaxFileTitle = Len(strFileTitle)
         .strTitle = DialogTitle
@@ -242,17 +242,17 @@ End Function
 ' Revisions:    John R. Boetsch, May 17, 2006 - documentation and error-trapping
 '               BLC, 4/4/2016 - adjust error handling, documentation
 ' =================================
-Function adhTrimNull(ByVal stritem As String) As String
+Function adhTrimNull(ByVal strItem As String) As String
     On Error GoTo Err_Handler
 
     Dim intPos As Integer
 
-    intPos = InStr(stritem, vbNullChar)
+    intPos = InStr(strItem, vbNullChar)
     If intPos > 0 Then
         ' If the Null character is present, trim the string
-        adhTrimNull = Left(stritem, intPos - 1)
+        adhTrimNull = Left(strItem, intPos - 1)
     Else
-        adhTrimNull = stritem
+        adhTrimNull = strItem
     End If
 
 Exit_Handler:

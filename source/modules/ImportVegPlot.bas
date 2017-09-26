@@ -159,24 +159,24 @@ Public Property Get CsvRows() As String
     ReDim output(mCover.Count - 1)
     Dim i As Long
     For Each key In mCover.Keys
-        Dim temp(16) As String
-        temp(0) = this.PlotID
-        temp(1) = this.VisitDate
-        temp(2) = this.LocationID
-        temp(3) = this.ModalSedimentSize
-        temp(4) = this.PercentFine
-        temp(5) = this.PercentWater
-        temp(6) = this.UnderstoryRootedPctCover
-        temp(7) = this.PlotDensity
-        temp(8) = this.NoCanopyVeg
-        temp(9) = this.NoRootedVeg
-        temp(10) = this.HasSocialTrail
-        temp(11) = this.FilamentousAlgae
-        temp(12) = this.NoIndicatorSpecies
-        temp(13) = this.Litter
-        temp(14) = key
-        temp(15) = mCover(key)
-        output(i) = Join(temp, ",")
+        Dim Temp(16) As String
+        Temp(0) = this.PlotID
+        Temp(1) = this.VisitDate
+        Temp(2) = this.LocationID
+        Temp(3) = this.ModalSedimentSize
+        Temp(4) = this.PercentFine
+        Temp(5) = this.PercentWater
+        Temp(6) = this.UnderstoryRootedPctCover
+        Temp(7) = this.PlotDensity
+        Temp(8) = this.NoCanopyVeg
+        Temp(9) = this.NoRootedVeg
+        Temp(10) = this.HasSocialTrail
+        Temp(11) = this.FilamentousAlgae
+        Temp(12) = this.NoIndicatorSpecies
+        Temp(13) = this.Litter
+        Temp(14) = key
+        Temp(15) = mCover(key)
+        output(i) = Join(Temp, ",")
         i = i + 1
     Next key
     CsvRows = Join(output, vbCrLf)

@@ -8,14 +8,17 @@ Option Explicit
 ' =================================
 ' CLASS:        CoverSpecies
 ' Level:        Framework class
-' Version:      1.00
+' Version:      1.04
 '
 ' Description:  Cover Species object related properties, events, functions & procedures for UI display
 '
 ' Source/date:  Bonnie Campbell, 4/17/2017
 ' References:   -
-' Revisions:    BLC - 4/17/2017 - 1.00 - initial version, adapted from BigRivers CoverSpecies
-'               BLC - 4/24/2017 - 1.01 - revised perecent cvoer to single vs integer to match database
+' Revisions:    BLC - 4/13/2016 - 1.00 - initial version
+'                               BLC - 6/11/2016 - 1.01 - updated to use GetTemplate()
+'                               BLC - 4/17/2017 - 1.02 - adapted from BigRivers CoverSpecies
+'               BLC - 4/24/2017 - 1.03 - revised perecent cvoer to single vs integer to match database
+'                           BLC - 8/22/2017 - 1.04 - merged BigRivers & Invasive/Upland versions into framework version
 ' =================================
 
 '---------------------
@@ -23,12 +26,18 @@ Option Explicit
 '---------------------
 Private m_Species As New Species
 
+Private m_PercentCover As Single 'Integer
+Private m_VegPlotID As Long
+
 Private m_PctCover As Single
 Private m_QuadratID As Long
 
 '---------------------
 ' Events
 '---------------------
+Public Event InvalidVegPlotID(Value As String)
+Public Event InvalidPercentCover(Value As Single) 'Integer)
+
 Public Event InvalidQuadratID(Value As String)
 Public Event InvalidPctCover(Value As Single)
 
@@ -42,6 +51,26 @@ Public Event InvalidCode(Value As String)
 '---------------------
 ' Properties
 '---------------------
+Public Property Let VegPlotID(Value As Long)
+    m_VegPlotID = Value
+End Property
+
+Public Property Get VegPlotID() As Long
+    VegPlotID = m_VegPlotID
+End Property
+
+Public Property Let PercentCover(Value As Single) 'Integer)
+    If IsBetween(Value, 0, 100, True) Or Value = 0.5 Then
+        m_PercentCover = Value
+    Else
+        RaiseEvent InvalidPercentCover(Value)
+    End If
+End Property
+
+Public Property Get PercentCover() As Single 'Integer
+    PercentCover = m_PercentCover
+End Property
+
 Public Property Let QuadratID(Value As Long)
     m_QuadratID = Value
 End Property
