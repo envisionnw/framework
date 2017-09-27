@@ -325,7 +325,7 @@ Public Function ParseConnectionStr(strConnStr As String, _
             ' There is a delimiter following the desired string
             varStartPos = varStartPos + Len(strComponent)
             varLength = varEndPos - varStartPos
-            ParseConnectionStr = Mid(strConnStr, varStartPos, varLength)
+            ParseConnectionStr = mid(strConnStr, varStartPos, varLength)
         Else
             varLength = Len(strConnStr) - varStartPos + 1 - Len(strComponent)
             ParseConnectionStr = Right(strConnStr, varLength)

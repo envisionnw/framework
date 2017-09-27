@@ -318,7 +318,6 @@ On Error GoTo Err_Handler
         If blnList = True Then Debug.Print oVBComp.Name
             
     Next
-    
 
 Exit_Handler:
     Exit Sub
@@ -356,8 +355,9 @@ End Function
 Public Function listobj()
     'ListObjects False, vbext_ct_ClassModule
     'ListObjects
+    ListObjects True, vbext_ct_ClassModule
     'ListObjects True
     'ListObjects False, vbext_ct_MSForm
-    ListObjects False, vbext_ct_Document
+    'ListObjects False, vbext_ct_Document
 
 End Function

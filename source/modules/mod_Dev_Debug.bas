@@ -279,7 +279,7 @@ On Error GoTo Err_Handler
         .TaskType = "TaskType.Photo"
         .Task = "Testing description"
         .Status = Status.Opened
-        .Priority = Priority.High
+        .Priority = Priority.high
         .RequestedByID = 3
         .CompletedByID = 1
         .AddTask

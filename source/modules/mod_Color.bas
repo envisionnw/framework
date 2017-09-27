@@ -154,7 +154,7 @@ Public Function HTMLConvert(strHTML As String) As Long
 On Error GoTo Err_Handler
     
     Rem converts a HTML color code number such as #D8B190 to an RGB value.
-    HTMLConvert = RGB(CInt("&H" & Mid(strHTML, 2, 2)), CInt("&H" & Mid(strHTML, 4, 2)), CInt("&H" & Mid(strHTML, 6, 2)))
+    HTMLConvert = RGB(CInt("&H" & mid(strHTML, 2, 2)), CInt("&H" & mid(strHTML, 4, 2)), CInt("&H" & mid(strHTML, 6, 2)))
 
 Exit_Handler:
     Exit Function

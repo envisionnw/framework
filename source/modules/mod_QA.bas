@@ -174,7 +174,7 @@ Public Function UpdateQAResults(Optional blnUpdateAll As Boolean = True, _
             frm.Repaint
             ' Create the record if all queries are being updated
             If blnUpdateAll Or (blnCreateNew And strQName = strSingleQName) Then
-                strQType = Mid(strQName, 7, 1)
+                strQType = mid(strQName, 7, 1)
                 If strQType = "" Then strQType = "0"
                 ' Create the statement to insert new records
                 strSQL = "INSERT INTO tbl_QA_Results " & _

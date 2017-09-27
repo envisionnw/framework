@@ -1268,7 +1268,7 @@ On Error GoTo Err_Handler
             strItem = Left(list, InStr(list, delimiter) - 1)
         End If
             
-        list = Mid(list, InStr(list, delimiter) + 1)
+        list = mid(list, InStr(list, delimiter) + 1)
     
         'Compare the item to the string to replace
         If StrComp(strItem, Find, iCompare) = 0 Then
@@ -1291,7 +1291,7 @@ On Error GoTo Err_Handler
         
         'Eliminate leading semicolons
         Do Until Left(strResult, 1) <> delimiter
-            strResult = Mid(strResult, 2)
+            strResult = mid(strResult, 2)
         Loop
         
         'Eliminate trailing semicolons
@@ -1301,7 +1301,7 @@ On Error GoTo Err_Handler
         
         'Eliminate grouped semicolons
         For i = 1 To Len(strResult)
-            strChar = Mid(strResult, i, 1)
+            strChar = mid(strResult, i, 1)
             If strChar = delimiter Then
                 If Semi = True Then
                 Else

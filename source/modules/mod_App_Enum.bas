@@ -124,9 +124,9 @@ End Enum
 Public Enum Priority
     [_First] = 51
     Critical = 51
-    High = 52
+    high = 52
     Medium = 53
-    Low = 54
+    low = 54
     [_Last] = 54
 End Enum
 
@@ -243,7 +243,7 @@ Public Enum WentworthClassSize
     LP = 32
     SC = 33
     LC = 34
-    B = 35
+    b = 35
     BED = 36
     [_Last] = 36
 End Enum

@@ -553,7 +553,7 @@ On Error GoTo Err_Handler:
     
     For i = 1 To Len(Trim(strInspect))
       
-      Select Case Mid$(Trim(strInspect), i, 1)
+      Select Case mid$(Trim(strInspect), i, 1)
         Case "A" To "Z", "a" To "z"
         Case Else
           IsAlpha = False
@@ -632,7 +632,7 @@ On Error GoTo Err_Handler:
     
     For i = 1 To Len(Trim(strInspect))
       
-      Select Case Mid$(Trim(strInspect), i, 1)
+      Select Case mid$(Trim(strInspect), i, 1)
         Case "A" To "Z", "a" To "z"
         Case "0" To "9"
         Case Else
@@ -679,7 +679,7 @@ On Error GoTo Err_Handler:
     
     For i = 1 To Len(Trim(strInspect))
       
-      Select Case Mid$(Trim(strInspect), i, 1)
+      Select Case mid$(Trim(strInspect), i, 1)
         Case "A" To "Z", "a" To "z"
         Case "0" To "9"
         Case "-"
@@ -728,7 +728,7 @@ On Error GoTo Err_Handler:
     
     For i = 1 To Len(Trim(strInspect))
       
-      Select Case Mid$(Trim(strInspect), i, 1)
+      Select Case mid$(Trim(strInspect), i, 1)
         Case "A" To "Z", "a" To "z"
         Case "0" To "9"
         Case "-"
@@ -778,7 +778,7 @@ On Error GoTo Err_Handler:
     
     For i = 1 To Len(Trim(strInspect))
       
-      Select Case Mid$(Trim(strInspect), i, 1)
+      Select Case mid$(Trim(strInspect), i, 1)
         Case "A" To "Z", "a" To "z"
         Case "0" To "9"
         Case "-"
@@ -963,7 +963,7 @@ On Error GoTo Err_Handler:
     
     For i = 1 To Len(Trim(strInspect))
       
-      Select Case Mid$(Trim(strInspect), i, 1)
+      Select Case mid$(Trim(strInspect), i, 1)
         Case "A" To "Z", "a" To "z"
         Case "-"
         Case Else
@@ -1010,7 +1010,7 @@ On Error GoTo Err_Handler:
     
     For i = 1 To Len(Trim(strInspect))
       
-      Select Case Mid$(Trim(strInspect), i, 1)
+      Select Case mid$(Trim(strInspect), i, 1)
         Case "A" To "Z", "a" To "z"
         Case "0" To "9"
         Case "-", "/", "_", ".", "?", "!"

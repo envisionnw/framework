@@ -623,7 +623,7 @@ Dim strList As String
             rs.MoveNext
         Loop
 
-        strList = Mid(strList, Len(strDelim))
+        strList = mid(strList, Len(strDelim))
     Else
 
         strList = Join(NameList, strDelim)

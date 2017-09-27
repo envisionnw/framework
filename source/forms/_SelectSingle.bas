@@ -546,7 +546,7 @@ On Error GoTo Err_Handler
         Case "site"
             'store selected ID
             TempVars.Add "site", Me.SelectedID
-            TempVars.Add "SiteCode", Mid(Me.SelectedValue, Len(Me.SelectedValue) - 2, 2)
+            TempVars.Add "SiteCode", mid(Me.SelectedValue, Len(Me.SelectedValue) - 2, 2)
             iClearBelow = 2
         Case "feature"
             'store selected ID

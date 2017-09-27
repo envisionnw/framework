@@ -612,7 +612,7 @@ Public Function ParseFileName(ByVal strFullPath As String) As String
 
     Do While (InStr(strFullPath, "\") > 0)
         strTemp = strTemp & Left$(strFullPath, InStr(strFullPath, "\"))
-        strFullPath = Mid$(strFullPath, InStr(strFullPath, "\") + 1)
+        strFullPath = mid$(strFullPath, InStr(strFullPath, "\") + 1)
     Loop
     
     ParseFileName = strFullPath
@@ -661,7 +661,7 @@ Public Function ParseFileExt(ByVal strFullPath As String, _
     varPosition = InStr(1, strFile, ".")
     If varPosition > 0 Then
         If blnIncludeDot = False Then varPosition = varPosition + 1
-        strTemp = Mid$(strFile, varPosition)
+        strTemp = mid$(strFile, varPosition)
     Else
         strTemp = ""
     End If

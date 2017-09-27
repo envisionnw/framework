@@ -4,14 +4,20 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Array
 ' Level:        Framework module
-' Version:      1.01
+' Version:      1.02
 ' Description:  array functions & procedures
 '
 ' Source/date:  Bonnie Campbell, 9/19/2016
 ' Revisions:    BLC, 9/19/2016 - 1.00 - initial version
 '               BLC, 9/14/2017 - 1.01 - added from mod_Utilities: Largest(), Smallest(),
 '                                       reorganized subs/functions
+'               BLC, 9/27/2017 - 1.02 - added Sort(), CopyOf(), CopyRange(), Length()
 ' =================================
+
+' ---------------------------------
+'  Declarations
+' ---------------------------------
+Private Const INSERTIONSORT_THRESHOLD As Long = 7
 
 ' ---------------------------------
 '  Properties
@@ -96,6 +102,39 @@ End Function
 ' ---------------------------------
 '  Retrieving Values
 ' ---------------------------------
+
+' ---------------------------------
+' SUB:          Length
+' Description:  Retrieve the length of an array
+' Assumptions:  -
+' Parameters:   a - array of items (variant)
+' Returns:      length of the array (long)
+' Throws:       none
+' References:   none
+' Source/date:
+'   Austin D., July 11, 2016
+'   https://stackoverflow.com/questions/3587662/how-do-i-sort-a-collection
+' Adapted:      Bonnie Campbell, September 27, 2017 - for NCPN tools
+' Revisions:
+'   BLC - 9/27/2017 - initial version
+' ---------------------------------
+Public Function Length(ByRef a() As Variant) As Long
+On Error GoTo Err_Handler
+
+    Length = UBound(a) - LBound(a) + 1
+
+Exit_Handler:
+    'cleanup
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - Length[mod_Array])"
+    End Select
+    Resume Exit_Handler
+End Function
 
 ' ---------------------------------
 ' FUNCTION:     Largest
@@ -249,6 +288,235 @@ Err_Handler:
 End Function
 
 ' ---------------------------------
+' SUB:          CopyOf
+' Description:  Copy an array
+' Assumptions:  -
+' Parameters:   original - array of items (variant)
+' Returns:      copy of the original array of items (variant)
+' Throws:       none
+' References:   -
+' Source/date:
+'   Austin D., July 11, 2016
+'   https://stackoverflow.com/questions/3587662/how-do-i-sort-a-collection
+' Adapted:      Bonnie Campbell, September 27, 2017 - for NCPN tools
+' Revisions:
+'   BLC - 9/27/2017 - initial version
+' ---------------------------------
+Public Function CopyOf(ByRef original() As Variant) As Variant()
+On Error GoTo Err_Handler
+
+    Dim dest() As Variant
+    ReDim dest(LBound(original) To UBound(original))
+    
+    CopyRange original, LBound(original), UBound(original), dest
+    
+    CopyOf = dest
+
+Exit_Handler:
+    'cleanup
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - CopyOf[mod_Array])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' SUB:          CopyRange
+' Description:  Copies the range of items
+' Assumptions:  -
+' Parameters:   source - array of items to copy (variant)
+'               iBegin - start for copy (long)
+'               iEnd - end of range (long)
+'               dest - arry of items to copy to (variant)
+' Returns:      -
+' Throws:       none
+' References:   -
+' Source/date:
+'   Austin D., July 11, 2016
+'   https://stackoverflow.com/questions/3587662/how-do-i-sort-a-collection
+' Adapted:      Bonnie Campbell, September 27, 2017 - for NCPN tools
+' Revisions:
+'   BLC - 9/27/2017 - initial version
+' ---------------------------------
+Private Sub CopyRange(source() As Variant, iBegin As Long, iEnd As Long, dest() As Variant)
+On Error GoTo Err_Handler
+
+    Dim k As Long
+    
+    For k = iBegin To iEnd Step 1
+        dest(k) = source(k)
+    Next k
+    
+Exit_Handler:
+    'cleanup
+    Exit Sub
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - CopyRange[mod_Array])"
+    End Select
+    Resume Exit_Handler
+End Sub
+
+' ---------------------------------
+'  Sorting
+' ---------------------------------
+
+' ---------------------------------
+' SUB:          Sort
+' Description:  Sorts the array using the MergeSort algorithm
+'               (follows the Java legacyMergesort algorithm
+'                       O(n*log(n)) time; O(n) space
+' Assumptions:  -
+' Parameters:   a - array of items (variant)
+'               c - (optional, IVariantComparator)
+' Returns:      -
+' Throws:       none
+' References:   IVariantComparator class
+' Source/date:
+'   Austin D., July 11, 2016
+'   https://stackoverflow.com/questions/3587662/how-do-i-sort-a-collection
+' Adapted:      Bonnie Campbell, September 27, 2017 - for NCPN tools
+' Revisions:
+'   BLC - 9/27/2017 - initial version
+' ---------------------------------
+Public Sub Sort(ByRef a() As Variant, Optional ByRef c As IVariantComparator)
+On Error GoTo Err_Handler
+    
+    If c Is Nothing Then
+        MergeSort CopyOf(a), a, 0, Length(a), 0, Factory.newNumericComparator
+    Else
+        MergeSort CopyOf(a), a, 0, Length(a), 0, c
+    End If
+    
+Exit_Handler:
+    'cleanup
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - Sort[mod_Array])"
+    End Select
+    Resume Exit_Handler
+End Sub
+
+' ---------------------------------
+' SUB:          MergeSort
+' Description:
+' Assumptions:
+'               Option Base 0 << not included though included in origin code
+'               as arrays start @ 0 by default &
+'               array upper & lower bounds should be defined
+'               See https://bettersolutions.com/vba/arrays/option-base-1.htm
+'               for details
+' Parameters:   -
+' Returns:      -
+' Throws:       none
+' References:   none
+' Source/date:
+'   Austin D., July 11, 2016
+'   https://stackoverflow.com/questions/3587662/how-do-i-sort-a-collection
+' Adapted:      Bonnie Campbell, September 27, 2017 - for NCPN tools
+' Revisions:
+'   BLC - 9/27/2017 - initial version
+' ---------------------------------
+Private Sub MergeSort(ByRef src() As Variant, ByRef dest() As Variant, low As Long, high As Long, off As Long, ByRef c As IVariantComparator)
+On Error GoTo Err_Handler
+
+    Dim Length As Long
+    Dim destLow As Long
+    Dim destHigh As Long
+    Dim mid As Long
+    Dim i As Long
+    Dim p As Long
+    Dim q As Long
+
+    Length = high - low
+
+    ' insertion sort on small arrays
+    If Length < INSERTIONSORT_THRESHOLD Then
+        i = low
+        Dim j As Long
+        Do While i < high
+            j = i
+            Do While True
+                If (j <= low) Then
+                    Exit Do
+                End If
+                If (c.Compare(dest(j - 1), dest(j)) <= 0) Then
+                    Exit Do
+                End If
+                swap dest, j, j - 1
+                j = j - 1 'decrement j
+            Loop
+            i = i + 1 'increment i
+        Loop
+        Exit Sub
+    End If
+
+    'recursively sort halves of dest into src
+    destLow = low
+    destHigh = high
+    low = low + off
+    high = high + off
+    mid = (low + high) / 2
+    MergeSort dest, src, low, mid, -off, c
+    MergeSort dest, src, mid, high, -off, c
+
+    'if list is already sorted, we're done
+    If c.Compare(src(mid - 1), src(mid)) <= 0 Then
+        Copy src, low, dest, destLow, Length - 1
+        Exit Sub
+    End If
+
+    'merge sorted halves into dest
+    i = destLow
+    p = low
+    q = mid
+    Do While i < destHigh
+        If (q >= high) Then
+           dest(i) = src(p)
+           p = p + 1
+        Else
+            'Otherwise, check if p<mid AND src(p) preceeds scr(q)
+            'See description of following idom at:
+            '   https://stackoverflow.com/a/3245183/3795219
+            Select Case True
+               Case p >= mid, c.Compare(src(p), src(q)) > 0
+                   dest(i) = src(q)
+                   q = q + 1
+               Case Else
+                   dest(i) = src(p)
+                   p = p + 1
+            End Select
+        End If
+
+        i = i + 1
+    Loop
+
+Exit_Handler:
+    'cleanup
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - MergeSort[mod_Array])"
+    End Select
+    Resume Exit_Handler
+End Sub
+
+' ---------------------------------
 '  Manipulation
 ' ---------------------------------
 
@@ -353,7 +621,6 @@ Err_Handler:
     End Select
     Resume Exit_Handler
 End Function
-
 
 ' ---------------------------------
 '  Output/Export

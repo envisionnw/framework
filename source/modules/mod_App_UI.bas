@@ -326,7 +326,7 @@ Dim i As Integer, z As Integer
                 'park summary report check
                 If TargetYear > 0 Then
                 
-                    If TargetYear = CInt(Mid(ParkPriorities(i), 6, 4)) Then
+                    If TargetYear = CInt(mid(ParkPriorities(i), 6, 4)) Then
                         'priority is for park & target year
                         PopulateSpeciesPriorities = Replace(ParkPriorities(i), ParkCode + "-" + CStr(TargetYear) + "-", "")
                         Exit For

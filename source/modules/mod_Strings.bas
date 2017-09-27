@@ -265,7 +265,7 @@ On Error GoTo Err_Handler
     Dim chrTmp As String * 1
     
     For intCounter = 1 To Len(strTextIn)
-        chrTmp = Mid$(strTextIn, intCounter)
+        chrTmp = mid$(strTextIn, intCounter)
         If chrTmp <> strFind Then
             strTmp = strTmp & chrTmp
         Else
@@ -320,7 +320,7 @@ On Error GoTo Err_Handler
     intPos = InStr(1, strTemp, strFind, intCaseSensitive)
 
     Do While intPos > 0
-        strTemp = Left$(strTemp, intPos - 1) & strReplace & Mid$(strTemp, intPos + Len(strFind))
+        strTemp = Left$(strTemp, intPos - 1) & strReplace & mid$(strTemp, intPos + Len(strFind))
         intPos = InStr(intPos + Len(strReplace), strTemp, strFind, intCaseSensitive)
     Loop
 
@@ -424,7 +424,7 @@ On Error GoTo Err_Handler
     origLength = Len(strOriginal)
     
     'find text to replace
-    strSegment = Mid(strOriginal, posWord1, posWord2 - posWord1)
+    strSegment = mid(strOriginal, posWord1, posWord2 - posWord1)
     
     'replace
     strNew = Replace(strOriginal, strSegment, Replacement)
@@ -506,33 +506,33 @@ On Error GoTo Err_Handler
     Dim i As Integer
     
     For i = 1 To Len(strIn)
-        If IsCapital(Mid(strIn, i, 1)) Then
+        If IsCapital(mid(strIn, i, 1)) Then
             Select Case i
                 Case 2 To (Len(strIn) - 1)  'middle letters
                     'previous letter a capital letter? --> don't put a space before it
                     '                                      unless next letter is lowercase
-                    If IsCapital(Mid(strIn, i - 1, 1)) Then
-                        If IsCapital(Mid(strIn, i + 1, 1)) Then
-                            strOut = strOut & Mid(strIn, i, 1)
+                    If IsCapital(mid(strIn, i - 1, 1)) Then
+                        If IsCapital(mid(strIn, i + 1, 1)) Then
+                            strOut = strOut & mid(strIn, i, 1)
                         Else
-                            strOut = strOut & " " & Mid(strIn, i, 1)
+                            strOut = strOut & " " & mid(strIn, i, 1)
                         End If
                     Else
                         'previous letter lowercase? --> put a space
-                        strOut = strOut & " " & Mid(strIn, i, 1)
+                        strOut = strOut & " " & mid(strIn, i, 1)
                     End If
                 Case 1  'first letter
                     strOut = UCase(Left(strIn, 1))
                 Case Len(strIn) 'last letter
                     'previous letter was a capital? --> don't put a space
-                    If IsCapital(Mid(strIn, i - 1, 1)) Then
-                        strOut = strOut & Mid(strIn, i, 1)
+                    If IsCapital(mid(strIn, i - 1, 1)) Then
+                        strOut = strOut & mid(strIn, i, 1)
                     Else
-                        strOut = strOut & " " & Mid(strIn, i, 1)
+                        strOut = strOut & " " & mid(strIn, i, 1)
                     End If
             End Select
         Else
-            strOut = strOut & Mid(strIn, i, 1)
+            strOut = strOut & mid(strIn, i, 1)
         End If
     Next
     
@@ -653,14 +653,14 @@ On Error GoTo Err_Handler
             strWord = Trim(strIn)
         Else
             strWord = Left(strIn, InStr(strIn, " ") - 1)
-            strIn = Mid(strIn, InStr(strIn, " ") + 1)
+            strIn = mid(strIn, InStr(strIn, " ") + 1)
         End If
         
         Select Case strWord
             Case "id", "tsn", "nps"
                 strWord = UCase(strWord)
             Case Else
-                strWord = UCase(Left(strWord, 1)) & Mid(strWord, 2)
+                strWord = UCase(Left(strWord, 1)) & mid(strWord, 2)
         End Select
         
         strWorking = strWorking & " " & strWord
@@ -708,7 +708,7 @@ Public Function InsertSpace(str As String) As String
      
      If str > "" Then
           For intLen = 1 To Len(str)
-               strChar = Mid(str, intLen, 1)
+               strChar = mid(str, intLen, 1)
                If Asc(strChar) >= 65 And Asc(strChar) <= 90 Then
                     strTemp = strTemp & " " & strChar
                Else
@@ -753,7 +753,7 @@ On Error GoTo Err_Handler
     Dim i As Integer
 
     For i = 1 To Len(strInspect)
-        strTest = Mid(strInspect, i, 1)
+        strTest = mid(strInspect, i, 1)
         
         If StrComp(strTest, StrConv(strTest, vbUpperCase), vbBinaryCompare) <> 0 Then
             strNew = strNew & strTest
@@ -1096,7 +1096,7 @@ On Error GoTo Err_Handler:
     posA = InStrRev(strInspect, strDelimiterA)
     posB = InStrRev(strInspect, strDelimiterB)
     
-    ExtractString = Mid(strInspect, posA + 1, posB - posA - 1)
+    ExtractString = mid(strInspect, posA + 1, posB - posA - 1)
 
 Exit_Handler:
     Exit Function
