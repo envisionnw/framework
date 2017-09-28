@@ -391,14 +391,14 @@ Public Sub Sort(ByRef a() As Variant, Optional ByRef c As IVariantComparator)
 On Error GoTo Err_Handler
     
     If c Is Nothing Then
-        MergeSort CopyOf(a), a, 0, Length(a), 0, Factory.newNumericComparator
+'        MergeSort CopyOf(a), a, 0, Length(a), 0, Factory.newNumericComparator
     Else
         MergeSort CopyOf(a), a, 0, Length(a), 0, c
     End If
     
 Exit_Handler:
     'cleanup
-    Exit Function
+    Exit Sub
     
 Err_Handler:
     Select Case Err.Number
@@ -455,7 +455,7 @@ On Error GoTo Err_Handler
                 If (c.Compare(dest(j - 1), dest(j)) <= 0) Then
                     Exit Do
                 End If
-                swap dest, j, j - 1
+'                swap dest, j, j - 1
                 j = j - 1 'decrement j
             Loop
             i = i + 1 'increment i
@@ -474,7 +474,7 @@ On Error GoTo Err_Handler
 
     'if list is already sorted, we're done
     If c.Compare(src(mid - 1), src(mid)) <= 0 Then
-        Copy src, low, dest, destLow, Length - 1
+'        Copy src, low, dest, destLow, Length - 1
         Exit Sub
     End If
 
@@ -505,7 +505,7 @@ On Error GoTo Err_Handler
 
 Exit_Handler:
     'cleanup
-    Exit Function
+    Exit Sub
     
 Err_Handler:
     Select Case Err.Number

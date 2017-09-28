@@ -1,3 +1,4 @@
+Attribute VB_Name = "mod_Dev_Project"
 Option Compare Database
 Option Explicit
 
