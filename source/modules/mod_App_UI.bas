@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_UI
 ' Level:        Application module
-' Version:      1.22
+' Version:      1.23
 ' Description:  Application User Interface related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
@@ -62,7 +62,8 @@ Option Explicit
 '                                           revised to use Photo vs. Tree form
 '                   ----------- inavsive reports -------
 '                   BLC, 9/21/2015 - 1.05 - added park species list, park summary report
-
+' --------------------------------------------------------------------
+'               BLC, 9/29/2017 - 1.23 - added logger case
 ' =================================
 
 ' ---------------------------------
@@ -652,6 +653,7 @@ End Function
 '   BLC - 10/25/2016 - revised species search to add originForm TempVar, callingform oArg
 '   BLC - 1/9/2017   - revised to use SetTempVar()
 '   BLC - 2/21/2017  - revised to use Photo vs. Tree form
+'   BLC - 9/29/2017  - added Logger case
 ' ---------------------------------
 Public Sub ClickAction(action As String)
 On Error GoTo Err_Handler
@@ -689,10 +691,13 @@ On Error GoTo Err_Handler
         Case "locations"
             fName = "Location"
             oArgs = "" 'collection source name - feature (A-G), transect #(1-8) &
+        Case "logger"
+            fName = "Logger"
+            oArgs = ""
         Case "people"
             fName = "Contact"
             oArgs = "Main"
-        'VegetationS
+        'Vegetation
         Case "veg plots"
             fName = "VegPlot"
         Case "woody canopy cover"
@@ -702,6 +707,7 @@ On Error GoTo Err_Handler
         Case "vegetation walk"
             fName = "VegWalk"
         Case "species"
+            fName = "Species"
         Case "unknowns"
             fName = "Unknown"
         Case "species search"
@@ -1559,7 +1565,6 @@ Err_Handler:
     Resume Exit_Handler
 End Sub
 
-
 ' ---------------------------------
 ' Sub:          PopulateForm
 ' Description:  Populate a form using a specific record for edits
@@ -1584,6 +1589,7 @@ End Sub
 ' --------------------------------------------------------------------
 '   BLC - 9/18/2017 - added back in from big rivers: Location, ModWentworth, SetDatasheetDefaults,
 '                     Site, Tagline, Task, Transducer, VegPlot, VegTransect
+'   BLC - 9/29/2017 - added Logger case
 ' ---------------------------------
 Public Sub PopulateForm(frm As Form, ID As Long)
 On Error GoTo Err_Handler
@@ -1636,6 +1642,12 @@ On Error GoTo Err_Handler
                 .Controls("tbxDistance").ControlSource = "HeadToOrientDistance_m"
                 .Controls("tbxBearing").ControlSource = "HeadToOrientBearing"
                 .Controls("tbxNotes").ControlSource = "LocationNotes"
+            Case "Logger"
+                'set form fields to record fields as datasource
+                .Controls("cbxSite").ControlSource = "Site_ID"
+                .Controls("cbxLoggerType").ControlSource = "SensorType"
+                .Controls("tbxAbbreviation").ControlSource = "SensorNumber"
+                .Controls("tbxSampleOrder").ControlSource = "SamplingOrder"
             Case "ModWentworth"
                 strTable = "ModWentworthScale"
                 'set form fields to record fields as datasource

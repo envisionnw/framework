@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_Data
 ' Level:        Application module
-' Version:      1.35
+' Version:      1.38
 ' Description:  data functions & procedures specific to this application
 '
 ' Source/date:  Bonnie Campbell, 2/9/2015
@@ -67,6 +67,8 @@ Option Explicit
 '                   BLC, 8/14/2017  - 1.28 - add error handling to address error 3048 on SetPlotCheckResult(),
 '                                        GetRecords()
 ' --------------------------------------------------------------------
+'               BLC, 9/28/2017 - 1.37 - update ToggleSensitive, SetRecord for sensitive locations/species
+'               BLC, 9/29/2017 - 1.38 - update UpsertRecord for location, add i_location site ID (SetRecord)
 ' =================================
 
 ' =================================
@@ -641,6 +643,7 @@ End Sub
 ' Adapted:      -
 ' Revisions:
 '   BLC - 7/30/2016 - initial version
+'   BLC - 9/28/2017 - revised template to lower case
 ' ---------------------------------
 Public Sub ToggleSensitive(Context As String, ID As Long, Sensitive As Byte)
 On Error GoTo Err_Handler
@@ -649,7 +652,7 @@ On Error GoTo Err_Handler
     
     Template = IIf(Sensitive = 1, "i_", "d_")
     
-    Template = Template & "Sensitive" & Context
+    Template = LCase(Template & "sensitive_" & Context)
     
     If Right(Template, 1) <> "s" Then Template = Template & "s"
     
@@ -876,6 +879,7 @@ On Error GoTo Err_Handler
                     '-- required parameters --
                     .Parameters("pkcode") = TempVars("ParkCode")
                     .Parameters("scode") = TempVars("SiteCode")
+                
                 Case "s_location_by_park_river"
                     '-- required parameters --
                     .Parameters("pkcode") = TempVars("ParkCode")
@@ -1191,6 +1195,8 @@ End Function
 '   BLC - 9/7/2017  - merge uplands, invasives, big rivers dbs modifications
 ' --------------------------------------------------------------------
 ' --------------------------------------------------------------------
+'   BLC - 9/28/2017 - update i_sensitive_locations to pull parkID from TempVars("ParkID")
+'   BLC - 9/29/2017 - add SiteID parameter for i_location
 ' ---------------------------------
 Public Function SetRecord(Template As String, Params As Variant) As Long
 On Error GoTo Err_Handler
@@ -1321,6 +1327,7 @@ On Error GoTo Err_Handler
                     .Parameters("dist") = Params(4)          'HeadtoOrientDistance
                     .Parameters("brg") = Params(5)           'HeadtoOrientBearing
                     .Parameters("lnotes") = Params(6)        'Notes
+                    .Parameters("sid") = TempVars("SiteID")  'Site
                     
                     '.Parameters("CreateDate") = Now()
                     .Parameters("CID") = TempVars("AppUserID")  'CreatedByID
@@ -1378,14 +1385,14 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                 
                 Case "i_sensitive_locations"
                     '-- required parameters --
-                    .Parameters("pkid") = Params(0)
+                    .Parameters("pkid") = TempVars("ParkID")
                     .Parameters("lid") = Params(1)
                     .Parameters("CID") = TempVars("AppUserID")
                     .Parameters("LMID") = TempVars("AppUserID")
                     
                 Case "i_sensitive_species"
                     '-- required parameters --
-                    .Parameters("pkid") = Params(0)
+                    .Parameters("pkid") = TempVars("ParkID")
                     .Parameters("sp") = Params(1)
                     .Parameters("CID") = TempVars("AppUserID")
                     .Parameters("LMID") = TempVars("AppUserID")
@@ -1902,6 +1909,16 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
 '                    .Parameters("plant") = params(3)
 '                    .Parameters("dead") = params(4)
             
+                Case "d_sensitive_locations"
+                    '-- required parameters --
+                    .Parameters("pkid") = TempVars("ParkID")
+                    .Parameters("lid") = Params(1)
+                
+                Case "d_sensitive_species"
+                    '-- required parameters --
+                    .Parameters("pkid") = TempVars("ParkID")
+                    .Parameters("sid") = Params(1)
+                
             End Select
 'Debug.Print .sql
             .Execute dbFailOnError
@@ -1981,6 +1998,7 @@ End Function
 ' --------------------------------------------------------------------
 '   BLC - 9/7/2017  - merge uplands, invasives, big rivers dbs modifications
 ' --------------------------------------------------------------------
+'   BLC - 9/29/2017 - update location ContactID
 ' ---------------------------------
 Public Sub UpsertRecord(ByRef frm As Form)
 On Error GoTo Err_Handler
@@ -2129,7 +2147,7 @@ On Error GoTo Err_Handler
                     '.CreateDate = ""
                     '.CreatedByID = 0
                     .LastModified = Now()
-                    .LastModifiedByID = 0
+                    .LastModifiedByID = TempVars("AppUserID") '0
                     
                     .ID = frm!tbxID.Value '0 if new, edit if > 0
 
