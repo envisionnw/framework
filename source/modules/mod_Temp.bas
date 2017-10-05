@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Temp
 ' Level:        Framework module
-' Version:      1.00
+' Version:      1.01
 ' Description:  Temporary object related functions & subroutines
 ' Requires:     -
 '
@@ -15,6 +15,8 @@ Option Explicit
 '                                       CreateTempTable(), RemoveTempTable(),
 '                                       CreateTempRecordset(), CreateTempRecords()
 '                                       from mod_Db
+'               BLC, 10/4/2017 - 1.01 - switched CurrentDb to CurrDb property to avoid
+'                                       multiple open connections
 ' =================================
 
 ' ---------------------------------
@@ -115,6 +117,8 @@ End Function
 ' References:
 ' Source/date:  Bonnie Campbell, September 20 2016
 ' Revisions:    BLC, 9/20/2016 - initial version
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                 multiple open connections
 ' ---------------------------------
 Public Sub CreateTempTable(tblName As String, aryFields() As Variant)
 On Error GoTo Err_Handler
@@ -128,7 +132,7 @@ On Error GoTo Err_Handler
     Dim Item As Variant, fldDef As Variant
     Dim i As Integer
 
-    Set db = CurrentDb()
+    Set db = CurrDb()
     
     'delete it if it already exists
     If TableExists(tblName) Then RemoveTempTable (tblName)
@@ -233,6 +237,8 @@ End Sub
 ' References:
 ' Source/date:  Bonnie Campbell, June 2016
 ' Revisions:    BLC, 6/8/2016 - initial version
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                 multiple open connections
 ' ---------------------------------
 Public Function CreateTempRecordset(iCount As Integer) As DAO.Recordset
 On Error GoTo Err_Handler
@@ -243,7 +249,7 @@ On Error GoTo Err_Handler
     
 '    strSQL = "SELECT * FROM usys_Temp_Table;"
     
-    Set rs = CurrentDb.OpenRecordset("usys_Temp_Table") 'strSQL, dbOpenSnapshot)
+    Set rs = CurrDb.OpenRecordset("usys_Temp_Table") 'strSQL, dbOpenSnapshot)
 
     'add records to recordset
     For i = 1 To iCount
@@ -340,6 +346,8 @@ End Sub
 '   https://www.experts-exchange.com/articles/9753/Creating-and-using-Temporary-Tables-in-Microsoft-Access.html
 ' Source/date:  Bonnie Campbell, June 2016
 ' Revisions:    BLC, 6/8/2016 - initial version
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                 multiple open connections
 ' ---------------------------------
 Public Function UpdateTempTable(tbl As String, TableQueryOrSQL As String, _
                                 Optional InCurrentDb As Boolean = False, _
@@ -368,7 +376,7 @@ Public Function UpdateTempTable(tbl As String, TableQueryOrSQL As String, _
     'check duration
     If TableExists(tbl) Then
 
-        If DateDiff("n", CurrentDb.TableDefs(tbl).Properties("DateCreated"), Now()) <= TimeLimit Then
+        If DateDiff("n", CurrDb.TableDefs(tbl).Properties("DateCreated"), Now()) <= TimeLimit Then
             'duration not yet expired
             UpdateTempTable = True
             GoTo Exit_Handler
@@ -457,12 +465,12 @@ Public Function UpdateTempTable(tbl As String, TableQueryOrSQL As String, _
             
     'Otherwise --> Execute SQL to create empty table in temp.accdb
     strError = "Writing data to the temp table in the temp db"
-    CurrentDb.Execute strSQL, dbFailOnError
+    CurrDb.Execute strSQL, dbFailOnError
             
     'Primary key field defined? --> Alter table structure
     If IsNull(PK_Field) = False Then
         If InCurrentDb = True Then
-            Set db = CurrentDb
+            Set db = CurrDb
         Else
             Set db = DBEngine.OpenDatabase(strTempFile)
         End If
@@ -477,13 +485,13 @@ Public Function UpdateTempTable(tbl As String, TableQueryOrSQL As String, _
     If InCurrentDb = False Then
         strError = "Linking table to the current database"
         
-        Set tdf = CurrentDb.CreateTableDef(tbl)
+        Set tdf = CurrDb.CreateTableDef(tbl)
         tdf.connect = ";DATABASE=" & strTempFile
         tdf.SourceTableName = tbl
-        CurrentDb.TableDefs.Append tdf
+        CurrDb.TableDefs.Append tdf
         'DisplayNavPane (False)
     End If
-    CurrentDb.TableDefs.Refresh
+    CurrDb.TableDefs.Refresh
     
     UpdateTempTable = True
     

@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_Data
 ' Level:        Application module
-' Version:      1.38
+' Version:      1.39
 ' Description:  data functions & procedures specific to this application
 '
 ' Source/date:  Bonnie Campbell, 2/9/2015
@@ -69,6 +69,8 @@ Option Explicit
 ' --------------------------------------------------------------------
 '               BLC, 9/28/2017 - 1.37 - update ToggleSensitive, SetRecord for sensitive locations/species
 '               BLC, 9/29/2017 - 1.38 - update UpsertRecord for location, add i_location site ID (SetRecord)
+'               BLC, 10/4/2017 - 1.39 - switched CurrentDb to CurrDb property to avoid
+'                                       multiple open connections
 ' =================================
 
 ' =================================
@@ -96,6 +98,8 @@ Option Explicit
 ' --------------------------------------------------------------------
 '                   - un-comment out
 ' --------------------------------------------------------------------
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Sub fillList(frm As Form, ctrlSource As Control, Optional ctrlDest As Control)
 On Error GoTo Err_Handler
@@ -111,16 +115,16 @@ On Error GoTo Err_Handler
 
         Case "lbxDataSheets", "sfrmDatasheets" 'Datasheets
             strQuery = "qry_Active_Datasheets"
-            strSQL = CurrentDb.QueryDefs(strQuery).SQL
+            strSQL = CurrDb.QueryDefs(strQuery).SQL
 
         Case "lbxSpecies", "lbxTgtSpecies", "fsub_Species_Listbox" 'Species
             strQuery = "qry_Plant_Species"
-            strSQL = CurrentDb.QueryDefs(strQuery).SQL
+            strSQL = CurrDb.QueryDefs(strQuery).SQL
 
     End Select
 
     'fetch data
-    Set db = CurrentDb
+    Set db = CurrDb
     Set rs = db.OpenRecordset(strSQL)
 
     'set TempVars
@@ -408,6 +412,8 @@ End Function
 ' Revisions:
 '   BLC - 6/3/2015  - initial version
 '   BLC - 12/1/2015 - "extra" vs target area renaming (IsUsedTargetArea > IsUsedExtraArea)
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Function IsUsedExtraArea(ExtraAreaID As Integer) As Boolean
 On Error GoTo Err_Handler
@@ -423,7 +429,7 @@ On Error GoTo Err_Handler
     strSQL = "SELECT TOP 1 Target_Area_ID FROM tbl_Target_Species WHERE Target_Area_ID = " & ExtraAreaID & ";"
             
     'fetch data
-    Set db = CurrentDb
+    Set db = CurrDb
     Set rs = db.OpenRecordset(strSQL)
     
     'assume only 1 record returned
@@ -462,6 +468,8 @@ End Function
 ' Revisions:
 '   BLC - 6/3/2015  - initial version
 '   BLC - 10/12/2016 - fixed to set combobox recordset
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Sub PopulateCombobox(cbx As ComboBox, BoxType As String)
 On Error GoTo Err_Handler
@@ -479,7 +487,7 @@ On Error GoTo Err_Handler
     End Select
  
      'fetch data
-    Set db = CurrentDb
+    Set db = CurrDb
     Set rs = db.OpenRecordset(strSQL)
  
     'assume only 1 record returned
@@ -515,6 +523,8 @@ End Sub
 ' Adapted:      Bonnie Campbell, June 3, 2015 - for NCPN tools
 ' Revisions:
 '   BLC - 6/3/2015  - initial version
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Sub PopulateTree(TreeType As String)
 On Error GoTo Err_Handler
@@ -530,7 +540,7 @@ On Error GoTo Err_Handler
     End Select
                    
     'fetch data
-    Set db = CurrentDb
+    Set db = CurrDb
     Set rs = db.OpenRecordset(strSQL)
     
     'assume only 1 record returned
@@ -778,6 +788,8 @@ End Function
 ' --------------------------------------------------------------------
 '       BLC - 8/14/2017 - redo error handling to address error 3048
 ' --------------------------------------------------------------------
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Function GetRecords(Template As String, _
                             Optional Params As Variant) As DAO.Recordset
@@ -787,7 +799,7 @@ On Error GoTo Err_Handler
     Dim qdf As DAO.QueryDef
     Dim rs As DAO.Recordset
     
-    Set db = CurrentDb
+    Set db = CurrDb
     
     With db
         Set qdf = .QueryDefs("usys_temp_qdf")
@@ -1197,6 +1209,8 @@ End Function
 ' --------------------------------------------------------------------
 '   BLC - 9/28/2017 - update i_sensitive_locations to pull parkID from TempVars("ParkID")
 '   BLC - 9/29/2017 - add SiteID parameter for i_location
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Function SetRecord(Template As String, Params As Variant) As Long
 On Error GoTo Err_Handler
@@ -1215,7 +1229,7 @@ On Error GoTo Err_Handler
     'default ID (if not set as param)
     ID = 0
     
-    Set db = CurrentDb
+    Set db = CurrDb
     
     With db
         Set qdf = .QueryDefs("usys_temp_qdf")
@@ -2699,6 +2713,8 @@ End Sub
 ' --------------------------------------------------------------------
 '                   - shifted from frm_Species_Cover_by_Route
 ' --------------------------------------------------------------------
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Sub CollapseRows(tbl As String) 'tdf As DAO.TableDef)
 On Error GoTo Err_Handler
@@ -2728,7 +2744,7 @@ On Error GoTo Err_Handler
     PrevCommonName = ""
     PrevIsDead = ""
     
-    Set db = CurrentDb
+    Set db = CurrDb
     Set tdf = db.TableDefs(tbl)
     
     Set rs = db.OpenRecordset(tdf.Name)
@@ -2831,6 +2847,8 @@ End Sub
 ' Adapted:      Bonnie Campbell, May 5, 2016 - for NCPN tools
 ' Revisions:
 '   BLC - 5/5/2016  - initial version
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Function GetProtocolVersion(Optional blnAllVersions As Boolean = False) As Variant
 On Error GoTo Err_Handler
@@ -2854,7 +2872,7 @@ On Error GoTo Err_Handler
     strSQL = GetTemplate("s_protocol_info", "strWHERE" & PARAM_SEPARATOR & strWHERE)
     
     'fetch data
-    Set db = CurrentDb
+    Set db = CurrDb
     Set rs = db.OpenRecordset(strSQL)
         
     If rs.BOF And rs.EOF Then GoTo Exit_Handler
@@ -2901,6 +2919,8 @@ End Function
 ' Revisions:
 '   BLC - 5/5/2016  - initial version
 '   BLC - 5/11/2016 - revised to getting full SOP metadata vs. number only
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Function GetSOPMetadata(area As String) As Variant
 On Error GoTo Err_Handler
@@ -2923,7 +2943,7 @@ On Error GoTo Err_Handler
     strSQL = GetTemplate("s_sop_metadata", "area" & PARAM_SEPARATOR & LCase(area))
     
     'fetch data
-    Set db = CurrentDb
+    Set db = CurrDb
     Set rs = db.OpenRecordset(strSQL, dbOpenDynaset)
         
     'return value
@@ -2958,6 +2978,8 @@ End Function
 ' Revisions:
 '   BLC - 6/28/2016  - initial version
 '   BLC - 1/12/2017  - revised to use GetRecords() vs. GetTemplate()
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Function GetParkID(ParkCode As String) As Long
 On Error GoTo Err_Handler
@@ -2976,7 +2998,7 @@ On Error GoTo Err_Handler
 '    strSQL = GetTemplate("s_park_id", "ParkCode" & PARAM_SEPARATOR & ParkCode)
             
     'fetch data
-'    Set db = CurrentDb
+'    Set db = CurrDb
     Set rs = GetRecords("s_park_id") 'db.OpenRecordset(strSQL)
 
     If rs.BOF And rs.EOF Then GoTo Exit_Handler
@@ -3018,6 +3040,8 @@ End Function
 ' Revisions:
 '   BLC - 2/19/2015  - initial version
 '   BLC - 6/28/2016  - revised to uppercase GetParkState vs getParkState
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Function getParkState(ParkCode As String) As String
 
@@ -3036,7 +3060,7 @@ On Error GoTo Err_Handler
     strSQL = "SELECT TOP 1 ParkState FROM tlu_Parks WHERE ParkCode LIKE '" & ParkCode & "';"
             
     'fetch data
-    Set db = CurrentDb
+    Set db = CurrDb
     Set rs = db.OpenRecordset(strSQL)
     
     'assume only 1 record returned
@@ -3071,6 +3095,8 @@ End Function
 ' Adapted:      Bonnie Campbell, May 5, 2016 - for NCPN tools
 ' Revisions:
 '   BLC - 5/5/2016  - initial version
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Function GetRiverSegments(ParkCode As String) As Variant
 On Error GoTo Err_Handler
@@ -3091,7 +3117,7 @@ On Error GoTo Err_Handler
 
             
     'fetch data
-    Set db = CurrentDb
+    Set db = CurrDb
     Set rs = db.OpenRecordset(strSQL)
 
     If rs.BOF And rs.EOF Then GoTo Exit_Handler
@@ -3135,6 +3161,8 @@ End Function
 ' Revisions:
 '   BLC - 6/28/2016  - initial version
 '   BLC - 1/17/2017  - revise to use GetRecords() vs. GetTemplate()
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Function GetRiverSegmentID(segment As String) As Long
 On Error GoTo Err_Handler
@@ -3153,7 +3181,7 @@ On Error GoTo Err_Handler
 '    strSQL = GetTemplate("s_river_segment_id", "waterway" & PARAM_SEPARATOR & segment)
             
     'fetch data
-'    Set db = CurrentDb
+'    Set db = CurrDb
     Set rs = GetRecords("s_river_segment_id") 'db.OpenRecordset(strSQL)
 
     If rs.BOF And rs.EOF Then GoTo Exit_Handler
@@ -3195,6 +3223,8 @@ End Function
 ' Adapted:      Bonnie Campbell, June 28, 2016 - for NCPN tools
 ' Revisions:
 '   BLC - 6/28/2016  - initial version
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Function GetSiteID(ParkCode As String, SiteCode As String) As Long
 On Error GoTo Err_Handler
@@ -3215,7 +3245,7 @@ On Error GoTo Err_Handler
             "|sitecode" & PARAM_SEPARATOR & SiteCode)
             
     'fetch data
-    Set db = CurrentDb
+    Set db = CurrDb
     Set rs = db.OpenRecordset(strSQL)
 
     If rs.BOF And rs.EOF Then GoTo Exit_Handler
@@ -3258,6 +3288,8 @@ End Function
 ' Revisions:
 '   BLC - 6/28/2016  - initial version
 '   BLC - 10/4/2016  - update to use parameter query
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Function GetFeatureID(ParkCode As String, Feature As String) As Long
 On Error GoTo Err_Handler
@@ -3278,7 +3310,7 @@ On Error GoTo Err_Handler
 '            "|feature" & PARAM_SEPARATOR & Feature)
 '
 '    'fetch data
-'    Set db = CurrentDb
+'    Set db = CurrDb
 '    Set rs = db.OpenRecordset(strSQL)
 '
 '    If rs.BOF And rs.EOF Then GoTo Exit_Handler
@@ -3701,6 +3733,8 @@ End Function
 ' Adapted:      -
 ' Revisions:
 '   BLC - 4/3/2017 - initial version (consider for future use)
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Function PrepareSpeciesQuery(Park As String, SampleYear As Integer, PlotID As Integer)
 On Error GoTo Err_Handler
@@ -3786,7 +3820,7 @@ On Error GoTo Err_Handler
     Dim qdf As QueryDef
     Dim strSQL As String
     
-    Set qdf = CurrentDb.QueryDefs("qry_Sp_Rpt_by_Park_Complete_Create_Table")
+    Set qdf = CurrDb.QueryDefs("qry_Sp_Rpt_by_Park_Complete_Create_Table")
     strSQL = qdf.SQL
 
 'SELECT DISTINCT
@@ -3827,7 +3861,7 @@ On Error GoTo Err_Handler
     Dim strIdxSQL As String
     
     strIdxSQL = "CREATE INDEX idxParkPlotSpeciesYear ON temp_Sp_Rpt_by_Park_Complete (ParkPlotSpecies, Year)"
-    CurrentDb.Execute strIdxSQL
+    CurrDb.Execute strIdxSQL
     
     DoCmd.SetWarnings True
     
@@ -3846,7 +3880,7 @@ On Error GoTo Err_Handler
     
     'add an index to improve report performance
     strIdxSQL = "CREATE INDEX idxParkPlotSpeciesYears ON temp_Sp_Rpt_by_Park_Rollup (ParkPlotSpecies, SpeciesYears)"
-    CurrentDb.Execute strIdxSQL
+    CurrDb.Execute strIdxSQL
     
 Debug.Print strSQL
 
@@ -4160,6 +4194,8 @@ End Sub
 ' Adapted:      -
 ' Revisions:
 '   BLC - 9/13/2016 - initial version
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Function FetchAddlData(tbl As String, Fields As String, ID As Long) As DAO.Recordset
 On Error GoTo Err_Handler
@@ -4174,7 +4210,7 @@ On Error GoTo Err_Handler
     Dim db As DAO.Database
     Dim qdf As DAO.QueryDef
     
-    Set db = CurrentDb
+    Set db = CurrDb
     
     With db
         Set qdf = .QueryDefs("usys_temp_qdf")

@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_List
 ' Level:        Framework module
-' Version:      1.04
+' Version:      1.05
 ' Description:  Listview & listbox related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
@@ -17,6 +17,8 @@ Option Explicit
 '                              BLC, 6/24/2016 - 1.01 - replaced Exit_Function > Exit_Handler
 ' ----------------------------------------------------------------------------------------
 '               BLC, 9/14/2017 - 1.04 - added ReplaceListItem() from mod_Utilities (removed)
+'               BLC, 10/4/2017 - 1.05 - switched CurrentDb to CurrDb property to avoid
+'                                       multiple open connections
 ' =================================
 
 ' ---------------------------------
@@ -41,6 +43,8 @@ Option Explicit
 '                   http://forums.esri.com/Thread.asp?c=93&f=992&t=198775
 '               BLC, 4/30/2015 - added error handling & moved from mod_Common_UI to mod_List
 '               BLC, 6/18/2015 - renamed aryFields to aryHeadings per documentation
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                 multiple open connections
 ' =================================
 Public Sub lvwPopulateFromQuery(ctrl As MSComctlLib.ListView, strSQL As String, aryHeadings As Variant)
 On Error GoTo Err_Handler
@@ -53,7 +57,7 @@ On Error GoTo Err_Handler
     
     ctrl.ListItems.Clear
 
-    Set dbs = CurrentDb
+    Set dbs = CurrDb
     Set rs = dbs.OpenRecordset(strSQL, dbOpenSnapshot)
 
     If rs.RecordCount > 0 Then
@@ -424,6 +428,8 @@ End Function
 '   BLC - 2/8/2015  - initial version
 '   BLC - 5/10/2015 - moved to mod_List from mod_Lists
 '   BLC - 6/18/2015 - updated documentation
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Sub SaveListToTable(ctrl As Control, tbl As String, tblFields As Variant, blnSelectedOnly As Boolean)
 
@@ -453,7 +459,7 @@ On Error GoTo Err_Handler
             
             strSQL = strSQL & "'" & ctrl.Column(jCol, iRow) & "'"
              
-            CurrentDb.Execute strSQL, dbFailOnError
+            CurrDb.Execute strSQL, dbFailOnError
             
             Next
     Next 'iRow
@@ -492,6 +498,8 @@ End Sub
 '   BLC - 5/26/2015 - revised to SetListRecordset saving listbox rows to Temp table
 '   BLC - 5/27/2015 - added blnReplace to handle adding additional records to the Temp
 '                     table from a list
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Sub SetListRecordset(lbx As ListBox, blnHeaders As Boolean, _
                 aryFields As Variant, aryFieldTypes As Variant, tblName As String, _
@@ -564,7 +572,7 @@ Dim blnTableExists As Boolean
         If Not blnTableExists Then
             
             'create Temporary table (if it doesn't exist)
-            Set tdf = CurrentDb.CreateTableDef(tblName)
+            Set tdf = CurrDb.CreateTableDef(tblName)
                     
             aryFieldNames = Split(CStr(aryFields(0)), ";")
                 
@@ -577,7 +585,7 @@ Dim blnTableExists As Boolean
                     If iRow = UBound(aryFieldNames) Then '- 1 Then
                             
                         ' add table to tabledefs
-                        CurrentDb.TableDefs.Append tdf
+                        CurrDb.TableDefs.Append tdf
                                         
                     End If
                     
@@ -586,7 +594,7 @@ Dim blnTableExists As Boolean
         End If
                 
         ' create recordset for the blank table
-        Set rsProcess = CurrentDb.OpenRecordset(tblName, dbOpenDynaset)
+        Set rsProcess = CurrDb.OpenRecordset(tblName, dbOpenDynaset)
                 
         'add records
         For iRow = 0 To UBound(aryData)
@@ -640,6 +648,8 @@ End Sub
 ' Revisions:
 '   BLC - 5/27/2015 - initial version
 '   BLC - 12/1/2015 - "extra" vs. target area renaming (handle back-end table fields not yet being renamed)
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Sub AddListRecordset(tblName As String, rsList As DAO.Recordset, strFieldNames As String, _
                 aryFieldTypes As Variant, blnReplace As Boolean)
@@ -689,7 +699,7 @@ Dim blnTableExists As Boolean
         If Not blnTableExists Then
             
             'create Temporary table (if it doesn't exist)
-            Set tdf = CurrentDb.CreateTableDef(tblName)
+            Set tdf = CurrDb.CreateTableDef(tblName)
 
             For iRow = 0 To UBound(aryFieldNames)
                 With tdf
@@ -700,7 +710,7 @@ Dim blnTableExists As Boolean
                     If iRow = UBound(aryFieldNames) - 1 Then
                             
                         ' add table to tabledefs
-                        CurrentDb.TableDefs.Append tdf
+                        CurrDb.TableDefs.Append tdf
                                         
                     End If
                     
@@ -709,7 +719,7 @@ Dim blnTableExists As Boolean
         End If
                 
         ' create recordset for the blank table
-        Set rsProcess = CurrentDb.OpenRecordset(tblName, dbOpenDynaset)
+        Set rsProcess = CurrDb.OpenRecordset(tblName, dbOpenDynaset)
                 
         'add records
         For iRow = 0 To rsList.RecordCount - 1 'UBound(aryData)
@@ -765,6 +775,8 @@ End Sub
 ' Adapted:      Bonnie Campbell, May 26, 2015 - for NCPN tools
 ' Revisions:
 '   BLC - 5/26/2015 - initial version
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Function GetListRecordset(tblName As String) As DAO.Recordset
 On Error GoTo Err_Handler
@@ -773,12 +785,11 @@ On Error GoTo Err_Handler
     If TableExists(tblName) Then
 
         ' create recordset for the blank table
-        Set GetListRecordset = CurrentDb.OpenRecordset(tblName, dbOpenDynaset)
+        Set GetListRecordset = CurrDb.OpenRecordset(tblName, dbOpenDynaset)
     Else
         'nothing if there isn't a table
         'GetListRecordset = vbNull
     End If
-        
 
 Exit_Handler:
     Exit Function

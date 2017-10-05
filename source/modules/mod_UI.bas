@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_UI
 ' Level:        Framework module
-' Version:      1.15
+' Version:      1.16
 ' Description:  User interface related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
@@ -30,6 +30,8 @@ Option Explicit
 '                                      CircleControl(), ButtonHighlight(), ButtonUnHighlight()
 '               BLC, 6/25/2017 - 1.14 - added SetNavGroup copied from invasives_rpts mod_UI (v 1.04)
 '               BLC, 9/15/2017 - 1.15 - added heading for navigation
+'               BLC, 10/4/2017 - 1.16 - switched CurrentDb to CurrDb property to avoid
+'                                       multiple open connections
 ' =================================
 
 ' ---------------------------------
@@ -230,6 +232,8 @@ Const SWP_NOSIZE = &H1
 ' References:   none
 ' Source/date:  -
 ' Revisions:    BLC, 5/10/2015 - initial version
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' =================================
 Public Function GetRibbonXML(strRibbon As String) As String
 On Error GoTo Err_Handler
@@ -240,7 +244,7 @@ On Error GoTo Err_Handler
     strSQL = "SELECT RibbonXML FROM USysRibbons WHERE RibbonName = '" & strRibbon & "';"
     strXML = ""
     
-    Set rs = CurrentDb.OpenRecordset(strSQL)
+    Set rs = CurrDb.OpenRecordset(strSQL)
     If Not (rs.BOF And rs.EOF) Then
         strXML = rs!RibbonXML
     End If
@@ -344,6 +348,8 @@ End Sub
 ' Source/date:  Bonnie Campbell June 25, 2017 - NCPN tools
 ' Adapted:      -
 ' Revisions:    BLC, 6/25/2017 - initial version
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                 multiple open connections
 ' ---------------------------------
 Function SetNavGroup(strGroup As String, strTable As String, strType As String) As String
 On Error GoTo Err_Handler
@@ -359,7 +365,7 @@ On Error GoTo Err_Handler
     'default
     SetNavGroup = "Failed"
     
-    Set dbs = CurrentDb
+    Set dbs = CurrDb
 
     '-- Category Code --
     ' Ignore the following code unless you want to manage 'Categories'

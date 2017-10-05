@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Enums
 ' Level:        Application module
-' Version:      1.03
+' Version:      1.04
 ' Description:  enum functions & procedures specific to this application
 '
 ' Source/date:  Bonnie Campbell, 11/5/2015
@@ -13,6 +13,8 @@ Option Explicit
 '               BLC - 7/6/2016   - 1.02 - added OpenAndHideVBE() and ShowAndCloseVBE() to
 '                                         CreateEnums()
 '               BLC - 8/4/2016   - 1.03 - revised table name to AppEnum to avoid reserved word
+'               BLC - 10/4/2017 - 1.04 - switched CurrentDb to CurrDb property to avoid
+'                                       multiple open connections
 ' =================================
 
 '-----------------------------
@@ -48,6 +50,8 @@ Option Explicit
 '                      before & after (respectively) modifying enums to prevent
 '                      VBE from displaying when enums are recreated
 '   BLC - 8/4/2016   - revised table name to AppEnum to avoid reserved word
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Function CreateEnums(Optional EnumType As String)
 On Error GoTo Err_Handler
@@ -55,7 +59,7 @@ On Error GoTo Err_Handler
     Dim db As DAO.Database
     Dim rs As DAO.Recordset
 
-    Set db = CurrentDb
+    Set db = CurrDb
     'Set rs = db.OpenRecordset("Enum", dbOpenSnapshot) <-- replace w/ SQL to get sort by enumtype
     Set rs = db.OpenRecordset("SELECT * FROM AppEnum ORDER BY EnumType, ID, Label", dbOpenSnapshot)
 

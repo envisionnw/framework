@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Linked_Tables
 ' Level:        Framework module
-' Version:      1.07
+' Version:      1.08
 ' Description:  Linked table related functions & subroutines
 '
 ' Adapted from: John R. Boetsch, May 24, 2006
@@ -15,22 +15,24 @@ Option Explicit
 '               BLC, 4/30/2015 - 1.00 - added fxnVerifyLinks, fxnRefreshLinks, fxnVerifyLinkTableInfo,
 '                                fxnMakeBackup from mod_Custom_Functions
 '               BLC, 5/19/2015 - 1.01 - renamed functions, removed fxn prefix
-'                               ------------------------------------------------------------------------
-'                               BLC, 8/22/2017 - 1.07 - merge prior versions into single framework version
-'                               ------------------------------------------------------------------------
+'               ------------------------------------------------------------------------
+'               BLC, 8/22/2017 - 1.07 - merge prior versions into single framework version
+'               ------------------------------------------------------------------------
 '                       BLC, 6/10/2015 - 1.02 - fixed VerifyLinkTableInfo to add new linked tables to tsys_Link_Tables
 '                       BLC, 6/12/2015 - 1.03 - replaced TempVars.item(... with TempVars("...
 '                       BLC, 9/30/2015 - 1.04 - added check & resolve double quotes in table descriptions in RefreshLinks
 '                       BLC, 12/1/2015 - 1.05 - resolve issues with linked database updates to differently named backend databases
 '                       BLC, 12/3/2015 - 1.06 - added UpdateTSysTableDb
-'                                       ------------------------------------------------------------------------
+'               ------------------------------------------------------------------------
 '                       BLC, 6/5/2016  - 1.02 - renamed frm_Progress_Meter to ProgressMeter,
 '                                           removed underscores from fields
-'                   BLC, 1/24/2017 - 1.03 - revised MakeBackup() to use FilePath vs. File_path
+'                       BLC, 1/24/2017 - 1.03 - revised MakeBackup() to use FilePath vs. File_path
 '                                               (tsys_Link_Dbs)
 '                       BLC, 2/22/2017 - 1.04 - added alternative path for new vs. legacy forms (ConnectDbs
 '                                           vs. frm_Connect_Dbs), BACKEND_REQUIRED check
-'                               ------------------------------------------------------------------------
+'               ------------------------------------------------------------------------
+'               BLC, 10/4/2017 - 1.08 - switched CurrentDb to CurrDb property to avoid
+'                                       multiple open connections
 ' =================================
 
 ' ---------------------------------
@@ -86,6 +88,8 @@ Option Explicit
 '               BLC, 6/5/2016  - removed underscores from field names
 '               BLC, 2/22/2017 - added alternative path for new vs. legacy forms (ConnectDbs
 '                                vs. frm_Connect_Dbs), BACKEND_REQUIRED check
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                multiple open connections
 ' ---------------------------------
 Public Function VerifyConnections()
     On Error GoTo Err_Handler
@@ -102,7 +106,7 @@ Public Function VerifyConnections()
     Dim strErrMsg As String
     Dim blnHasError As Boolean
 
-    Set db = CurrentDb
+    Set db = CurrDb
     TempVars.Item("Connected") = False           ' Default in case of error
     TempVars.Item("HasAccessBE") = False         ' Flag to indicate that at least 1 Access BE exists
     strSysTable = "tsys_Link_Dbs"   ' System table listing linked tables
@@ -260,13 +264,15 @@ End Function
 ' Source/date:  John R. Boetsch, 6/24/2009
 ' Revisions:    JRB, 6/24/2009 - initial version
 '               BLC, 5/18/2015 - renamed, removed fxn prefix
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                 multiple open connections
 ' =================================
 Public Function LinkedDatabase(ByVal strTableName As String) As String
     On Error GoTo Err_Handler
 
     Dim strTemp As String
 
-    strTemp = ParseConnectionStr(CurrentDb.TableDefs(strTableName).connect)
+    strTemp = ParseConnectionStr(CurrDb.TableDefs(strTableName).connect)
     LinkedDatabase = strTemp
 
 Exit_Procedure:
@@ -367,6 +373,8 @@ End Function
 '               BLC, 4/30/2015 - moved to mod_Linked_Tables from mod_Custom_Functions
 '               BLC, 5/18/2015 - renamed, removed fxn prefix
 '               BLC, 1/24/2017 - revised DLookup for tsys_Link_Dbs to check FilePath vs. File_path
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                multiple open connections
 ' =================================
 Public Function MakeBackup()
     On Error GoTo Err_Handler
@@ -393,7 +401,7 @@ Public Function MakeBackup()
     strBackupDate = Format$(Now, "YYYYMMDD_HHNN")
 
     ' Set the recordset to the systems table, grouped by linked Access databases
-    Set rs = CurrentDb.OpenRecordset("SELECT Database " & _
+    Set rs = CurrDb.OpenRecordset("SELECT Database " & _
         "FROM MSysObjects " & _
         "WHERE ((MSysObjects.Type) = 6) And ((MSysObjects.Name) Not Like '~*') " & _
         "GROUP BY MSysObjects.Database;", dbOpenSnapshot)
@@ -507,6 +515,8 @@ End Function
 '               Created 09/13/94 pel; Last modified 07/10/96 pel.
 ' Revisions:    John R. Boetsch, May 17, 2006 - updated documentation, added error traps
 '               BLC, 5/18/2015 - renamed, removed fxn prefix
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' =================================
 Public Function CheckLink(strTableName As String) As Boolean
     On Error GoTo Err_Handler
@@ -516,7 +526,7 @@ Public Function CheckLink(strTableName As String) As Boolean
     On Error Resume Next
     ' Check for failure.  If can't determine the name of
     ' the first field in the table, the link must be bad.
-    varRet = CurrentDb.TableDefs(strTableName).Fields(0).Name
+    varRet = CurrDb.TableDefs(strTableName).Fields(0).Name
     If Err <> 0 Then
         CheckLink = False
     Else
@@ -588,6 +598,8 @@ End Function
 ' Source/date:  John R. Boetsch, 6/24/2009 (adapted from http://support.microsoft.com/kb/210319)
 ' Revisions:    JRB, 6/24/2009 - initial version
 '               BLC, 5/18/2015 - renamed, removed fxn prefix
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                 multiple open connections
 ' =================================
 Function TestODBCConnection(strTableName As String, _
     Optional ByVal strConnStr As String, _
@@ -603,11 +615,11 @@ Function TestODBCConnection(strTableName As String, _
     Dim strDbName As String
 
     ' Create a blank pass-through query
-    Set db = CurrentDb()
+    Set db = CurrDb()
     Set qdf = db.CreateQueryDef("")
 
     ' If no revised connection string was passed, use the current connection string
-    If strConnStr = "" Then strConnStr = CurrentDb.TableDefs(strTableName).connect
+    If strConnStr = "" Then strConnStr = CurrDb.TableDefs(strTableName).connect
     strDbName = ParseConnectionStr(strConnStr)
 
     ' Update the connection string for the pass-through query, set to not return records
@@ -682,6 +694,8 @@ End Function
 '                               BLC, 8/22/2017 - merged in prior work
 '                       BLC, 9/30/2015 - add description parsing to avoid errors due to quotes
 '                       BLC, 12/1/2015 - resolve issues with linked database updates to differently named backend databases
+'                       BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                           multiple open connections
 ' =================================
 Public Function RefreshLinks(strDbName As String, ByVal strNewConnStr As String, _
     Optional strComponent As String = "DATABASE=", _
@@ -709,7 +723,7 @@ Public Function RefreshLinks(strDbName As String, ByVal strNewConnStr As String,
     'set new db name default to current name if strNewDbName not populated
     If Len(strNewDbName) = 0 Then strNewDbName = strDbName
 
-    Set db = CurrentDb
+    Set db = CurrDb
     Set rs = db.OpenRecordset(GetTemplate("s_tsys_link_tables_by_dbname", "dbName" & PARAM_SEPARATOR & strDbName), dbOpenSnapshot)
 '    Set rs = db.OpenRecordset("SELECT * FROM tsys_Link_Tables WHERE " & _
 '                "[tsys_Link_Tables]![LinkDb] = """ & strDbName & """", dbOpenSnapshot)
@@ -965,6 +979,8 @@ End Function
 '                              BLC, 6/10/2015 - updated SQL insert into tsys_Link_Tables for missing MSysObjects tables
 '                                                captured by qsys_Linked_tables_not_in_tsys_Link_Tables (missing Link_type)
 '                                                bug resulted in new linked tables never being inserted into tsys_Link_Tables & subsequent errors
+'                               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                                multiple open connections
 ' =================================
 Public Function VerifyLinkTableInfo() As Boolean
     On Error GoTo Err_Handler
@@ -980,7 +996,7 @@ Public Function VerifyLinkTableInfo() As Boolean
     Dim blnHasError As Boolean
     Dim strSQL As String
 
-    Set db = CurrentDb
+    Set db = CurrDb
     blnHasError = False             ' Flag to indicate error status
 
     ' Check if FIX_LINKED_DBS is set (usually when DbAdmin is not fully implemented)
@@ -1154,6 +1170,8 @@ End Function
 '               BLC, 4/30/2015 - moved to mod_Linked_Tables from mod_Custom_Functions & renamed VerifyLinks
 '               BLC, 5/18/2015 - renamed, removed fxn prefix
 '               BLC, 6/5/2016  - adapted to Big Rivers Application, adjust to renamed tsys_Link_Tables fields
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                multiple open connections
 ' =================================
 Public Function VerifyLinks() As Boolean
     On Error GoTo Err_Handler
@@ -1177,7 +1195,7 @@ Public Function VerifyLinks() As Boolean
 '        "FROM MSysObjects " & _
 '        "WHERE ((MSysObjects.Name) Not Like '~*') AND ((MSysObjects.Type) In (4,6)) " & _
 '        "ORDER BY MSysObjects.Name;", dbOpenSnapshot)
-    Set rs = CurrentDb.OpenRecordset(GetTemplate("s_msysobjects_except_deleted"), dbOpenSnapshot)
+    Set rs = CurrDb.OpenRecordset(GetTemplate("s_msysobjects_except_deleted"), dbOpenSnapshot)
 
     ' Counts the number of linked tables in the recordset
     rs.MoveLast    ' Need to do this to make the record count accurate
@@ -1260,6 +1278,8 @@ End Function
 ' Throws:       none
 ' References:   ParseConnectionStr
 ' Source/date:  BLC, 5/19/2015 - initial version
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                 multiple open connections
 ' =================================
 Public Sub FixLinkedDatabase(ByVal strTableName As String)
     On Error GoTo Err_Handler
@@ -1267,10 +1287,10 @@ Public Sub FixLinkedDatabase(ByVal strTableName As String)
     Dim strTemp As String, strSQL As String, strCurDb As String, strCurDbPath As String
     Dim rs As DAO.Recordset
 
-    strTemp = ParseConnectionStr(CurrentDb.TableDefs(strTableName).connect)
+    strTemp = ParseConnectionStr(CurrDb.TableDefs(strTableName).connect)
     
     'fetch current database location
-    Set rs = CurrentDb.OpenRecordset("qsys_Linked_tables_mismatched_info") '_dbs")
+    Set rs = CurrDb.OpenRecordset("qsys_Linked_tables_mismatched_info") '_dbs")
     
     If Not rs.EOF And rs.BOF Then
     

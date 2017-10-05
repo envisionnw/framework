@@ -4,11 +4,13 @@ Option Explicit
 ' ------------------------------------------
 ' -------         REVISIONS           ------
 ' ------------------------------------------
-'  BLC - 8/10/2015 - Vestigial, unused subroutines FillCanopyGapsOld & UpdateCanopyGapsOld
-'                    were removed. These routines, developed by R. DenBleyker in 11/2006
-'                    caused the application to fail to compile.
-'                    FillCanopyGaps() & UpdateCanopyGaps() handle their functionality.
-'                    Option Explicit was added.
+'  BLC, 8/10/2015 - 1.00 - Vestigial, unused subroutines FillCanopyGapsOld & UpdateCanopyGapsOld
+'                          were removed. These routines, developed by R. DenBleyker in 11/2006
+'                          caused the application to fail to compile.
+'                          FillCanopyGaps() & UpdateCanopyGaps() handle their functionality.
+'                          Option Explicit was added.
+'  BLC, 10/4/2017 - 1.01 - switched CurrentDb to CurrDb property to avoid
+'                          multiple open connections
 ' ------------------------------------------
 
 Sub ClearCanopyGaps(intLastField As Integer)
@@ -76,6 +78,9 @@ Err_Handler:
     End Select
 
 End Sub
+
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 Function FillBasalGaps(strTransectID As String) As Integer
 ' Fill controls in fsub_Basal_Gap from tbl_Basal_Gaps.  11/2006 Russ DenBleyker
 ' Northern Colorado Plateau Network
@@ -89,7 +94,7 @@ Function FillBasalGaps(strTransectID As String) As Integer
     Dim strFieldName As String
 
     strSQL = "Select * FROM tbl_Basal_Gaps WHERE Transect_ID = '" & strTransectID & "' ORDER BY Gap_ID"
-    Set db = CurrentDb
+    Set db = CurrDb
   ' Get the records for this transect
     Set Gaps = db.OpenRecordset(strSQL)
     If Gaps.EOF Then
@@ -222,7 +227,7 @@ Function UpdateBasalGaps(strTransectID As String, strField As String) As Integer
         UpdateBasalGaps = 1  ' Indicate no update.
         GoTo Exit_Function
       End If
-      Set db = CurrentDb
+      Set db = CurrDb
       Set NewGap = db.OpenRecordset("tbl_Basal_Gaps")
         NewGap.AddNew
         NewGap!Gap_ID = intField1
@@ -238,7 +243,7 @@ Function UpdateBasalGaps(strTransectID As String, strField As String) As Integer
         UpdateBasalGaps = 0  ' Indicate OK.
     Else   ' Update routines.
       strSQL = "Select * FROM tbl_Basal_Gaps WHERE Transect_ID = '" & strTransectID & "' AND Gap_ID = " & intField1
-      Set db = CurrentDb
+      Set db = CurrDb
       Set Gaps = db.OpenRecordset(strSQL)
       Gaps.MoveFirst
       Gaps.Edit
@@ -276,6 +281,8 @@ Err_Handler:
     Resume Exit_Function
 End Function
 
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 Function FillCanopyGaps(strTransectID As String) As Integer
 ' Fill controls in fsub_Canopy_Gap from tbl_Canopy_Gaps.  3/2011 Russ DenBleyker
 ' Northern Colorado Plateau Network
@@ -289,7 +296,7 @@ Function FillCanopyGaps(strTransectID As String) As Integer
     Dim strFieldName As String
 
     strSQL = "Select * FROM tbl_Canopy_Gaps WHERE Transect_ID = '" & strTransectID & "' ORDER BY Gap_ID"
-    Set db = CurrentDb
+    Set db = CurrDb
   ' Get the records for this transect
     Set Gaps = db.OpenRecordset(strSQL)
     If Gaps.EOF Then
@@ -346,6 +353,8 @@ End Function
 ' Revisions:
 '   RD  -  3/2011   - initial version
 '   BLC - 8/11/2015 - defined intField1, intField2 (integer), updated error handler/documentation
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Function UpdateCanopyGaps(strTransectID As String, strField As String) As Integer
     On Error GoTo Err_Handler
@@ -422,7 +431,7 @@ Function UpdateCanopyGaps(strTransectID As String, strField As String) As Intege
         UpdateCanopyGaps = 1  ' Indicate no update.
         GoTo Exit_Function
       End If
-      Set db = CurrentDb
+      Set db = CurrDb
       Set NewGap = db.OpenRecordset("tbl_Canopy_Gaps")
         NewGap.AddNew
         NewGap!Gap_ID = intField1
@@ -438,7 +447,7 @@ Function UpdateCanopyGaps(strTransectID As String, strField As String) As Intege
         UpdateCanopyGaps = 0  ' Indicate OK.
     Else   ' Update routines.
       strSQL = "Select * FROM tbl_Canopy_Gaps WHERE Transect_ID = '" & strTransectID & "' AND Gap_ID = " & intField1
-      Set db = CurrentDb
+      Set db = CurrDb
       Set Gaps = db.OpenRecordset(strSQL)
       Gaps.MoveFirst
       Gaps.Edit

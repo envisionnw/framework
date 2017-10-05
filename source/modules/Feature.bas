@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        Feature
 ' Level:        Framework class
-' Version:      1.02
+' Version:      1.03
 '
 ' Description:  Feature object related properties, events, functions & procedures
 '
@@ -26,6 +26,8 @@ Option Explicit
 '               --------------- Reference Library ------------------
 '               BLC - 9/21/2017  - 1.02 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
+'               BLC - 10/4/2017 - 1.03 - switched CurrentDb to CurrDb property to avoid
+'                                       multiple open connections
 ' =================================
 
 '---------------------
@@ -242,20 +244,6 @@ End Sub
 Public Sub SaveToDb(Optional IsUpdate As Boolean = False)
 On Error GoTo Err_Handler
     
-'    Dim strSQL As String
-'    Dim db As DAO.Database
-'    Dim rs As DAO.Recordset
-'
-'    Set db = CurrentDb
-'
-'    'events must have: start date, site ID, location ID, protocol ID
-'    strSQL = "INSERT INTO Feature(Location_ID, Feature, FeatureDescription, FeatureDirections) VALUES " _
-'                & "(" & Me.LocationID & ",'" & Me.Name & "','" _
-'                & Me.Description & "','" & Me.Directions & "');"
-'
-'    db.Execute strSQL, dbFailOnError
-'    Me.ID = db.OpenRecordset("SELECT @@IDENTITY")(0)
-
     Dim Template As String
     
     Template = "i_feature"
@@ -276,7 +264,6 @@ On Error GoTo Err_Handler
         
         .ID = SetRecord(Template, Params)
     End With
-
 
 Exit_Handler:
     Exit Sub

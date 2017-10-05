@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        AppComment
 ' Level:        Framework class
-' Version:      1.02
+' Version:      1.03
 '
 ' Description:  Comment object related properties, events, functions & procedures
 '
@@ -24,6 +24,7 @@ Option Explicit
 '               --------------- Reference Library ------------------
 '               BLC - 9/19/2017  - 1.02 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
+'               BLC - 10/4/2017 - 1.03 - SaveToDb() code cleanup
 ' =================================
 
 '---------------------
@@ -238,7 +239,7 @@ On Error GoTo Err_Handler
 '    Dim rs As DAO.Recordset
 '    Dim strSQL As String
 '
-'    Set db = CurrentDb
+'    Set db = CurrDb
 '    Set rs = db.OpenRecordset("Comment")
 '
 '    With rs

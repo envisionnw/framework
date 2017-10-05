@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        VegPlot
 ' Level:        Framework class
-' Version:      1.03
+' Version:      1.04
 '
 ' Description:  VegPlot object related properties, events, functions & procedures
 '
@@ -29,6 +29,7 @@ Option Explicit
 '               --------------- Reference Library ------------------
 '               BLC - 9/21/2017  - 1.03 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
+'               BLC, 10/4/2017 - 1.04 - SaveToDb() code cleaup
 ' =================================
 
 '---------------------
@@ -384,31 +385,6 @@ End Sub
 Public Sub SaveToDb(Optional IsUpdate As Boolean = False)
 On Error GoTo Err_Handler
     
-'    Dim strSQL As String
-'    Dim db As DAO.Database
-'    Dim rs As DAO.Recordset
-'
-'    Set db = CurrentDb
-'
-'    'record VegPlots must have:
-'    strSQL = "INSERT INTO VegPlot(Event_ID, Site_ID, Feature_ID, " _
-'                & "VegTransect_ID, PlotNumber, PlotDistance_m, " _
-'                & "ModalSedimentSize, PercentFine, PercentWater, " _
-'                & "UnderstoryRootedPctCover, PlotDensity, NoCanopyVeg, " _
-'                & "NoRootedVeg, HasSocialTrail, FilamentousAlgae, " _
-'                & "NoIndicatorSpecies) VALUES " _
-'                & "(" & Me.EventID & "," & Me.SiteID & "," _
-'                & Me.FeatureID & "," & Me.VegTransectID & "," _
-'                & Me.PlotNumber & "," & Me.PlotDistance & ",'" _
-'                & Me.ModalSedimentSize & "'," & Me.PercentFines & "," _
-'                & Me.PercentWater & "," & Me.UnderstoryRootedPctCover & "," _
-'                & Me.PlotDensity & "," & Me.NoCanopyVeg & "," _
-'                & Me.NoRootedVeg & "," & Me.HasSocialTrail & "," _
-'                & Me.FilamentousAlgae & "," & Me.NoIndicatorSpecies & ");"
-'
-'    db.Execute strSQL, dbFailOnError
-'    Me.ID = db.OpenRecordset("SELECT @@IDENTITY")(0)
-
     Dim Template As String
     
     Template = "i_vegplot"

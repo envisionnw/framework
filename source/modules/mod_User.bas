@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_User
 ' Level:        Framework module
-' Version:      1.11
+' Version:      1.12
 ' Description:  Access related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, May 2014
@@ -21,10 +21,12 @@ Option Explicit
 '               BLC, 9/26/2016 - 1.09 - adjusted to use GetRecords() vs. GetTemplate()
 '               BLC, 10/5/2016 - 1.10 - revised to set UserAccessLevelID TempVar
 ' ------------------------------------------------------------------------------
-'                               BLC, 8/23/2017 - 1.11 - merge prior work:
+'               BLC, 8/23/2017 - 1.11 - merge prior work:
 '                               BLC, 6/6/2017  - 1.06 - revised UserName() to accommodate TestUser
 '                               BLC, 6/15/2017 - 1.07 - revised to user Contact_Access vs. tsys_User_Roles
 ' ------------------------------------------------------------------------------
+'               BLC, 10/4/2017 - 1.12 - switched CurrentDb to CurrDb property to avoid
+'                                       multiple open connections
 ' =================================
 
 ' ---------------------------------
@@ -60,6 +62,8 @@ Option Explicit
 '                               BLC, 8/23/2017 - 1.11 - merge prior work:
 '                               BLC, 6/15/2016 - revised to reference Contact_Access vs. tsys_User_Roles
 ' ------------------------------------------------------------------------------
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                multiple open connections
 ' ---------------------------------
 Public Function getDbUserAccess() As String
 On Error GoTo Err_Handler
@@ -76,12 +80,12 @@ Dim rs As DAO.Recordset
 'Debug.Print strSQL
 '        'fetch User role & set UserAccessLevel
 '        'Set rs = dbCurrent.OpenRecordset(strSQL)
-'        Set rs = CurrentDb.OpenRecordset(strSQL)
+'        Set rs = CurrDb.OpenRecordset(strSQL)
         
         Dim db As DAO.Database
         Dim qdf As DAO.QueryDef
         
-        Set db = CurrentDb
+        Set db = CurrDb
         
         With db
             Set qdf = .QueryDefs("usys_temp_qdf")
@@ -161,6 +165,8 @@ End Function
 '               BLC, 6/30/2015 - updated cmd button prefixes to btn
 '               BLC, 4/4/2016  - changed Exit_Procedure > Exit_Handler
 '               BLC, 6/30/2016 - revised to use GetTemplate()
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                multiple open connections
 ' ---------------------------------
 Public Sub setUserAccess(frm As Form, Optional flag As String)
 On Error GoTo Err_Handler
@@ -219,9 +225,9 @@ Debug.Print "useraccesslvl=" & TempVars("UserAccessLevel")
                                 '!tbxAppMode.Enabled = False
                                 '!tbxAppMode.Locked = True
                             End With
-                            CurrentDb.Properties("AllowFullMenus") = True
-                            CurrentDb.Properties("AllowShortcutMenus") = True
-                            CurrentDb.Properties("AllowBuiltInToolbars") = True
+                            CurrDb.Properties("AllowFullMenus") = True
+                            CurrDb.Properties("AllowShortcutMenus") = True
+                            CurrDb.Properties("AllowBuiltInToolbars") = True
                         End If
                     Case "DbAdmin", _
                          "fsub_DbAdmin", "frm_Data_Gateway", "frm_Edit_Log", "frm_Lookups", "frm_QA_Tool", _
@@ -260,9 +266,9 @@ Debug.Print "useraccesslvl=" & TempVars("UserAccessLevel")
                                 !tbxAppMode = TempVars("UserAccessLevel")
                                 '!tbxAppMode.Locked = True
                             End With
-                            CurrentDb.Properties("AllowFullMenus") = True
-                            CurrentDb.Properties("AllowShortcutMenus") = True
-                            CurrentDb.Properties("AllowBuiltInToolbars") = True
+                            CurrDb.Properties("AllowFullMenus") = True
+                            CurrDb.Properties("AllowShortcutMenus") = True
+                            CurrDb.Properties("AllowBuiltInToolbars") = True
                         End If
                     Case "DbAdmin", _
                         "fsub_DbAdmin", "frm_Data_Gateway", "frm_Edit_Log", "frm_Lookups", "frm_Data_Browser"
@@ -305,9 +311,9 @@ Debug.Print "useraccesslvl=" & TempVars("UserAccessLevel")
                             '!tbxAppMode.Locked = True
                         End With
                         ' Turn off options (only apparent after the next time app is opened)
-                        CurrentDb.Properties("AllowFullMenus") = False
-                        CurrentDb.Properties("AllowShortcutMenus") = False
-                        CurrentDb.Properties("AllowBuiltInToolbars") = False
+                        CurrDb.Properties("AllowFullMenus") = False
+                        CurrDb.Properties("AllowShortcutMenus") = False
+                        CurrDb.Properties("AllowBuiltInToolbars") = False
                     Case "frm_Data_Gateway"
                         .optgCertifiedMode.Enabled = False    ' no cert data to minimize confusion
                         .optgScheduledMode.Enabled = True     ' user can enter data for unscheduled locs
@@ -405,9 +411,9 @@ Debug.Print "useraccesslvl=" & TempVars("UserAccessLevel")
                         If flag = "update" Then
                             !fsub_DbAdmin.Form!btnEditLog.Enabled = True
                             ' Turn off options (only apparent after the next time app is opened)
-                            CurrentDb.Properties("AllowFullMenus") = False
-                            CurrentDb.Properties("AllowShortcutMenus") = False
-                            CurrentDb.Properties("AllowBuiltInToolbars") = False
+                            CurrDb.Properties("AllowFullMenus") = False
+                            CurrDb.Properties("AllowShortcutMenus") = False
+                            CurrDb.Properties("AllowBuiltInToolbars") = False
                         End If
                     Case "frm_Set_Defaults"
                         .tbxTimeframe.Locked = True
@@ -661,6 +667,8 @@ End Sub
 ' Revisions:    BLC, 8/8/2014 - initial version
 '               BLC, 6/12/2015 - replaced TempVars.item("... with TempVars("...
 '               BLC, 6/30/2016 - revised to use SWITCHBOARD vs. frm_Switchboard and GetTemplate()
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                 multiple open connections
 ' ---------------------------------
 Public Sub logUserAction(frm As Form)
 On Error GoTo Err_Handler
@@ -681,7 +689,7 @@ Dim strSQL As String
                     Dim db As DAO.Database
                     Dim qdf As DAO.QueryDef
                     
-                    Set db = CurrentDb
+                    Set db = CurrDb
                     
                     With db
                         Set qdf = .QueryDefs("usys_temp_qdf")
@@ -840,7 +848,7 @@ Public Function AccessID(AccessLevel As String) As Long
     TempVars.Add "TempLvl", LCase(AccessLevel)
     'strSQL = GetTemplate("s_access_level", "lvl" & PARAM_SEPARATOR & LCase(AccessLevel))
     
-    Set rs = GetRecords("s_access_lvl") 'CurrentDb.OpenRecordset(strSQL, dbOpenSnapshot)
+    Set rs = GetRecords("s_access_lvl") 'CurrDb.OpenRecordset(strSQL, dbOpenSnapshot)
     
     If rs.RecordCount > 0 Then
         AccessID = rs("ID")

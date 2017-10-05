@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        InvasiveCoverSpecies
 ' Level:        Application class
-' Version:      1.02
+' Version:      1.03
 '
 ' Description:  Invasive cover species object related properties, events, functions & procedures for UI display
 '
@@ -26,6 +26,8 @@ Option Explicit
 '               --------------- Reference Library ------------------
 '               BLC - 9/21/2017  - 1.02 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
+'               BLC - 10/4/2017 - 1.03 - switched CurrentDb to CurrDb property to avoid
+'                                       multiple open connections
 ' =================================
 
 '---------------------
@@ -636,6 +638,8 @@ End Sub
 ' Adapted:      -
 ' Revisions:
 '   BLC, 7/18/2017 - initial version
+'   BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 '---------------------------------------------------------------------------------------
 Public Sub AddSpeciesCover()
 On Error GoTo Err_Handler
@@ -657,7 +661,7 @@ On Error GoTo Err_Handler
         
         'retrieve the ID (requires MAX() vs. SELECT @@Identity
         'since each CurrentDb is a new db object & won't see the last insert
-        With CurrentDb
+        With CurrDb
             Me.SpeciesCoverID = .OpenRecordset("SELECT MAX(ID) FROM SpeciesCover").Fields(0)
         End With
 End With
@@ -731,6 +735,8 @@ End Sub
 ' Adapted:      -
 ' Revisions:
 '   BLC, 7/18/2017 - initial version
+'   BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 '---------------------------------------------------------------------------------------
 Public Sub DeleteSpeciesCover()
 On Error GoTo Err_Handler
@@ -753,7 +759,7 @@ On Error GoTo Err_Handler
         'retrieve the species cover ID for the last inserted record
         'cannot use @@Identity here since it requires using same CurrentDb object
         '@ time CurrentDb is called, that's a new one >> use MAX(ID) instead
-'        With CurrentDb
+'        With CurrDb
 '            Me.SpeciesCoverID = .OpenRecordset("SELECT MAX(ID) FROM SpeciesCover").Fields(0)
 '        End With
     End With

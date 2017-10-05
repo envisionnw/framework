@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        UnderstoryCoverSpecies
 ' Level:        Framework class
-' Version:      1.04
+' Version:      1.05
 '
 ' Description:  UnderstoryCover species object related properties, events, functions & procedures for UI display
 '
@@ -28,6 +28,7 @@ Option Explicit
 '               --------------- Reference Library ------------------
 '               BLC - 9/21/2017  - 1.04 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
+'               BLC - 10/4/2017 - 1.05 - SaveToDb() code cleanup
 ' =================================
 
 '---------------------
@@ -503,24 +504,6 @@ End Sub
 Public Sub SaveToDb(Optional IsUpdate As Boolean = False)
 On Error GoTo Err_Handler
     
-'    Dim strSQL As String
-'    Dim db As DAO.Database
-'    Dim rs As DAO.Recordset
-'
-'    Set db = CurrentDb
-'
-'    'record actions must have:
-''    strSQL = "INSERT INTO UnderstorySpecies(VegPlot_ID, Master_PLANT_Code, PercentCover, IsSeedling) VALUES " _
-''                & "(" & Me.VegPlotID & ",'" & Me.MasterPlantCode & "'," _
-''                & Me.PercentCover & "," & Me.IsSeedling & ");"
-'    strSQL = GetTemplate("i_understory_species", _
-'                "vegplotID" & PARAM_SEPARATOR & Me.VegPlotID & _
-'                "|masterplantcode" & PARAM_SEPARATOR & Me.MasterPlantCode & _
-'                "|pctcover" & PARAM_SEPARATOR & Me.PercentCover & _
-'                "|isseedling" & PARAM_SEPARATOR & Me.IsSeedling)
-'    db.Execute strSQL, dbFailOnError
-'    Me.ID = db.OpenRecordset("SELECT @@IDENTITY")(0)
-
     Dim Template As String
     
     Template = "i_understory_species"

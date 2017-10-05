@@ -3,7 +3,7 @@ Option Explicit
 
 ' =================================
 ' MODULE:       mod_QA
-' VERSION:      1.03
+' VERSION:      1.04
 ' Description:  QA related properties, functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, 8/22/2014
@@ -11,6 +11,8 @@ Option Explicit
 '               BLC, 6/12/2015 - 1.01 - replaced TempVars.item(... with TempVars("...
 '               BLC, 4/4/2016  - 1.02 - changed Exit_Procedure/Exit_Function > Exit_Handler
 '               BLC, 6/5/2016  - 1.03 - renamed frm_Progress_Meter to ProgressMeter
+'               BLC, 10/4/2017 - 1.04 - switched CurrentDb to CurrDb property to avoid
+'                                       multiple open connections
 ' =================================
 
 ' ---------------------------------
@@ -97,6 +99,8 @@ Option Explicit
 '               BLC, 6/12/2015 - replaced TempVars.item("... with TempVars("...
 '               BLC, 4/4/2016  - changed Exit_Function > Exit_Handler, dbCurrent to CurrentDb
 '               BLC, 6/5/2016  - renamed frm_Progress_Meter to ProgressMeter
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                 multiple open connections
 ' ---------------------------------
 Public Function UpdateQAResults(Optional blnUpdateAll As Boolean = True, _
     Optional strSingleQName As String, Optional blnCreateNew As Boolean = False)
@@ -184,7 +188,7 @@ Public Function UpdateQAResults(Optional blnUpdateAll As Boolean = True, _
                     " AS Data_scope, """ & strQType & _
                     """ AS Query_type, 0 AS Is_done;"
                 ' Run the SQL code
-                CurrentDb.Execute strSQL
+                CurrDb.Execute strSQL
             End If
 
             ' Run the following query if all queries are being updated, or if the current
@@ -242,7 +246,7 @@ Public Function UpdateQAResults(Optional blnUpdateAll As Boolean = True, _
                         """) AND ((tbl_QA_Results.Data_scope)=" & intScope & "));"
                 End If
                 ' Run the SQL code
-                CurrentDb.Execute strSQL
+                CurrDb.Execute strSQL
             End If
         End If
     Next qdf

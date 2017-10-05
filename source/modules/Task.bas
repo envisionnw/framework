@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        Task
 ' Level:        Framework class
-' Version:      1.02
+' Version:      1.03
 '
 ' Description:  Task object related properties, events, functions & procedures
 '
@@ -25,6 +25,8 @@ Option Explicit
 '               --------------- Reference Library ------------------
 '               BLC - 9/21/2017  - 1.02 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
+'               BLC - 10/4/2017 - 1.03 - switched CurrentDb to CurrDb property to avoid
+'                                       multiple open connections
 ' =================================
 
 '    [ID] [smallint] IDENTITY(1,1) NOT NULL,
@@ -313,6 +315,8 @@ End Sub
 ' Adapted:      -
 ' Revisions:
 '   BLC - 11/3/2015 - initial version
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Sub AddTask()
 On Error GoTo Err_Handler
@@ -325,7 +329,7 @@ On Error GoTo Err_Handler
 '    Dim rs As DAO.Recordset
 '    Dim strSQL As String
 '
-'    Set db = CurrentDb
+'    Set db = CurrDb
 '    Set rs = db.OpenRecordset("Task")
 '
 '    With rs

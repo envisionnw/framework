@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_SQL
 ' Level:        Framework module
-' VERSION:      1.07
+' VERSION:      1.08
 ' Description:  Database/SQL properties, functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, 7/24/2014
@@ -19,6 +19,8 @@ Option Explicit
 ' --------------------------------------------------------------------
 '               BLC, 4/18/2017 - 1.06 - adjusted for invasives
 '               BLC, 4/28/2017 - 1.07 - added SQL_encode(), GetParamsFromSQL() moved from mod_Db
+'               BLC, 10/4/2017 - 1.08 - switched CurrentDb to CurrDb property to avoid
+'                                       multiple open connections
 ' =================================
 
 ' ---------------------------------
@@ -174,12 +176,14 @@ End Function
 '   BLC, 5/26/2015 - moved from mod_db_Templates to mod_SQL, added error handling
 '   ------------------------------------------------------
 '   BLC, 6/30/2015 - combined with GetDbQuerySQL (similar functions)
+'   BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Private Function GetQuerySQL(strQueryName As String) As String
 Dim qdf As DAO.QueryDef
  
     'fetch query
-    Set qdf = CurrentDb.QueryDefs(strQueryName)
+    Set qdf = CurrDb.QueryDefs(strQueryName)
     
     'return SQL
     GetQuerySQL = qdf.SQL
@@ -208,6 +212,8 @@ End Function
 ' Source/date:  Bonnie Campbell, June 2014
 ' Revisions:    BLC, 6/16/2014 - initial version
 '               BLC, 5/26/2015 - moved from mod_db_Templates to mod_SQL, added error handling
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                multiple open connections
 ' ---------------------------------
 Public Sub GetSQLTemplates(Optional strVersion As String = "")
 On Error GoTo Err_Handler
@@ -226,7 +232,7 @@ On Error GoTo Err_Handler
     'sql
     strSQL = "SELECT * FROM tsys_Db_Templates" & strSQLWhere
     
-    Set db = CurrentDb
+    Set db = CurrDb
     Set rst = db.OpenRecordset(strSQL)
     
     'handle no records
@@ -605,6 +611,8 @@ End Function
 ' Revisions:
 '   BLC - 4/8/2015  - initial version
 '   BLC - 5/1/2015 - integrated into Invasives Reporting tool
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Function Coalsce(strSQL As String, strDelim, ParamArray NameList() As Variant)
 On Error GoTo Err_Handler
@@ -613,7 +621,7 @@ Dim db As Database
 Dim rs As DAO.Recordset
 Dim strList As String
 
-    Set db = CurrentDb
+    Set db = CurrDb
 
     If strSQL <> "" Then
         Set rs = db.OpenRecordset(strSQL)

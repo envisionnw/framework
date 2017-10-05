@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        VegWalkSpecies
 ' Level:        Framework class
-' Version:      1.02
+' Version:      1.03
 '
 ' Description:  VegWalk species object related properties, events, functions & procedures for UI display
 '
@@ -26,6 +26,7 @@ Option Explicit
 '               --------------- Reference Library ------------------
 '               BLC - 9/21/2017  - 1.02 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
+'               BLC - 10/4/2017 - 1.03 - SaveToDb() code cleanup
 ' =================================
 
 '---------------------
@@ -485,20 +486,6 @@ End Sub
 '---------------------------------------------------------------------------------------
 Public Sub SaveToDb(Optional IsUpdate As Boolean = False)
 On Error GoTo Err_Handler
-    
-'    Dim strSQL As String
-'    Dim db As DAO.Database
-'    Dim rs As DAO.Recordset
-'
-'    Set db = CurrentDb
-'
-'    'record actions must have:
-'    strSQL = "INSERT INTO VegWalkSpecies(VegWalk_ID, Master_PLANT_Code, IsSeedling) VALUES " _
-'                & "(" & Me.VegWalkID & ",'" & Me.MasterPlantCode & "'," _
-'                & Me.IsSeedling & ");"
-'
-'    db.Execute strSQL, dbFailOnError
-'    Me.ID = db.OpenRecordset("SELECT @@IDENTITY")(0)
     
     Dim Template As String
     

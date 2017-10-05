@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Treeview
 ' Level:        Framework module
-' Version:      1.00
+' Version:      1.02
 ' Description:  treeview functions & procedures
 '
 ' Requires:     Microsoft Common Controls 6.0 (SP6) Library reference
@@ -14,6 +14,8 @@ Option Explicit
 ' Revisions:    BLC, 8/30/2016 - 1.00 - initial version
 '               BLC, 2/17/2017 - 1.01 - added SelectedNode for public reference,
 '                                       moved MoveToNode() from Tree form
+'               BLC, 10/4/2017 - 1.02 - switched CurrentDb to CurrDb property to avoid
+'                                       multiple open connections
 ' =================================
 
 '---------------------
@@ -56,6 +58,8 @@ Public SelectedNode As MSComctlLib.Node
 ' Revisions:
 '   BLC - 7/10/2015 - initial version
 '   BLC - 8/31/2016 - load from query or table
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Sub LoadTree(frm As Form, tvw As Treeview, Template As String, Params As Variant)
 On Error GoTo Err_Handler
@@ -73,7 +77,7 @@ On Error GoTo Err_Handler
     strPhotoPath = ""
 
     'retrieve data
-    Set db = CurrentDb
+    Set db = CurrDb
     
     With db
         Set qdf = .QueryDefs("usys_temp_qdf")

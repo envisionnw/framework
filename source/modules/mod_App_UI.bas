@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_UI
 ' Level:        Application module
-' Version:      1.23
+' Version:      1.24
 ' Description:  Application User Interface related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
@@ -64,6 +64,8 @@ Option Explicit
 '                   BLC, 9/21/2015 - 1.05 - added park species list, park summary report
 ' --------------------------------------------------------------------
 '               BLC, 9/29/2017 - 1.23 - added logger case
+'               BLC, 10/4/2017 - 1.24 - switched CurrentDb to CurrDb property to avoid
+'                                       multiple open connections
 ' =================================
 
 ' ---------------------------------
@@ -919,6 +921,8 @@ End Sub
 ' References:
 ' Source/date:  Bonnie Campbell, August 27, 2015 - for NCPN tools
 ' Revisions:    BLC, 8/27/2015 - initial version
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                 multiple open connections
 ' =================================
 Public Sub RollupReportbyPark()
 On Error GoTo Err_Handler
@@ -933,16 +937,15 @@ On Error GoTo Err_Handler
     
     Dim strPrevParkPlotSpecies As String
     
-    
-    Set rs = CurrentDb.OpenRecordset("temp_Sp_Rpt_by_Park_Complete")
+    Set rs = CurrDb.OpenRecordset("temp_Sp_Rpt_by_Park_Complete")
 
     'remove existing table
     If DCount("[Name]", "MSysObjects", "[Name] = 'temp_Sp_Rpt_by_Park_Rollup'") = 1 Then _
-            CurrentDb.TableDefs.Delete "temp_Sp_Rpt_by_Park_Rollup"
+            CurrDb.TableDefs.Delete "temp_Sp_Rpt_by_Park_Rollup"
     
     'create empty table
     CreateRollupTable
-    Set rsTemp = CurrentDb.OpenRecordset("temp_Sp_Rpt_by_Park_Rollup")
+    Set rsTemp = CurrDb.OpenRecordset("temp_Sp_Rpt_by_Park_Rollup")
     
     'default
     strParkPlotSpecies = ""
@@ -966,7 +969,7 @@ On Error GoTo Err_Handler
             If Not iCount > 0 Then
               'determine how many have the same ParkPlotSpecies
               strSQL = "SELECT COUNT(Year) AS NumRecords FROM temp_Sp_Rpt_by_Park_Complete WHERE ParkPlotSpecies = '" & strParkPlotSpecies & "';"
-              Set rsCount = CurrentDb.OpenRecordset(strSQL, dbOpenSnapshot)
+              Set rsCount = CurrDb.OpenRecordset(strSQL, dbOpenSnapshot)
               iCount = rsCount!NumRecords
             End If
           
@@ -1022,13 +1025,15 @@ End Sub
 ' References:
 ' Source/date:  Bonnie Campbell, August 27, 2015 - for NCPN tools
 ' Revisions:    BLC, 8/27/2015 - initial version
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                 multiple open connections
 ' =================================
 Public Sub CreateRollupTable()
 On Error GoTo Err_Handler
 
     Dim tdf As DAO.TableDef
     
-    Set tdf = CurrentDb.CreateTableDef("temp_Sp_Rpt_by_Park_Rollup")
+    Set tdf = CurrDb.CreateTableDef("temp_Sp_Rpt_by_Park_Rollup")
     
     'add the new record
     With tdf
@@ -1041,7 +1046,7 @@ On Error GoTo Err_Handler
         .Fields.Append .CreateField("ParkPlot", dbText)
     End With
 
-    CurrentDb.TableDefs.Append tdf
+    CurrDb.TableDefs.Append tdf
     
 Exit_Sub:
     Exit Sub
@@ -1070,6 +1075,8 @@ End Sub
 '   BLC, 2/9/2016  - initial version
 '   BLC, 2/11/2016 - added level to accommodate both event & transect level identifiers
 '   BLC, 3/18/2016 - added 1000hr fuel A-D to handle no fuels reported in comments for transects
+'   BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Function GetNoDataCollected(levelID As String, level As String) As Scripting.Dictionary
 On Error GoTo Err_Handler
@@ -1098,7 +1105,7 @@ On Error GoTo Err_Handler
     
     strSQL = "SELECT SampleType FROM NoDataCollected WHERE ID = '" & levelID & "' AND SampleLevel = '" & level & "';"
     
-    Set rs = CurrentDb.OpenRecordset(strSQL)
+    Set rs = CurrDb.OpenRecordset(strSQL)
     
     'rs.MoveFirst
     
@@ -1590,6 +1597,8 @@ End Sub
 '   BLC - 9/18/2017 - added back in from big rivers: Location, ModWentworth, SetDatasheetDefaults,
 '                     Site, Tagline, Task, Transducer, VegPlot, VegTransect
 '   BLC - 9/29/2017 - added Logger case
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Sub PopulateForm(frm As Form, ID As Long)
 On Error GoTo Err_Handler
@@ -1604,7 +1613,7 @@ On Error GoTo Err_Handler
             Case "Contact"
                 'requires Contact & Contact_Access data
                 Dim qdf As DAO.QueryDef
-                CurrentDb.QueryDefs("usys_temp_qdf").SQL = GetTemplate("s_contact_access")
+                CurrDb.QueryDefs("usys_temp_qdf").SQL = GetTemplate("s_contact_access")
                 
                 strTable = "usys_temp_qdf"
                 'set form fields to record fields as datasource
@@ -1763,6 +1772,8 @@ End Sub
 ' Adapted:      -
 ' Revisions:
 '   BLC - 12/8/2016 - initial version
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 'Public Sub PopulateCombobox(ctrl As ComboBox)
 Public Function PopulateCSVFields(ctrl As Control) 'frm As Form) 'strName As String) 'ByRef ctrl As ComboBox)
@@ -1790,7 +1801,7 @@ On Error GoTo Err_Handler
     Dim aryRecord() As String
     Dim i As Integer
     
-    Set rs2 = CurrentDb.OpenRecordset("usys_temp_rs2", dbOpenDynaset)
+    Set rs2 = CurrDb.OpenRecordset("usys_temp_rs2", dbOpenDynaset)
     
     'add the "None" value
     rs2.AddNew

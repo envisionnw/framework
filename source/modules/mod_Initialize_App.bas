@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Initialize_App
 ' Level:        Framework module
-' Version:      1.05
+' Version:      1.07
 ' Description:  Standard module for setting initial app & database values/settings & global variables
 ' Source/date:  Bonnie Campbell, July 2014
 ' Adapted:      -
@@ -33,6 +33,8 @@ Option Explicit
 '                                           to frm!fsub_DbAdmin.Form!btnBackup.visible, added existance
 '                                           check for lbxLinkedDbs control
 '               -----------------------------------------------------------------------
+'               BLC, 10/4/2017 - 1.07 - switched CurrentDb to CurrDb property to avoid
+'                                       multiple open connections
 ' =================================
 ' HISTORY:
 ' MERGED MODULE: mod_Global_Variables (merged with mod_Initialize_App)
@@ -163,6 +165,8 @@ End Sub
 ' Adapted:      -
 ' Revisions:    BLC, 7/31/2014 - initial version
 '               BLC, 6/12/2015 - replaced TempVars.item("... with TempVars("...
+'               BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                 multiple open connections
 ' ---------------------------------
 Public Sub initApp()
 On Error GoTo Err_Handler:
@@ -179,9 +183,9 @@ On Error GoTo Err_Handler:
 
     If DEV_MODE = False Then
         ' Turn off options (only apparent after the next time app is opened)
-        CurrentDb.Properties("AllowFullMenus") = False
-        CurrentDb.Properties("AllowShortcutMenus") = False
-        CurrentDb.Properties("AllowBuiltInToolbars") = False
+        CurrDb.Properties("AllowFullMenus") = False
+        CurrDb.Properties("AllowShortcutMenus") = False
+        CurrDb.Properties("AllowBuiltInToolbars") = False
     End If
     
     'Check for missing tables

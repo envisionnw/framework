@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        RecordAction
 ' Level:        Framework class
-' Version:      1.03
+' Version:      1.04
 '
 ' Description:  Record action object related properties, events, functions & procedures
 '
@@ -27,6 +27,7 @@ Option Explicit
 '               --------------- Reference Library ------------------
 '               BLC - 9/21/2017  - 1.03 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
+'               BLC - 10/4/2017 - 1.04 - SaveToDb() code cleanup
 ' =================================
 
 '---------------------
@@ -265,32 +266,6 @@ End Sub
 '---------------------------------------------------------------------------------------
 Public Sub SaveToDb(Optional IsUpdate As Boolean = False)
 On Error GoTo Err_Handler
-    
-'    Dim strSQL As String
-'    Dim db As DAO.Database
-'    Dim rs As DAO.Recordset
-'
-'    Set db = CurrentDb
-'
-'    'record actions must have:
-''    strSQL = "INSERT INTO RecordAction(ReferenceType, Reference_ID, Contact_ID, Action, ActionDate) VALUES " _
-''                & "('" & Me.RefTable & "'," & Me.RefID & "," _
-''                & Me.ID & ",'" & Me.action & "', Now() );"
-'
-'    strSQL = GetTemplate("i_action_record", _
-'                         "RefType" & PARAM_SEPARATOR & Me.RefTable _
-'                        & "|RefID" & PARAM_SEPARATOR & Me.RefID _
-'                        & "|ID" & PARAM_SEPARATOR & Me.ID _
-'                        & "|action" & PARAM_SEPARATOR & Me.action _
-'                        & "|actiondate" & PARAM_SEPARATOR & "Now()")
-'
-''********************
-''  FIX: Me.RefTable & actiondate values
-''********************
-'
-'
-'    db.Execute strSQL, dbFailOnError
-'    Me.ID = db.OpenRecordset("SELECT @@IDENTITY")(0)
 
     Dim Params(0 To 4) As Variant
 

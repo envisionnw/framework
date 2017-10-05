@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        Species
 ' Level:        Framework class
-' Version:      1.02
+' Version:      1.03
 '
 ' Description:  Species object related properties, events, functions & procedures for UI display
 '
@@ -25,6 +25,8 @@ Option Explicit
 '               --------------- Reference Library ------------------
 '               BLC - 9/21/2017  - 1.02 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
+'               BLC - 10/4/2017 - 1.03 - switched CurrentDb to CurrDb property to avoid
+'                                        multiple open connections
 ' =================================
 
 '---------------------
@@ -433,6 +435,8 @@ End Sub
 ' Revisions:
 '   BLC, 4/18/2016 - initial version
 '   BLC, 6/11/2016 - changed to GetTemplate()
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 '---------------------------------------------------------------------------------------
 Public Sub Init(LUCode As String)
 On Error GoTo Err_Handler
@@ -441,7 +445,7 @@ On Error GoTo Err_Handler
     Dim db As DAO.Database
     Dim rs As DAO.Recordset
     
-    Set db = CurrentDb
+    Set db = CurrDb
     
     'species must have:
 '    strSQL = "SELECT DISTINCT TOP 1 Master_Family, Master_PLANT_Code, Master_Species, " _

@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        Photo
 ' Level:        Framework class
-' Version:      1.06
+' Version:      1.07
 '
 ' Description:  Photo object related properties, events, functions & procedures
 '
@@ -30,6 +30,7 @@ Option Explicit
 '               --------------- Reference Library ------------------
 '               BLC - 9/21/2017  - 1.06 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
+'               BLC - 10/4/2017 - 1.07 - SaveToDb code cleanup
 ' =================================
 
 '    [ID] [smallint] IDENTITY(1,1) NOT NULL,
@@ -444,48 +445,6 @@ End Sub
 Public Sub SaveToDb(Optional IsUpdate As Boolean = False)
 On Error GoTo Err_Handler
     
-'    Dim strSQL As String
-'    Dim db As DAO.Database
-'    Dim rs As DAO.Recordset
-'
-'    Set db = CurrentDb
-'
-'    '& "PhotogLocationDesc, PhotogOrientation, SurveyPoint_ID, " _
-'    '& Me.PhotogLocationDescr & "','" _
-'
-'    'photos must have:
-''    strSQL = "INSERT INTO Photo(PhotoDate, PhotoType, Photographer_ID, " _
-''                & "DigitalFilename, NCPNImageID, PhotogFacing, PhotogLocation, " _
-''                & "PhotogOrientation, SurveyPoint_ID, " _
-''                & "IsCloseup, InActive, IsSkipped, IsReplacement, " _
-''                & "LastPhotoUpdate, CreateDate, CreatedBy_ID, " _
-''                & "LastModified, LastModifiedBy_ID) VALUES " _
-''                & "(#" & Me.PhotoDate & "#,'" & Me.PhotoType & "'," _
-''                & Me.PhotographerID & ",'" & Me.Filename & "','" _
-''                & Me.NCPNImageID & "','" & Me.DirectionFacing & "','" _
-''                & Me.PhotogLocation & "','" _
-''                & Me.PhotogOrientation & "'," & Me.SurveyPtID & "," _
-''                & Me.IsCloseup & "," & Me.IsInActive & "," & Me.IsSkipped & "," _
-''                & Me.IsReplacement & ",#" & Me.LastPhotoUpdate & "#,# Now()#," _
-''                & Me.CreatedByID & ",# Now()#, " & Me.LastModifiedByID & ");"
-'
-'    strSQL = "INSERT INTO Photo(PhotoDate, PhotoType, Photographer_ID, " _
-'                & "DigitalFilename, NCPNImageID, PhotogFacing, PhotogLocation, " _
-'                & "" _
-'                & "IsCloseup, InActive, IsSkipped, IsReplacement, " _
-'                & "LastPhotoUpdate, CreateDate, CreatedBy_ID, " _
-'                & "LastModified, LastModifiedBy_ID) VALUES " _
-'                & "(#" & Me.PhotoDate & "#,'" & Me.PhotoType & "'," _
-'                & Me.PhotographerID & ",'" & Me.FileName & "','" _
-'                & Me.NCPNImageID & "','" & Me.DirectionFacing & "','" _
-'                & Me.PhotogLocation & "','" _
-'                & Me.IsCloseup & "," & Me.IsInActive & "," & Me.IsSkipped & "," _
-'                & Me.IsReplacement & ",#" & Me.LastPhotoUpdate & "#,# Now()#," _
-'                & Me.CreatedByID & ",# Now()#, " & Me.LastModifiedByID & ");"
-'
-'    db.Execute strSQL, dbFailOnError
-'    Me.ID = db.OpenRecordset("SELECT @@IDENTITY")(0)
-
     Dim Template As String
     
     Template = "i_photo"

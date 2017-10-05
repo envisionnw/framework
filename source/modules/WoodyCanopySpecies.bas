@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        WoodyCanopySpecies
 ' Level:        Framework class
-' Version:      1.04
+' Version:      1.05
 '
 ' Description:  Woody Canopy cover species object related properties, events, functions & procedures for UI display
 '
@@ -28,6 +28,8 @@ Option Explicit
 '               --------------- Reference Library ------------------
 '               BLC - 9/21/2017  - 1.04 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
+'               BLC - 10/4/2017 - 1.05 - switched CurrentDb to CurrDb property to avoid
+'                                        multiple open connections
 ' =================================
 
 '---------------------
@@ -502,25 +504,6 @@ End Sub
 Public Sub SaveToDb(Optional IsUpdate As Boolean = False)
 On Error GoTo Err_Handler
     
-'    Dim strSQL As String
-'    Dim db As DAO.Database
-'    Dim rs As DAO.Recordset
-'
-'    Set db = CurrentDb
-'
-'    'record actions must have:
-''    strSQL = "INSERT INTO WoodyCanopySpecies(VegPlot_ID, Master_PLANT_Code, PercentCover) VALUES " _
-''                & "(" & Me.VegPlotID & ",'" & Me.MasterPlantCode & "'," _
-''                & Me.PercentCover & ");"
-'    strSQL = GetTemplate("i_cover_species", _
-'                "tbl" & PARAM_SEPARATOR & "WoodyCanopySpecies" & _
-'                "vegplotID" & PARAM_SEPARATOR & Me.VegPlotID & _
-'                "|masterplantcode" & PARAM_SEPARATOR & Me.MasterPlantCode & _
-'                "|pctcover" & PARAM_SEPARATOR & Me.PercentCover)
-'
-'    db.Execute strSQL, dbFailOnError
-'    Me.ID = db.OpenRecordset("SELECT @@IDENTITY")(0)
-
     Dim Template As String
     
     Template = "i_cover_species"

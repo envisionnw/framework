@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Db
 ' Level:        Framework module
-' Version:      1.20
+' Version:      1.22
 ' Description:  Database related functions & subroutines
 ' Requires:     Microsoft Scripting Runtime (scrrun.dll) for Scripting.Dictionary
 '
@@ -52,20 +52,22 @@ Option Explicit
 '                                       tsys_BE_Updates.ID which does not exist
 '               BLC, 6/22/2017 - 1.20 - added SetColumnOrdinalPosition(), CombineTableSQL()
 ' --------------------------------------------------------------------
-'                               BLC, 8/22/2017 - 1.21 - merged prior work:
-'                               Invasives db
-'                               BLC, 4/28/2017 - 1.19 - added Delete_All_Records() moved from mod_Temp,
-'                                                       reorganized sections, moved SQL_encode(), GetParamsFromSQL()
-'                                                       to mod_SQL
-'                                                       moved SetTempVar(), GetTempVarIndex(),
-'                                                       CreateTempTable(), RemoveTempTable(),
-'                                                       CreateTempRecordset(), CreateTempRecords()
-'                                                       to mod_Temp
-'                               BLC, 7/18/2017 - 1.20 - Add RefreshTempTable for updating usys_temp_transect,
+'               BLC, 8/22/2017 - 1.21 - merged prior work:
+'                   Invasives db
+'                       BLC, 4/28/2017 - 1.19 - added Delete_All_Records() moved from mod_Temp,
+'                                               reorganized sections, moved SQL_encode(), GetParamsFromSQL()
+'                                               to mod_SQL
+'                                               moved SetTempVar(), GetTempVarIndex(),
+'                                               CreateTempTable(), RemoveTempTable(),
+'                                               CreateTempRecordset(), CreateTempRecords()
+'                                               to mod_Temp
+'                       BLC, 7/18/2017 - 1.20 - Add RefreshTempTable for updating usys_temp_transect,
 '                                       usys_temp_speciescover & other Temp tables w/ std naming
-'                               Uplands db
-'                              BLC, 8/10/2017 - 1.18  - add OpenAllDatabases(), CurrDb property
+'                   Uplands db
+'                       BLC, 8/10/2017 - 1.18  - add OpenAllDatabases(), CurrDb property
 ' --------------------------------------------------------------------
+'               BLC, 10/4/2017 - 1.22 - switched CurrentDb to CurrDb property to avoid
+'                                       multiple open connections
 ' =================================
 
 ' ---------------------------------
@@ -215,6 +217,8 @@ End Sub
 '               BLC, 6/5/2016  - adapted for Big Rivers App naming revisions (removed field underscores)
 '               BLC, 6/19/2017 - updated SQL for OpenRecordset to properly order by tsys_BE_Updates.Update_ID vs.
 '                                tsys_BE_Updates.ID which does not exist
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                multiple open connections
 ' =================================
 Public Function BEUpdates(Optional ByVal bRunAll As Boolean = True)
     On Error GoTo Err_Handler
@@ -226,7 +230,7 @@ Public Function BEUpdates(Optional ByVal bRunAll As Boolean = True)
     Dim intI As Integer
     Dim strSQL As String
     
-    Set db = CurrentDb
+    Set db = CurrDb
     Set rs = db.OpenRecordset("SELECT tsys_BE_Updates.* FROM tsys_BE_Updates " & _
         "ORDER BY tsys_BE_Updates.ID;", dbOpenDynaset)
 
@@ -565,6 +569,8 @@ End Function
 '   David Fenton's functino originally based on Tony Toew's function in TempTables.MDB
 ' Source/date:  Bonnie Campbell, June 2016
 ' Revisions:    BLC, 6/8/2016 - initial version
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                multiple open connections
 ' ---------------------------------
 Public Function DbTableExists(tbl As String, Optional tdfRefresh As Boolean, _
                                 Optional db As DAO.Database) As Boolean
@@ -573,7 +579,7 @@ On Error GoTo Err_Handler
   Dim tdf As DAO.TableDef
 
   'set db if passed
-  If db Is Nothing Then Set db = CurrentDb()
+  If db Is Nothing Then Set db = CurrDb()
   
   'refresh tables
   If tdfRefresh Then db.TableDefs.Refresh
@@ -610,6 +616,8 @@ End Function
 '               http://www.access-programmers.co.uk/forums/showthread.php?t=190747
 ' Adapted:      Bonnie Campbell, May 1, 2015
 ' Revisions:    BLC, 5/1/2015 - initial version
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                multiple open connections
 ' ---------------------------------
 Function QueryExists(strQueryName As String) As Boolean
 On Error GoTo Err_Handler
@@ -618,7 +626,7 @@ On Error GoTo Err_Handler
     Dim tdf As DAO.QueryDef
     
     On Error GoTo Err_Handler
-    Set db = CurrentDb
+    Set db = CurrDb
     Set tdf = db.QueryDefs(strQueryName)
     
     QueryExists = True
@@ -650,6 +658,8 @@ End Function
 '               http://bytes.com/topic/access/answers/765384-determine-if-query-x-exists
 ' Adapted:      Bonnie Campbell, June 17, 2014
 ' Revisions:    6/17/2014 - BLC - initial version
+'               BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                 multiple open connections
 ' ---------------------------------
 Public Function qryExists(strQueryName As String) As Boolean
 
@@ -658,7 +668,7 @@ Public Function qryExists(strQueryName As String) As Boolean
     'default
     qryExists = False
   
-    For Each qdf In CurrentDb.QueryDefs
+    For Each qdf In CurrDb.QueryDefs
 '        Debug.Print qdf.Name
         If qdf.Name = strQueryName Then
             qryExists = True
@@ -782,6 +792,8 @@ End Function
 ' Adapted:      Bonnie Campbell, March 30, 2017 - for NCPN tools
 ' Revisions:
 '   BLC - 3/30/2017 - initial version
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Sub SetQueryProperty(qdf As DAO.QueryDef, prop As String, val As Variant) 'qry As String, prop As String, val As Variant)
 On Error Resume Next
@@ -789,7 +801,7 @@ On Error Resume Next
 '    Dim qdf As QueryDef
     Dim prp As DAO.Property
     
-'    Set db = CurrentDb
+'    Set db = CurrDb
 '    Set qdf = db.QueryDefs(qry)
     
     With qdf
@@ -859,6 +871,8 @@ End Function
 '   http://www.dbforums.com/showthread.php?1678970-Count-the-number-of-columns-(fields)-in-a-table
 ' Source/date:  Bonnie Campbell, October 11 2016
 ' Revisions:    BLC, 10/11/2016 - initial version
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                               multiple open connections
 ' ---------------------------------
 Public Function FieldCount(ByVal TableName As String) As Long
 'Public Function FIeldCount(ByVal TableName As Variant) As Variant <<-- if including in query
@@ -866,7 +880,7 @@ On Error GoTo Err_Handler
 
     Dim rs As DAO.Recordset
 
-    Set rs = CurrentDb.OpenRecordset(TableName, dbOpenSnapshot)
+    Set rs = CurrDb.OpenRecordset(TableName, dbOpenSnapshot)
     
     FieldCount = rs.Fields.Count
 
@@ -896,6 +910,8 @@ End Function
 '   http://www.dbforums.com/showthread.php?1678970-Count-the-number-of-columns-(fields)-in-a-table
 ' Source/date:  Bonnie Campbell, October 11 2016
 ' Revisions:    BLC, 10/11/2016 - initial version
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                multiple open connections
 ' ---------------------------------
 Public Function MaxDbFieldCount() As Long
 On Error GoTo Err_Handler
@@ -906,7 +922,7 @@ On Error GoTo Err_Handler
     Dim max As Long
     Dim qtName As String
     
-    Set db = CurrentDb
+    Set db = CurrDb
     
     'default
     max = 0
@@ -993,6 +1009,8 @@ End Function
 ' Adapted:      Bonnie Campbell, January 19, 2017 - for NCPN tools
 ' Revisions:
 '   BLC - 1/19/2017 - initial version
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Function RetrieveTableColumnData(tbl As String) As Variant
 On Error GoTo Err_Handler
@@ -1014,7 +1032,7 @@ On Error GoTo Err_Handler
     'default
     strTableColumns = ""
     
-    Set rs = CurrentDb.OpenRecordset("usys_temp_rs", dbOpenDynaset)
+    Set rs = CurrDb.OpenRecordset("usys_temp_rs", dbOpenDynaset)
     
     For i = 0 To UBound(aryFieldInfo)
         
@@ -1295,6 +1313,8 @@ End Function
 ' Source/date:  Bonnie Campbell, June 2016
 ' Revisions:    BLC, 6/8/2016 - initial version
 '               BLC, 1/19/2017 - added error handling for non-table inputs
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Function FetchDbTableFieldInfo(tbl As String) As Variant 'DAO.Recordset
 On Error GoTo Err_Handler
@@ -1310,7 +1330,7 @@ On Error GoTo Err_Handler
     Dim icols As Integer, iCol As Integer
     Dim strTypeName As String
     
-    Set db = CurrentDb()
+    Set db = CurrDb()
     
     'determine if table is in database
     If Not DbTableExists(tbl) Then
@@ -1406,6 +1426,8 @@ End Function
 ' Source/date:  Bonnie Campbell, October 6 2016
 ' Revisions:    BLC, 10/6/2016 - initial version
 '               BLC, 10/20/2016 - revised to include linked tables, added Tsys, Usys parameters
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                multiple open connections
 ' ---------------------------------
 Public Function ListTables(ShowMSysTables As Boolean, _
                             ShowTSysTables As Boolean, _
@@ -1420,7 +1442,7 @@ On Error GoTo Err_Handler
     tbls = ""
     
     'fetch tables
-    For Each tdf In CurrentDb.TableDefs
+    For Each tdf In CurrDb.TableDefs
 'Debug.Print tdf.Name
         'handle MSys tables
         If Len(tdf.Name) > Len(Replace(tdf.Name, "MSys", "")) And ShowMSysTables = False Then GoTo Continue
@@ -1470,6 +1492,8 @@ End Function
 '               http://stackoverflow.com/questions/3994956/meaning-of-msysobjects-values-32758-32757-and-3-microsoft-access
 ' Source/date:  Bonnie Campbell, May 26, 2015
 ' Revisions:    BLC, 5/26/2015 - initial version
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                multiple open connections
 ' ---------------------------------
 Public Function HasRecords(ByVal strName As String) As Boolean
     On Error GoTo Err_Handler
@@ -1482,7 +1506,7 @@ Public Function HasRecords(ByVal strName As String) As Boolean
     ' check for table/query - 1(table), 4(Linked ODBC), 6(Linked Access), 5(query)
     If DCount("*", "MSysObjects", "(([Type] In (1,4,6,5)) AND ([Name]=""" & _
         strName & """))") > 0 Then
-            Set rs = CurrentDb.OpenRecordset("SELECT * FROM " & strName & ";")
+            Set rs = CurrDb.OpenRecordset("SELECT * FROM " & strName & ";")
             
             'check if empty (BOF & EOF = true)
             If Not (rs.BOF And rs.EOF) Then
@@ -1580,6 +1604,8 @@ End Sub
 '                                to capture these properties of a Template
 '               BLC, 4/18/2017 - revised Dim to set dictTemplates as Scripting.Dictionary vs. Dictionary (latter
 '                                produces compile error on .Add - Method or Data Member not found)
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                multiple open connections
 ' ---------------------------------
 Public Sub GetTemplates(Optional strSyntax As String = "", Optional Params As String = "")
 
@@ -1601,7 +1627,7 @@ Public Sub GetTemplates(Optional strSyntax As String = "", Optional Params As St
     '       EffectiveDate, RetireDate, CreateDate, CreatedBy_ID, LastModified, LastModifiedBy_ID
     strSQL = "SELECT * FROM tsys_Db_Templates" & strSQLWhere & ";"
     
-    Set db = CurrentDb
+    Set db = CurrDb
     Set rs = db.OpenRecordset(strSQL)
     
     'handle no records
@@ -1734,9 +1760,9 @@ Err_Handler:
             Dim qdf As DAO.QueryDef
             
             If Not QueryExists("UsysTempQuery") Then
-                Set qdf = CurrentDb.CreateQueryDef("UsysTempQuery")
+                Set qdf = CurrDb.CreateQueryDef("UsysTempQuery")
             Else
-                Set qdf = CurrentDb.QueryDefs("UsysTempQuery")
+                Set qdf = CurrDb.QueryDefs("UsysTempQuery")
             End If
             
             qdf.SQL = strErrorSQL
@@ -1837,6 +1863,8 @@ End Function
 ' Source/date:  Bonnie Campbell, May 2016
 ' Revisions:    BLC, 5/19/2016 - initial version
 '               BLC, 6/6/2016  - added error handling for duplicate Templates, renamed global to g_AppTemplates
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                multiple open connections
 ' ---------------------------------
 Public Function GetTemplate(strTemplate As String, Optional Params As String = "") As String
 On Error GoTo Err_Handler
@@ -1923,9 +1951,9 @@ Err_Handler:
             Dim qdf As DAO.QueryDef
             
             If Not QueryExists("UsysTempQuery") Then
-                Set qdf = CurrentDb.CreateQueryDef("UsysTempQuery")
+                Set qdf = CurrDb.CreateQueryDef("UsysTempQuery")
             Else
-                Set qdf = CurrentDb.QueryDefs("UsysTempQuery")
+                Set qdf = CurrDb.QueryDefs("UsysTempQuery")
             End If
             
             qdf.SQL = strErrorSQL
@@ -2217,6 +2245,8 @@ End Sub
 ' Adapted:      Bonnie Campbell, April 28, 2017 for NCPN tools
 ' Revisions:    NCPN, unknown - initial version
 '               BLC, 4/28/2017 - moved to mod_Db
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                multiple open connections
 ' ---------------------------------
 Public Sub Delete_All_Records()
 On Error GoTo Err_Handler:
@@ -2240,7 +2270,7 @@ On Error GoTo Err_Handler:
     
     For i = 0 To UBound(strTables) - 1
         strSQL = cstrSQL & strTables(i)
-        CurrentDb.Execute strSQL
+        CurrDb.Execute strSQL
     Next i
 
 Exit_Handler:
@@ -2276,6 +2306,8 @@ End Sub
 '   BLC - 3/30/2017 - initial version
 '   BLC - 3/31/2017 - adjust to include check for g_AppTemplateIDs
 '   BLC - 4/3/2017 - code cleanup
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Public Sub HandleDependentQueries(deps As String, action As String)
 On Error GoTo Err_Handler
@@ -2298,7 +2330,7 @@ End If
         Dim strTemplate As String, deps2 As String, strSQL As String
         Dim tID As Integer, iTemplate
         
-        Set db = CurrentDb
+        Set db = CurrDb
         
         'retrieve Template ID dictionary
         'initialize AppTemplates if not populated
@@ -2502,6 +2534,8 @@ End Sub
 ' Adapted:      Bonnie Campbell, June 22, 2017 - for NCPN tools
 ' Revisions:
 '   BLC - 6/22/2017 - initial version
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 Function CombineTableSQL(Table1 As String, Table2 As String, Destination As String)
     Dim lDb As Database
@@ -2513,7 +2547,7 @@ Function CombineTableSQL(Table1 As String, Table2 As String, Destination As Stri
     lS1 = "Select "
     lS2 = "Select "
 
-    Set lDb = CurrentDb
+    Set lDb = CurrDb
     Set lTd1 = lDb.TableDefs(Table1)
     Set lTd2 = lDb.TableDefs(Table2)
 

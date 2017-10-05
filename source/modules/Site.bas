@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        Site
 ' Level:        Framework class
-' Version:      1.03
+' Version:      1.04
 '
 ' Description:  Site object related properties, events, functions & procedures
 '
@@ -33,6 +33,8 @@ Option Explicit
 '               --------------- Reference Library ------------------
 '               BLC - 9/21/2017  - 1.03 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
+'               BLC - 10/4/2017 - 1.04 - switched CurrentDb to CurrDb property to avoid
+'                                       multiple open connections
 ' =================================
 
 '---------------------
@@ -354,70 +356,6 @@ End Sub
 Public Sub SaveToDb(Optional IsUpdate As Boolean = False)
 On Error GoTo Err_Handler
     
-'    Dim strSQL As String
-'    Dim db As DAO.Database
-'    Dim qdf As DAO.QueryDef
-'    Dim rs As DAO.Recordset
-'    Dim iCount As Integer
-'
-'    Set db = CurrentDb
-'
-'    'events must have: start date, site ID, location ID, protocol ID
-''    strSQL = "INSERT INTO Site(Park_ID, River_ID, SiteCode, SiteName, " _
-''                & "SiteDirections, SiteDescription, " _
-''                & "IsActiveForProtocol) VALUES " _
-''                & "(" & Me.ParkID & "," & Me.RiverID & ",'" _
-''                & Me.Code & "','" & Me.Name & "','" _
-''                & Me.Directions & "','" & Me.Description & "'," _
-''                & Me.IsActiveForProtocol & ");"
-'    With db
-'        Set qdf = .QueryDefs("usys_temp_qdf")
-'
-'        With qdf
-'            'check if record exists in site
-'            .SQL = GetTemplate("s_count_tbl", _
-'                    "field" & PARAM_SEPARATOR & "ID" & _
-'                    "|tbl" & PARAM_SEPARATOR & "Site WHERE SiteCode = '" & Me.Code & _
-'                    "' AND Park_ID = " & Me.ParkID & " AND River_ID = " & Me.RiverID)
-'            Set rs = .OpenRecordset
-'            If rs.Fields(0) > 0 Then iCount = rs.Fields(0)
-'        End With
-'
-'        Set qdf = .QueryDefs("usys_temp_qdf")
-'
-'        With qdf
-'            'update if site is in site, otherwise insert new record
-'            If iCount > 0 Then
-'                .SQL = GetTemplate("u_site")
-'            Else
-'                .SQL = GetTemplate("i_site_record")
-'            End If
-'
-'            '-- required parameters --
-'            .Parameters("parkid") = Me.ParkID
-'            .Parameters("riverid") = Me.RiverID
-'            .Parameters("code") = Me.Code
-'            .Parameters("sitename") = Me.Name
-'            .Parameters("flag") = Me.IsActiveForProtocol
-'
-'            '-- optional parameters --
-'            If Not IsNull(Me.Directions) And Not Len(Me.Directions) = 0 Then _
-'                .Parameters("dir") = Me.Directions
-'            If Not IsNull(Me.Description) And Not Len(Me.Description) = 0 Then _
-'                .Parameters("descr") = Me.Description
-'
-'            .Execute dbFailOnError
-'
-'            'cleanup
-'            .Close
-'        End With
-'
-'        'retrieve identity
-'        Me.ID = .OpenRecordset("SELECT @@IDENTITY;")(0)
-'
-'    End With
-
-
     Dim Template As String
     
     Template = "i_site"
@@ -443,37 +381,9 @@ On Error GoTo Err_Handler
         .ID = SetRecord(Template, Params)
     End With
 
-
-'    db.Execute strSQL, dbFailOnError
-'    Me.ID = db.OpenRecordset("SELECT @@IDENTITY")(0)
-
-'    'handle record actions
-'    Dim act As New RecordAction
-'    With act
-'
-'    'Recorder
-'        .RefAction = "R"
-'        .ContactID = Me.RecorderID
-'        .RefID = Me.ID
-'        .RefTable = "Site"
-'        .SaveToDb
-'
-'    'Observer
-'        .RefAction = "O"
-'        .ContactID = Me.ObserverID
-'        .RefID = Me.ID
-'        .RefTable = "Site"
-'        .SaveToDb
-'
-'    End With
-
     SetObserverRecorder Me, "Site"
 
 Exit_Handler:
-'    'cleanup
-'    Set qdf = Nothing
-'    Set rs = Nothing
-    
     Exit Sub
 
 Err_Handler:

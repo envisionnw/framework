@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Array
 ' Level:        Framework module
-' Version:      1.02
+' Version:      1.03
 ' Description:  array functions & procedures
 '
 ' Source/date:  Bonnie Campbell, 9/19/2016
@@ -12,6 +12,8 @@ Option Explicit
 '               BLC, 9/14/2017 - 1.01 - added from mod_Utilities: Largest(), Smallest(),
 '                                       reorganized subs/functions
 '               BLC, 9/27/2017 - 1.02 - added Sort(), CopyOf(), CopyRange(), Length()
+'               BLC, 10/4/2017 - 1.03 - switched CurrentDb to CurrDb property to avoid
+'                                       multiple open connections
 ' =================================
 
 ' ---------------------------------
@@ -641,6 +643,8 @@ End Function
 ' Adapted:  -
 ' Revisions:
 '   BLC - 9/19/2015 - initial version
+'   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                     multiple open connections
 ' ---------------------------------
 'aryFields() As String, aryData() As Variant) As DAO.Recordset 'ADODB.Recordset
 Public Function ArrayToRecordset(aryFields() As Variant, aryData() As Variant, _
@@ -657,7 +661,7 @@ On Error GoTo Err_Handler
  
 '    ReDim aryRecord(1 To 1, 1 To UBound(aryData, 2))
  
-    Set db = CurrentDb
+    Set db = CurrDb
     
     Dim LB As Integer, UB As Integer
     

@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        Transducer
 ' Level:        Framework class
-' Version:      1.02
+' Version:      1.03
 '
 ' Description:  Transducer object related properties, events, functions & procedures
 '
@@ -32,6 +32,7 @@ Option Explicit
 '               --------------- Reference Library ------------------
 '               BLC - 9/21/2017  - 1.02 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
+'               BLC - 10/4/2017 - 1.03 - SaveToDb() code cleanup
 ' =================================
 
 '---------------------
@@ -291,35 +292,6 @@ End Sub
 Public Sub SaveToDb(Optional IsUpdate As Boolean = False)
 On Error GoTo Err_Handler
     
-'    Dim strSQL As String, params As String
-'    Dim db As DAO.Database
-'    Dim rs As DAO.Recordset
-'
-'    Set db = CurrentDb
-'
-'    'record Transducers must have:
-''    strSQL = "INSERT INTO Transducer(Event_ID, TransducerType, TransducerNumber, " _
-''                & "SerialNumber, IsSurveyed, Timing, ActionDate, ActionTime) VALUES " _
-''                & "(" & Me.EventID & ",'" & Me.TransducerType & "','" _
-''                & Me.TransducerNumber & "','" & Me.SerialNumber & "'," _
-''                & Me.IsSurveyed & ",'" & Me.Timing & "',#" _
-''                & CDate(Me.ActionDate) & "#,#" & Format(Me.ActionTime, "hh:mm:ss") & "#);"
-'
-'    params = "EventID" & PARAM_SEPARATOR & Me.EventID & _
-'            "|TransducerType" & PARAM_SEPARATOR & Me.TransducerType & _
-'            "|TransducerNumber" & PARAM_SEPARATOR & Me.TransducerNumber & _
-'            "|SerialNumber" & PARAM_SEPARATOR & Me.SerialNumber & _
-'            "|IsSurveyed" & PARAM_SEPARATOR & Me.IsSurveyed & _
-'            "|Timing" & PARAM_SEPARATOR & Me.Timing & _
-'            "|ActionDate" & PARAM_SEPARATOR & CDate(Me.ActionDate) & _
-'            "|ActionTime" & PARAM_SEPARATOR & Format(Me.ActionTime, "hh::mm::ss")
-'
-'    strSQL = GetTemplate("i_transducer", params)
-'
-'    db.Execute strSQL, dbFailOnError
-'    Me.ID = db.OpenRecordset("SELECT @@IDENTITY")(0)
-
-
     Dim Template As String
     
     Template = "i_transducer"
@@ -355,7 +327,6 @@ On Error GoTo Err_Handler
 '        .RefTable = "VegTransect"
 '        .SaveToDb
 '    End With
-
 
 Exit_Handler:
     Exit Sub
