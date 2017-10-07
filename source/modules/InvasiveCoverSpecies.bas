@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        InvasiveCoverSpecies
 ' Level:        Application class
-' Version:      1.03
+' Version:      1.04
 '
 ' Description:  Invasive cover species object related properties, events, functions & procedures for UI display
 '
@@ -28,6 +28,7 @@ Option Explicit
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
 '               BLC - 10/4/2017 - 1.03 - switched CurrentDb to CurrDb property to avoid
 '                                       multiple open connections
+'               BLC - 10/6/2017 - 1.04 - removed GetClass() after Factory class instatiation implemented after Factory class instatiation implemented
 ' =================================
 
 '---------------------
@@ -433,49 +434,7 @@ End Property
 '---------------------
 
 '======== Instancing Method ==========
-
-' ---------------------------------
-' SUB:          GetClass
-' Description:  Retrieve a new instance of the class
-'               --------------------------------------------------------------------------
-'               Classes in a library with PublicNotCreateable instancing cannot
-'               create items of the class in other projects (using the New keyword)
-'               Variables can be declared, but the class object isn't created
-'
-'               This function allows other projects to create new instances of the class object
-'               In referencing projects, set a reference to this project & call the GetClass()
-'               function to create the new class object:
-'                   Dim NewInvasiveCoverSpecies as framework.InvasiveCoverSpecies
-'                   Set NewInvasiveCoverSpecies = framework.GetClass()
-'               --------------------------------------------------------------------------
-' Assumptions:  -
-' Parameters:   -
-' Returns:      New instance of the class
-' Throws:       none
-' References:
-'   Chip Pearson, November 6, 2013
-'   http://www.cpearson.com/excel/classes.aspx
-' Source/date:  -
-' Adapted:      Bonnie Campbell, September 21, 2017 - for NCPN tools
-' Revisions:
-'   BLC - 9/21/2016 - initial version
-' ---------------------------------
-Public Function GetClass() As InvasiveCoverSpecies
-On Error GoTo Err_Handler
-
-    Set GetClass = New InvasiveCoverSpecies
-
-Exit_Handler:
-    Exit Function
-
-Err_Handler:
-    Select Case Err.Number
-        Case Else
-            MsgBox "Error #" & Err.Description, vbCritical, _
-                "Error encounter (#" & Err.Number & " - GetClass[InvasiveCoverSpecies class])"
-    End Select
-    Resume Exit_Handler
-End Function
+' handled by Factory class
 
 '======== Standard Methods ==========
 

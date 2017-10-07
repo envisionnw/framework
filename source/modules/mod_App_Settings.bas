@@ -90,7 +90,7 @@ Public gSubReportCount As Integer                  'global counter for subreport
 '               BLC, 6/26/2017 - added REMOVE_RESULT_TABLES constant for 2017 Pre-Season Invasives
 ' --------------------------------------------------------------------
 ' ---------------------------------
-Public Const VCS_FULL_PATH As String = "Z:\_____LIB\dev\git_projects\libraries\VCS.accdb"   'Version Control System (VCS) db (contains modules for version control)
+                                                                'Version Control System (VCS) db (contains modules for version control)
                                                                 'Tables to save for VCS (e.g. lookups)
 Public Const VCS_SAVE_TABLES As String = "tlu_projects, " & _
     "tlu_Cover_Class, tlu_Crown_Class, tlu_Disturbance, " & _

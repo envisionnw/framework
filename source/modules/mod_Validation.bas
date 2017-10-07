@@ -1,10 +1,10 @@
 Option Compare Database
 Option Explicit
 
-' =================================
+' ---------------------------------
 ' MODULE:       mod_Validation
 ' Level:        Framework module
-' Version:      1.06
+' Version:      1.08
 ' Description:  validation functions & procedures
 '
 ' Source/date:  Bonnie Campbell, 2/10/2015
@@ -23,7 +23,8 @@ Option Explicit
 ' --------------------------------------------------------------------
 '               BLC - 9/14/2017 - 1.07 - added from mod_Utilities: IsNothing(), IsCapital()
 '                                        reorganized methods
-' =================================
+'               BLC - 10/6/2017 - 1.08 - added comma to IsParagraph()
+' ---------------------------------
 
 ' ---------------------------------
 '  Properties
@@ -242,7 +243,7 @@ End Function
 
 ' ---------------------------------
 ' FUNCTION:     IsNothing
-' Description:  Checks if item is a "logical" nothign based on data type
+' Description:  Checks if item is a "logical" nothing based on data type
 ' Assumptions:  Nothing -->  Empty & NULL,   Zero length string,   Number = 0
 '               Never Nothing --> Date/Time
 ' Parameters:   varTest - item to check (variant)
@@ -292,7 +293,7 @@ End Function
 
 ' ---------------------------------
 ' FUNCTION:     IsBlank
-' Description:  Counts the number of instances of character(s) in a string
+' Description:  Determines if an item contains no values
 ' Assumptions:  -
 ' Parameters:   arg - item to check
 ' Returns:      boolean - True if argument is Nothing, Null, Empty, Missing or an empty string
@@ -999,6 +1000,7 @@ End Function
 ' Adapted:      Bonnie Campbell, November 12, 2015 - for NCPN tools
 ' Revisions:
 '   BLC - 11/12/2015 - initial version
+'   BLC - 10/6/2017  - added comma
 ' ---------------------------------
 Function IsParagraph(strInspect As String) As Boolean
 On Error GoTo Err_Handler:
@@ -1013,7 +1015,7 @@ On Error GoTo Err_Handler:
       Select Case mid$(Trim(strInspect), i, 1)
         Case "A" To "Z", "a" To "z"
         Case "0" To "9"
-        Case "-", "/", "_", ".", "?", "!"
+        Case "-", "/", "_", ".", "?", "!", ","
         Case Else
           IsParagraph = False
           Exit For

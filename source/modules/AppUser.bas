@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        AppUser
 ' Level:        Framework class
-' Version:      1.02
+' Version:      1.03
 '
 ' Description:  Application User object related properties, events, functions & procedures
 '
@@ -23,6 +23,7 @@ Option Explicit
 '               BLC - 8/23/2016 - 1.01 - added Initialize, Terminate, SaveToDb methods
 '               BLC - 9/21/2017  - 1.02 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
+'               BLC - 10/6/2017 - 1.03 - removed GetClass() after Factory class instatiation implemented
 ' =================================
 
 '---------------------
@@ -79,49 +80,7 @@ End Property
 '---------------------
 
 '======== Instancing Method ==========
-
-' ---------------------------------
-' SUB:          GetClass
-' Description:  Retrieve a new instance of the class
-'               --------------------------------------------------------------------------
-'               Classes in a library with PublicNotCreateable instancing cannot
-'               create items of the class in other projects (using the New keyword)
-'               Variables can be declared, but the class object isn't created
-'
-'               This function allows other projects to create new instances of the class object
-'               In referencing projects, set a reference to this project & call the GetClass()
-'               function to create the new class object:
-'                   Dim NewAppUser as framework.AppUser
-'                   Set NewAppUser = framework.GetClass()
-'               --------------------------------------------------------------------------
-' Assumptions:  -
-' Parameters:   -
-' Returns:      New instance of the class
-' Throws:       none
-' References:
-'   Chip Pearson, November 6, 2013
-'   http://www.cpearson.com/excel/classes.aspx
-' Source/date:  -
-' Adapted:      Bonnie Campbell, September 21, 2017 - for NCPN tools
-' Revisions:
-'   BLC - 9/21/2016 - initial version
-' ---------------------------------
-Public Function GetClass() As AppUser
-On Error GoTo Err_Handler
-
-    Set GetClass = New AppUser
-
-Exit_Handler:
-    Exit Function
-
-Err_Handler:
-    Select Case Err.Number
-        Case Else
-            MsgBox "Error #" & Err.Description, vbCritical, _
-                "Error encounter (#" & Err.Number & " - GetClass[AppUser class])"
-    End Select
-    Resume Exit_Handler
-End Function
+' handled by Factory class
 
 '======== Standard Methods ===========
 

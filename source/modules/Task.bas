@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        Task
 ' Level:        Framework class
-' Version:      1.03
+' Version:      1.04
 '
 ' Description:  Task object related properties, events, functions & procedures
 '
@@ -27,6 +27,7 @@ Option Explicit
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
 '               BLC - 10/4/2017 - 1.03 - switched CurrentDb to CurrDb property to avoid
 '                                       multiple open connections
+'               BLC - 10/6/2017 - 1.04 - removed GetClass() after Factory class instatiation implemented
 ' =================================
 
 '    [ID] [smallint] IDENTITY(1,1) NOT NULL,
@@ -197,49 +198,7 @@ End Property
 '---------------------
 
 '======== Instancing Method ==========
-
-' ---------------------------------
-' SUB:          GetClass
-' Description:  Retrieve a new instance of the class
-'               --------------------------------------------------------------------------
-'               Classes in a library with PublicNotCreateable instancing cannot
-'               create items of the class in other projects (using the New keyword)
-'               Variables can be declared, but the class object isn't created
-'
-'               This function allows other projects to create new instances of the class object
-'               In referencing projects, set a reference to this project & call the GetClass()
-'               function to create the new class object:
-'                   Dim NewTask as framework.Task
-'                   Set NewTask = framework.GetClass()
-'               --------------------------------------------------------------------------
-' Assumptions:  -
-' Parameters:   -
-' Returns:      New instance of the class
-' Throws:       none
-' References:
-'   Chip Pearson, November 6, 2013
-'   http://www.cpearson.com/excel/classes.aspx
-' Source/date:  -
-' Adapted:      Bonnie Campbell, September 21, 2017 - for NCPN tools
-' Revisions:
-'   BLC - 9/21/2016 - initial version
-' ---------------------------------
-Public Function GetClass() As Task
-On Error GoTo Err_Handler
-
-    Set GetClass = New Task
-
-Exit_Handler:
-    Exit Function
-
-Err_Handler:
-    Select Case Err.Number
-        Case Else
-            MsgBox "Error #" & Err.Description, vbCritical, _
-                "Error encounter (#" & Err.Number & " - GetClass[Task class])"
-    End Select
-    Resume Exit_Handler
-End Function
+' handled by Factory class
 
 '======== Standard Methods ==========
 
@@ -317,39 +276,10 @@ End Sub
 '   BLC - 11/3/2015 - initial version
 '   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
 '                     multiple open connections
+'   BLC - 10/6/2017 - code cleanup
 ' ---------------------------------
 Public Sub AddTask()
 On Error GoTo Err_Handler
-
-''context As String, recordID As Integer, description As String, _
-'                    status As Integer, priority As Integer, requestor As Integer, _
-'                    Optional completor As Integer
-'
-'    Dim db As DAO.Database
-'    Dim rs As DAO.Recordset
-'    Dim strSQL As String
-'
-'    Set db = CurrDb
-'    Set rs = db.OpenRecordset("Task")
-'
-'    With rs
-'        .AddNew
-'        !TaskType = Me.TaskType
-'        !Task = Me.Task
-'        !Status = Me.Status
-'        !Priority = Me.Priority
-'        !RequestedBy = Me.RequestedByID
-'        !RequestDate = Me.RequestDate
-'        !CompletedBy = Me.CompletedByID
-'        !CompleteDate = Me.CompleteDate
-'        !LastUpdateBy = 1
-'        !LastUpdate = Now()
-'
-'        .update
-'        If IsNumeric(!ID) Then
-'            Me.ID = !ID
-'        End If
-'    End With
     
     Me.SaveToDb False
 

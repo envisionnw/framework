@@ -380,7 +380,7 @@ End Sub
 
 ' ---------------------------------
 ' SUB:          FindSpecificNode
-' Description:  find a node based on it's
+' Description:  find a node based on it's name
 ' Assumptions:  -
 ' Parameters:   tvw - treeview control (treeview object)
 '               strFind - item to find (string)
@@ -510,7 +510,8 @@ End Function
 ' SUB:          tvwNodeSelect
 ' Description:  set view as if nodes are selected
 ' Assumptions:  -
-' Parameters:   Node being selected (node object)
+' Parameters:   Node being selected (node object, optional)
+'               blnNodeSelected - if node is selected (boolean, optional)
 ' Returns:      -
 ' Throws:       none
 ' References:

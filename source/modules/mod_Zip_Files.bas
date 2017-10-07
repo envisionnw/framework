@@ -1,7 +1,7 @@
 Option Compare Database
 Option Explicit
 
-' =================================
+' ---------------------------------
 ' MODULE:       mod_Zip_Files
 ' Level:        Framework module
 ' Version:      1.01
@@ -16,7 +16,7 @@ Option Explicit
 '               BLC, 5/26/2015 - 1.00 - included in NCPN invasives reporting tool &
 '                   moved sapiSleep & fxnPause(Delay) to mod_Time
 '               BLC, 4/4/2016 - 1.01 - changed Exit_Procedure > Exit_Handler
-' =================================
+' ---------------------------------
 
 ' ---------------------------------
 '  Functions
@@ -47,7 +47,7 @@ Public Const VER_PLATFORM_WIN32_NT = 2      ' Windows NT/2000/XP, or Windows Ser
 '  Functions
 ' ---------------------------------
 
-' =================================
+' ---------------------------------
 ' FUNCTION:     ZipFiles
 ' Description:  Creates a Zip file using WinXP Compressed (Zipped) Folders (Won't work on Win2K)
 ' Parameters:   varSourceFiles = Individual file path or a Directory path
@@ -68,7 +68,7 @@ Public Const VER_PLATFORM_WIN32_NT = 2      ' Windows NT/2000/XP, or Windows Ser
 ' Revisions:    Alan Williams, 7/20/2007 - added OS check to help evaluate compatability
 '               John R. Boetsch, 1/8/2009 - updated error handling and naming conventions
 '               BLC, 5/19/2015 - renamed, removed fxn prefix
-' =================================
+' ---------------------------------
 Public Function ZipFiles(strSourceFiles As String, strZipFileName As String, _
     Optional AppendToZip As Boolean = False) As Boolean
     On Error GoTo Err_Handler
@@ -120,7 +120,7 @@ Err_Handler:
 
 End Function
 
-' =================================
+' ---------------------------------
 ' FUNCTION:     NewZip
 ' Description:  Makes new, empty zip file (kills any file with the same name before)
 ' Parameters:   sPath = Full directory path and file name for new zip file
@@ -131,7 +131,7 @@ End Function
 ' Revisions:    Alan Williams, 7/19/2007 - added error handling
 '               John R. Boetsch, 1/8/2009 - updated error handling and formatting
 '               BLC, 5/19/2015 - renamed, removed fxn prefix
-' =================================
+' ---------------------------------
 Public Function NewZip(sPath)
     On Error GoTo Err_Handler
 
@@ -156,7 +156,7 @@ Err_Handler:
 
 End Function
 
-' =================================
+' ---------------------------------
 ' FUNCTION:     GetVersion
 ' Description:  Extracts OS Version info and returns it
 ' Parameters:   Optional VersionNumber
@@ -168,7 +168,7 @@ End Function
 '                   to help evaluate compatability
 '               John R. Boetsch, 1/8/2009 - added error handling and updated formatting
 '               BLC, 5/19/2015 - renamed, removed fxn prefix
-' =================================
+' ---------------------------------
 Private Function GetVersion(Optional VersionNumber) As String
     On Error GoTo Err_Handler
 

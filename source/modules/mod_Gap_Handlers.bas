@@ -1,56 +1,59 @@
 Option Compare Database
 Option Explicit
 
+' =================================
+' MODULE:       mod_Gap_Handlers
+' Level:        Framework module
+' Version:      1.02
+' Description:  Gap handling functions & procedures
+'
+' Source/date:  Russ Den Bleyker, November, 2006
+' Adapted:      Bonnie Campbell, 11/25/2015
+' Revisions:    RDB, unknown   - 0.00 - initial code
+'               BLC, 8/10/2015 - 1.00 - Vestigial, unused subroutines FillCanopyGapsOld & UpdateCanopyGapsOld
+'                                       were removed. These routines, developed by R. DenBleyker in 11/2006
+'                                       caused the application to fail to compile.
+'                                       FillCanopyGaps() & UpdateCanopyGaps() handle their functionality.
+'                                       Option Explicit was added.
+'               BLC, 10/4/2017 - 1.01 - switched CurrentDb to CurrDb property to avoid
+'                                       multiple open connections
+'               BLC, 10/5/2017 - 1.02 - documentation update, renamed from mod_GapHandlers to mod_Gap_Handlers
 ' ------------------------------------------
-' -------         REVISIONS           ------
-' ------------------------------------------
-'  BLC, 8/10/2015 - 1.00 - Vestigial, unused subroutines FillCanopyGapsOld & UpdateCanopyGapsOld
-'                          were removed. These routines, developed by R. DenBleyker in 11/2006
-'                          caused the application to fail to compile.
-'                          FillCanopyGaps() & UpdateCanopyGaps() handle their functionality.
-'                          Option Explicit was added.
-'  BLC, 10/4/2017 - 1.01 - switched CurrentDb to CurrDb property to avoid
-'                          multiple open connections
-' ------------------------------------------
 
-Sub ClearCanopyGaps(intLastField As Integer)
-' Clear fields on fsub_Canopy_Gap (when navigating transects).  11/2006 Russ DenBleyker
-' Northern Colorado Plateau Network
-    On Error GoTo Err_Handler
+' =================================
 
-    Dim intRecordCount As Integer
-    Dim strFieldName As String
+' ---------------------------------
+'  Declarations
+' ---------------------------------
 
-    If intLastField > 0 Then
-      intRecordCount = 1
-      Do Until intRecordCount > intLastField
-        ' Clear form fields.
-        strFieldName = "F" & intRecordCount  ' Set field name
-        Forms!frm_Data_Entry!frm_Canopy_Transect.Form!fsub_Canopy_Gap.Form!(strFieldName) = Null
-        strFieldName = "F" & (intRecordCount + 1) ' Set field name
-        Forms!frm_Data_Entry!frm_Canopy_Transect.Form!fsub_Canopy_Gap.Form!(strFieldName) = Null
-        intRecordCount = intRecordCount + 2
-      Loop
-    End If
-    
-Exit_Sub:
-    Exit Sub
+' ---------------------------------
+'  Properties
+' ---------------------------------
 
-Err_Handler:
-    Select Case Err.Number
-        Case Else
-            MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-                "Error encountered (ClearCanopyGaps)"
-            Resume Exit_Sub
-    End Select
+' ---------------------------------
+'  Methods
+' ---------------------------------
 
-End Sub
+' ------- BASAL GAPS --------------
 
-Sub ClearBasalGaps(intLastField As Integer)
-' Clear fields on fsub_Basal_Gap (when navigating transects).  11/2006 Russ DenBleyker
-' Northern Colorado Plateau Network
-    On Error GoTo Err_Handler
-
+' ---------------------------------
+' SUB:          ClearBasalGaps
+' Description:  Clear fields on fsub_Basal_Gap (when navigating transects).
+' Assumptions:  -
+'
+' Parameters:   -
+' Returns:      -
+' Throws:       none
+' References:   none
+' Requires:     -
+' Source/date:  Russ Den Bleyker, November, 2006
+' Adapted:      Bonnie Campbell, August 10, 2015 - for NCPN tools
+' Revisions:
+'   BLC - 8/10/2015  - initial version
+' ---------------------------------
+Public Sub ClearBasalGaps(intLastField As Integer)
+On Error GoTo Err_Handler
+ 
     Dim intRecordCount As Integer
     Dim strFieldName As String
 
@@ -66,25 +69,37 @@ Sub ClearBasalGaps(intLastField As Integer)
       Loop
     End If
     
-Exit_Sub:
+Exit_Handler:
     Exit Sub
-
+    
 Err_Handler:
     Select Case Err.Number
-        Case Else
-            MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-                "Error encountered (ClearBasalGaps)"
-            Resume Exit_Sub
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - ClearBasalGaps[mod_Gap_Handlers])"
     End Select
-
+    Resume Exit_Handler
 End Sub
 
+' ---------------------------------
+' FUNCTION:     FillBasalGaps
+' Description:  Fill controls in fsub_Basal_Gap from tbl_Basal_Gaps.
+' Assumptions:  -
+'
+' Parameters:   -
+' Returns:      -
+' Throws:       none
+' References:   none
+' Requires:     -
+' Source/date:  Russ Den Bleyker, November, 2006
+' Adapted:      Bonnie Campbell, August 10, 2015 - for NCPN tools
+' Revisions:
+'   BLC - 8/10/2015  - initial version
 '   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
 '                     multiple open connections
-Function FillBasalGaps(strTransectID As String) As Integer
-' Fill controls in fsub_Basal_Gap from tbl_Basal_Gaps.  11/2006 Russ DenBleyker
-' Northern Colorado Plateau Network
-    On Error GoTo Err_Handler
+' ---------------------------------
+Public Function FillBasalGaps(strTransectID As String) As Integer
+On Error GoTo Err_Handler
     
     Dim stDocName As String
     Dim db As Database
@@ -102,7 +117,7 @@ Function FillBasalGaps(strTransectID As String) As Integer
       Forms!frm_Data_Entry!frm_Canopy_Transect.Form!fsub_Basal_Gap.Form!LastStart = 0
       FillBasalGaps = 0  ' Indicate no records retreived
       Gaps.Close
-      GoTo Exit_Procedure
+      GoTo Exit_Handler
     End If
     intRecordCount = 0
     Gaps.MoveFirst
@@ -124,17 +139,16 @@ Function FillBasalGaps(strTransectID As String) As Integer
     FillBasalGaps = intRecordCount  ' Indicate index of last record encountered
     Gaps.Close
     
-Exit_Procedure:
+Exit_Handler:
     Exit Function
-
+    
 Err_Handler:
     Select Case Err.Number
-        Case Else
-            MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-                "Error encountered (FillBasalGaps)"
-            Resume Exit_Procedure
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - FillBasalGaps[mod_Gap_Handlers])"
     End Select
-
+    Resume Exit_Handler
 End Function
 
 ' ---------------------------------
@@ -276,18 +290,78 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - UpdateBasalGaps[mod_GapHandlers])"
+            "Error encountered (#" & Err.Number & " - UpdateBasalGaps[mod_Gap_Handlers])"
     End Select
     Resume Exit_Function
 End Function
 
+' ------- CANOPY GAPS -------------
+
+' ---------------------------------
+' SUB:          ClearCanopyGaps
+' Description:  Clear fields on fsub_Canopy_Gap (when navigating transects).
+' Assumptions:  -
+'
+' Parameters:   -
+' Returns:      -
+' Throws:       none
+' References:   none
+' Requires:     -
+' Source/date:  Russ Den Bleyker, November, 2006
+' Adapted:      Bonnie Campbell, August 10, 2015 - for NCPN tools
+' Revisions:
+'   BLC - 8/10/2015  - initial version
+' ---------------------------------
+Public Sub ClearCanopyGaps(intLastField As Integer)
+On Error GoTo Err_Handler
+
+    Dim intRecordCount As Integer
+    Dim strFieldName As String
+
+    If intLastField > 0 Then
+      intRecordCount = 1
+      Do Until intRecordCount > intLastField
+        ' Clear form fields.
+        strFieldName = "F" & intRecordCount  ' Set field name
+        Forms!frm_Data_Entry!frm_Canopy_Transect.Form!fsub_Canopy_Gap.Form!(strFieldName) = Null
+        strFieldName = "F" & (intRecordCount + 1) ' Set field name
+        Forms!frm_Data_Entry!frm_Canopy_Transect.Form!fsub_Canopy_Gap.Form!(strFieldName) = Null
+        intRecordCount = intRecordCount + 2
+      Loop
+    End If
+    
+Exit_Handler:
+    Exit Sub
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - ClearCanopyGaps[mod_Gap_Handlers])"
+    End Select
+    Resume Exit_Handler
+End Sub
+
+' ---------------------------------
+' FUNCTION:     FillCanopyGaps
+' Description:  Fill controls in fsub_Canopy_Gap from tbl_Canopy_Gaps.
+' Assumptions:  -
+'
+' Parameters:   -
+' Returns:      -
+' Throws:       none
+' References:   none
+' Requires:     -
+' Source/date:  Russ Den Bleyker, November, 2006
+' Adapted:      Bonnie Campbell, August 10, 2015 - for NCPN tools
+' Revisions:
+'   BLC - 8/10/2015  - initial version
 '   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
 '                     multiple open connections
-Function FillCanopyGaps(strTransectID As String) As Integer
-' Fill controls in fsub_Canopy_Gap from tbl_Canopy_Gaps.  3/2011 Russ DenBleyker
-' Northern Colorado Plateau Network
-    On Error GoTo Err_Handler
-    
+' ---------------------------------
+Public Function FillCanopyGaps(strTransectID As String) As Integer
+On Error GoTo Err_Handler
+        
     Dim stDocName As String
     Dim db As Database
     Dim Gaps As DAO.Recordset
@@ -304,7 +378,7 @@ Function FillCanopyGaps(strTransectID As String) As Integer
       Forms!frm_Data_Entry!frm_Canopy_Transect.Form!fsub_Canopy_Gap.Form!LastStart = 0
       FillCanopyGaps = 0  ' Indicate no records retreived
       Gaps.Close
-      GoTo Exit_Procedure
+      GoTo Exit_Handler
     End If
     intRecordCount = 0
     Gaps.MoveFirst
@@ -326,17 +400,16 @@ Function FillCanopyGaps(strTransectID As String) As Integer
     FillCanopyGaps = intRecordCount  ' Indicate index of last record encountered
     Gaps.Close
     
-Exit_Procedure:
+Exit_Handler:
     Exit Function
-
+    
 Err_Handler:
     Select Case Err.Number
-        Case Else
-            MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-                "Error encountered (FillCanopyGaps)"
-            Resume Exit_Procedure
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - FillCanopyGaps[mod_Gap_Handlers])"
     End Select
-
+    Resume Exit_Handler
 End Function
 
 ' ---------------------------------
@@ -480,7 +553,7 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - UpdateBasalGaps[mod_GapHandlers])"
+            "Error encountered (#" & Err.Number & " - UpdateBasalGaps[mod_Gap_Handlers])"
     End Select
     Resume Exit_Function
 End Function

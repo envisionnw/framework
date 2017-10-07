@@ -584,7 +584,6 @@ Err_Handler:
 
 End Function
 
-
 ' =================================
 ' FUNCTION:     TestODBCConnection
 ' Description:  Uses a pass-through query to test an ODBC connection and to trap ODBC errors

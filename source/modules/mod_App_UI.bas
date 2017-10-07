@@ -109,10 +109,9 @@ Private Declare Function SetLayeredWindowAttributes Lib "user32" _
 ' SUB:     PopulateInsetTitle
 ' Description:  Sets inset title on form
 ' Assumptions:
-' Parameters:   frm - form holding crumb labels
-'               aryCrumbs - breadcrumb array
-'               separator - non-clickable value between crumbs, default = >
-' Returns:      aryCrumbs - array of breadcrumb values
+' Parameters:   ctrl - control to update (Control)
+'               strContext - context for title (string)
+' Returns:      -
 ' Throws:       none
 ' References:   none
 ' Source/date:
@@ -599,7 +598,7 @@ End Sub
 ' Function:     SetCurrentPseudoRecord
 ' Description:  sets a pseudo current record # based on the combobox w/ current focus
 ' Assumptions:  -
-' Parameters:   -
+' Parameters:   ctrl - control with focus (control)
 ' Returns:      current # for combobox (integer)
 ' Throws:       none
 ' References:   -
@@ -868,7 +867,7 @@ End Function
 ' SUB:          EnableTargetTool
 ' Description:  enable the target tool button
 ' Assumptions:  -
-' Parameters:   N/A
+' Parameters:   ctrl - button to enable (control)
 ' Returns:      N/A
 ' Throws:       none
 ' References:   none
@@ -1066,7 +1065,7 @@ End Sub
 ' Assumptions:  -
 ' Parameters:   levelID - ID for event or event|transect as appropriate
 '               level - event or transect (E = event, T = transect)
-' Returns:      N/A
+' Returns:      Dictionary of no data collected information (scripting.dictionary)
 ' Throws:       none
 ' References:   none
 ' Source/date:
@@ -1144,8 +1143,8 @@ End Function
 ' Parameters:   levelID - ID for event/transect
 '               level - sampling level identifier (E-event, T-transect)
 '               SampleType - sub-protocol w/o data "1mBelt-Shrub", "OverstoryTree-Sapling", etc.
-'               cbxValue - the value (1 or 0) to add or remove the
-' Returns:      N/A
+'               cbxValue - the value (1 or 0) to add or remove the flag
+' Returns:      No data collected dictionary (scripting.dictionary)
 ' Throws:       none
 ' References:   none
 ' Source/date:
@@ -1576,7 +1575,8 @@ End Sub
 ' Sub:          PopulateForm
 ' Description:  Populate a form using a specific record for edits
 ' Assumptions:  -
-' Parameters:   -
+' Parameters:   frm - form to populate (form)
+'               ID - identifier for record to populate from (long)
 ' Returns:      -
 ' Throws:       none
 ' References:   -
@@ -1762,7 +1762,7 @@ End Sub
 ' Description:  CSV field combobox populating actions
 ' Assumptions:  Control OnChange event = PopulateCSVFields([Screen].[ActiveControl])
 '               where Screen.ActiveControl passes in the proper combobox
-' Parameters:   -
+' Parameters:   ctrl - control to populate (control)
 ' Returns:      -
 ' Throws:       none
 ' References:
@@ -1933,7 +1933,8 @@ End Function
 ' Sub:          FilterListForm
 ' Description:  form filter click actions
 ' Assumptions:  -
-' Parameters:   -
+' Parameters:   frm - form to filter (form)
+'               ctrl - control to filter by (control)
 ' Returns:      -
 ' Throws:       none
 ' References:

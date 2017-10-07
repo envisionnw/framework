@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        ImportVegPlot
 ' Level:        Framework class
-' Version:      1.01
+' Version:      1.02
 '
 ' Description:  Import veg plot object related properties, events, functions & procedures
 '
@@ -26,6 +26,7 @@ Option Explicit
 '               --------------- Reference Library ------------------
 '               BLC - 9/21/2017  - 1.01 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
+'               BLC - 10/6/2017  - 1.02 - removed GetClass() after Factory class instatiation implemented after Factory class instatiation implemented
 ' =================================
 
 'Plot.cls
@@ -56,10 +57,6 @@ End Type
 
 Private this As PlotData
 Private mCover As Scripting.Dictionary
-
-Private Sub Class_Initialize()
-    Set mCover = New Scripting.Dictionary
-End Sub
 
 Public Property Get PlotID() As Long
     PlotID = this.PlotID
@@ -165,10 +162,6 @@ Public Property Let NoIndicatorSpecies(Value As Byte)
     this.NoIndicatorSpecies = Value
 End Property
 
-Public Sub AddSpeciesCover(Species As String, cover As String)
-    mCover.Add Species, cover
-End Sub
-
 Public Property Get Litter() As Double
     Litter = this.Litter
 End Property
@@ -241,48 +234,13 @@ End Property
 '---------------------
 
 '======== Instancing Method ==========
-
-' ---------------------------------
-' SUB:          GetClass
-' Description:  Retrieve a new instance of the class
-'               --------------------------------------------------------------------------
-'               Classes in a library with PublicNotCreateable instancing cannot
-'               create items of the class in other projects (using the New keyword)
-'               Variables can be declared, but the class object isn't created
-'
-'               This function allows other projects to create new instances of the class object
-'               In referencing projects, set a reference to this project & call the GetClass()
-'               function to create the new class object:
-'                   Dim NewImportVegPlot as framework.ImportVegPlot
-'                   Set NewImportVegPlot = framework.GetClass()
-'               --------------------------------------------------------------------------
-' Assumptions:  -
-' Parameters:   -
-' Returns:      New instance of the class
-' Throws:       none
-' References:
-'   Chip Pearson, November 6, 2013
-'   http://www.cpearson.com/excel/classes.aspx
-' Source/date:  -
-' Adapted:      Bonnie Campbell, September 21, 2017 - for NCPN tools
-' Revisions:
-'   BLC - 9/21/2016 - initial version
-' ---------------------------------
-Public Function GetClass() As ImportVegPlot
-On Error GoTo Err_Handler
-
-    Set GetClass = New ImportVegPlot
-
-Exit_Handler:
-    Exit Function
-
-Err_Handler:
-    Select Case Err.Number
-        Case Else
-            MsgBox "Error #" & Err.Description, vbCritical, _
-                "Error encounter (#" & Err.Number & " - GetClass[ImportVegPlot class])"
-    End Select
-    Resume Exit_Handler
-End Function
+' handled by Factory class
 
 '======== Standard Methods ==========
+Private Sub Class_Initialize()
+    Set mCover = New Scripting.Dictionary
+End Sub
+
+Public Sub AddSpeciesCover(Species As String, cover As String)
+    mCover.Add Species, cover
+End Sub

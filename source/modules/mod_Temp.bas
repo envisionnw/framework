@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Temp
 ' Level:        Framework module
-' Version:      1.01
+' Version:      1.02
 ' Description:  Temporary object related functions & subroutines
 ' Requires:     -
 '
@@ -17,6 +17,8 @@ Option Explicit
 '                                       from mod_Db
 '               BLC, 10/4/2017 - 1.01 - switched CurrentDb to CurrDb property to avoid
 '                                       multiple open connections
+'               BLC, 10/6/2017 - 1.02 - code cleanup, added documentation,
+'                                       removed TableExists(), QueryExists(), Wrap()
 ' =================================
 
 ' ---------------------------------
@@ -228,7 +230,7 @@ End Sub
 ' ---------------------------------
 ' FUNCTION:     CreateTempRecordset
 ' Description:  creates a temporary DAO recordset
-' Parameters:   strTemplate - name of virtual table (string)
+' Parameters:
 '               iCount - number of records (integer)
 ' Returns:      rs - recordset containing # of records = iCount (DAO.recordset)
 ' Assumptions:  the temporary recordset is used in limited instances when
@@ -332,11 +334,13 @@ End Sub
 
 ' ---------------------------------
 ' SUB:          UpdateTempTable
-' Description:
-'
+' Description:  Updates a temp table using a SQL or query
+'               in current or other database
 ' Parameters:   tbl - name of table to update (string)
 '               TableQueryOrSQL - query name or SQL (string)
-'               TimeLimit - time in minutes table is valid (integer)
+'               InCurrentDb - whether table is in current database (boolean, optional, default = False)
+'               TimeLimit - time in minutes table is valid (integer, optional, default = 0)
+'               PK_Field - if primary key is changed (variant, optional, default = NULL)
 '
 ' Returns:      True or False - whether update was successful or not (boolean)
 ' Assumptions:  -
@@ -510,87 +514,35 @@ Err_Handler:
     Resume Exit_Handler
 End Function
 
+' ---------------------------------
+' SUB:          DropTable
+' Description:  Drops table from database
+'
+' Parameters:   TableName - name of table to drop (string)
+'
+' Returns:      -
+' Assumptions:  -
+' Throws:       none
+' References:   -
+' Source/date:  Bonnie Campbell, 2016
+' Revisions:    BLC, x/x/2016 - initial version
+'               BLC, 10/6/2017 - added documentation
+' ---------------------------------
 Public Sub DropTable(TableName As String)
+On Error GoTo Err_Handler
 
     If TableExists(TableName) Then
         DoCmd.DeleteObject acTable, TableName
     End If
     
+Exit_Handler:
+    Exit Sub
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - DropTable[mod_Temp])"
+    End Select
+    Resume Exit_Handler
 End Sub
-
-'Public Function TableExists(Tablename As String, Optional db As DAO.Database) As Boolean
-'
-'    Dim intFields As Integer
-'    Dim ReleaseDB As Boolean
-'
-'    On Error GoTo ProcError
-'
-'    'The default database is the currentdb, but if one is passed, use it
-'    If db Is Nothing Then
-'        Set db = CurrentDb
-'        ReleaseDB = True
-'    End If
-'
-'    'If the table exists, then the next line will determine how many fields are in the table
-'    'If it doesn't exist, then this will raise an error
-'    intFields = db.TableDefs(Tablename).Fields.Count
-'    TableExists = True
-'
-'ProcExit:
-'    If ReleaseDB Then Set db = Nothing
-'    Exit Function
-'
-'ProcError:
-'    TableExists = False
-'    Resume ProcExit
-'
-'End Function
-'
-'Public Function QueryExists(QueryName As String, Optional db As DAO.Database) As Boolean
-'
-'    Dim intFields As Integer
-'    Dim ReleaseDB As Boolean
-'
-'    On Error GoTo ProcError
-'
-'    'The default database is the currentdb, but if one is passed, use it
-'    If db Is Nothing Then
-'        Set db = CurrentDb
-'        ReleaseDB = True
-'    End If
-'
-'    'If the query exists, then the next line will determine how many fields are in the table
-'    'If it doesn't exist, then this will raise an error
-'    intFields = db.QueryDefs(QueryName).Fields.Count
-'    QueryExists = True
-'
-'ProcExit:
-'    If ReleaseDB Then Set db = Nothing
-'    Exit Function
-'
-'ProcError:
-'    QueryExists = False
-'    Resume ProcExit
-'
-'End Function
-'
-
-
-Public Function Wrap(WrapWhat As Variant, Optional WrapWith As String = """") As String
-
-    'Created by Dale Fye, 2000-03-10
-    
-    'This function is used to wrap some value with some sort of wrapping character.
-    
-    'Accepts a variant and wraps that with whatever character or group of characters
-    'are passed in the optional WrapWith argument.
-    
-    'It also replaces all values equal to the WrapWith text with duplicates of that character
-    'which enables wrapping a text string that contains quotes.
-    
-    'If the WrapWhat value is NULL, then the function returns a empty string wrapped in quotes
-    'I generally use this to wrap text in quotes or date values in the #
-    
-    Wrap = WrapWith & Replace(WrapWhat & "", WrapWith, WrapWith & WrapWith) & WrapWith
-    
-End Function

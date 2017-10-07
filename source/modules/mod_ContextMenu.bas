@@ -410,7 +410,7 @@ End Sub
 ' ---------------------------------
 Public Sub mnuAddTask()
     
-    DoCmd.OpenForm "Tile", acNormal
+    DoCmd.OpenForm "Task", acNormal '"Tile", acNormal
     
 End Sub
 
@@ -496,7 +496,7 @@ Public Sub mnuSetFeature()
     
     'set global
     TempVars.Add "Feature", Feature
-    TempVars.Add "SiteID", GetFeatureID(TempVars("ParkCode"), Feature)
+    TempVars.Add "FeatureID", GetFeatureID(TempVars("ParkCode"), Feature)
     
     'update calling form
     Call Forms("Main").UpdateBreadcrumb(iClearBelow)

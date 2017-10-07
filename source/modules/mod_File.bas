@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_File
 ' Level:        Framework module
-' Version:      1.07
+' Version:      1.08
 ' Description:  File and directory related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
@@ -25,6 +25,7 @@ Option Explicit
 '                                 conflict w/ other version of FileExists (by path)
 ' --------------------------------------------------------------------
 '               BLC, 9/14/2017 - 1.07 - noted ParseFileName = now removed GetPath() from mod_Utilities
+'               BLC, 10/5/2017 - 1.08 - update documentation
 ' =================================
 
 ' ---------------------------------
@@ -321,7 +322,7 @@ End Function
 ' Revisions:
 '   BLC - 8/30/2016 - initial version
 ' ---------------------------------
-Function GetSpecialFolderPath(SpecialFolder As String)
+Function GetSpecialFolderPath(SpecialFolder As String) As String
 On Error GoTo Err_Handler
 
     Dim arySpecials() As String, strPath As String

@@ -1,7 +1,7 @@
 Option Compare Database
 Option Explicit
 
-' =================================
+' ---------------------------------
 ' MODULE:       mod_User
 ' Level:        Framework module
 ' Version:      1.12
@@ -27,7 +27,7 @@ Option Explicit
 ' ------------------------------------------------------------------------------
 '               BLC, 10/4/2017 - 1.12 - switched CurrentDb to CurrDb property to avoid
 '                                       multiple open connections
-' =================================
+' ---------------------------------
 
 ' ---------------------------------
 ' GLOBALS:      global variables
@@ -734,7 +734,7 @@ Err_Handler:
 
 End Sub
 
-' =================================
+' ---------------------------------
 ' FUNCTION:     UserName
 ' Description:  Returns the current user name
 ' Parameters:   none
@@ -750,7 +750,7 @@ End Sub
 '                               BLC, 8/23/2017 - merged in prior work:
 '                              BLC, 6/6/2017  - revised to accommodate testing user
 ' ------------------------------------------------------------------------------
-' =================================
+' ---------------------------------
 Public Function UserName() As String
     On Error GoTo Err_Handler
 
@@ -769,7 +769,7 @@ Err_Handler:
     Resume Exit_Handler
 End Function
 
-' =================================
+' ---------------------------------
 ' FUNCTION:     GetADCommonName
 ' Description:  Returns the currently logged in user's common name
 ' Note:
@@ -790,7 +790,7 @@ End Function
 '   https://social.msdn.microsoft.com/Forums/office/en-US/1b38c289-af3f-471a-8bb6-d04d6e281964/os-compatible-way-to-get-the-full-user-name-via-vba?forum=accessdev
 ' Source/date:  Bonnie Campbell, April 20, 2016
 ' Revisions:    BLC, 4/20/2016 - initial version
-' =================================
+' ---------------------------------
 Public Function GetADCommonName() As String
 On Error GoTo Err_Handler
 
@@ -824,7 +824,7 @@ Err_Handler:
     Resume Exit_Handler
 End Function
 
-' =================================
+' ---------------------------------
 ' FUNCTION:     AccessID
 ' Description:  Returns the access level ID from the access level name
 ' Assumptions:  Access levels include:
@@ -836,7 +836,7 @@ End Function
 ' Source/date:  B. Campbell, 6/7/2016
 ' Revisions:    BLC, 6/7/2016 - initial version
 '               BLC, 9/26/2016 - adjusted to use GetRecords vs. GetTemplate
-' =================================
+' ---------------------------------
 Public Function AccessID(AccessLevel As String) As Long
     On Error GoTo Err_Handler
 

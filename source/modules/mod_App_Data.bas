@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_Data
 ' Level:        Application module
-' Version:      1.39
+' Version:      1.40
 ' Description:  data functions & procedures specific to this application
 '
 ' Source/date:  Bonnie Campbell, 2/9/2015
@@ -71,6 +71,7 @@ Option Explicit
 '               BLC, 9/29/2017 - 1.38 - update UpsertRecord for location, add i_location site ID (SetRecord)
 '               BLC, 10/4/2017 - 1.39 - switched CurrentDb to CurrDb property to avoid
 '                                       multiple open connections
+'               BLC, 10/6/2017 - 1.40 - moved UploadCSVFile() to mod_CSV
 ' =================================
 
 ' =================================
@@ -759,6 +760,7 @@ End Function
 ' Description:  Retrieve records based on template
 ' Assumptions:  -
 ' Parameters:   Template - SQL template name (string)
+'               params - additional parameters to pass into routine (variant, optional)
 ' Returns:      rs - data retrieved (recordset)
 ' Throws:       none
 ' References:
@@ -3559,7 +3561,7 @@ End Function
 
 ' ---------------------------------
 ' Sub:          SetPlotCheckResult
-' Description:  Run plot check queries
+' Description:  Run plot check queries & determine results
 ' Assumptions:  -
 ' Parameters:   strTemplate - template name (string)
 '               action - insert or update (string)
@@ -3684,7 +3686,7 @@ End Function
 ' Sub:          UpdateNumRecords
 ' Description:  Update NumRecords # of records
 ' Assumptions:  -
-' Parameters:   iRecord - template ID (string)
+' Parameters:   iRecord - template ID (integer)
 '               numRecords - # of records (integer)
 ' Returns:      -
 ' Throws:       none
@@ -3913,7 +3915,7 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - PrepareSpeciesQuery[mod_App_Data form])"
+            "Error encountered (#" & Err.Number & " - PrepareSpeciesQuery[mod_App_Data])"
     End Select
     Resume Exit_Handler
 End Function
@@ -3939,7 +3941,7 @@ End Function
 ' Revisions:
 '   BLC - 7/13/2016 - initial version
 ' ---------------------------------
-Public Function UpdateTransectX() As Single
+Public Function UpdateTransect() As Single
 On Error GoTo Err_Handler
 
     Dim transectID As String
@@ -4137,45 +4139,6 @@ Err_Handler:
     End Select
     Resume Exit_Handler
 End Function
-
-' =================================
-'   CSV Methods
-' =================================
-' ---------------------------------
-' Sub:          UploadCSVFile
-' Description:  Uploads data into database from CSV file
-' Assumptions:  -
-' Parameters:   strFilename - name of file being uploaded (string)
-' Returns:      -
-' Throws:       none
-' References:   -
-' Source/date:  Bonnie Campbell, September 1, 2016 - for NCPN tools
-' Adapted:      -
-' Revisions:
-'   BLC - 9/1/2016 - initial version
-'   BLC - 10/19/2016 - renamed to UploadCSVFile from UploadSurveyFile to genericize
-' --------------------------------------------------------------------
-'   BLC - 9/7/2017  - merge uplands, invasives, big rivers dbs modifications
-' --------------------------------------------------------------------
-'                   - un-comment out
-' --------------------------------------------------------------------
-' ---------------------------------
-Public Sub UploadCSVFile(strFilename As String)
-On Error GoTo Err_Handler
-
-    'import to table
-    ImportCSV strFilename, "usys_temp_csv", True, True
-
-Exit_Handler:
-    Exit Sub
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - UploadCSVFile[mod_App_Data])"
-    End Select
-    Resume Exit_Handler
-End Sub
 
 ' ---------------------------------
 ' Function:     FetchAddlData

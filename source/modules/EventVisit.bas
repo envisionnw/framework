@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        EventVisit
 ' Level:        Framework class
-' Version:      1.04
+' Version:      1.05
 '
 ' Description:  Event object related properties, events, functions & procedures
 '
@@ -28,6 +28,7 @@ Option Explicit
 '               --------------- Reference Library ------------------
 '               BLC - 9/21/2017  - 1.04 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
+'               BLC - 10/6/2017  - 1.05 - removed GetClass() after Factory class instatiation implemented after Factory class instatiation implemented, changed IDs to Long vs Integer
 ' =================================
 
 '---------------------
@@ -35,9 +36,9 @@ Option Explicit
 '---------------------
 Private m_ID As Long
 Private m_StartDate As Date
-Private m_SiteID As Integer
-Private m_LocationID As Integer
-Private m_ProtocolID As Integer
+Private m_SiteID As Long
+Private m_LocationID As Long
+Private m_ProtocolID As Long
 
 '---------------------
 ' Events
@@ -59,27 +60,27 @@ Public Property Get ID() As Long
     ID = m_ID
 End Property
 
-Public Property Let SiteID(Value As Integer)
+Public Property Let SiteID(Value As Long)
     m_SiteID = Value
 End Property
 
-Public Property Get SiteID() As Integer
+Public Property Get SiteID() As Long
     SiteID = m_SiteID
 End Property
 
-Public Property Let LocationID(Value As Integer)
+Public Property Let LocationID(Value As Long)
     m_LocationID = Value
 End Property
 
-Public Property Get LocationID() As Integer
+Public Property Get LocationID() As Long
     LocationID = m_LocationID
 End Property
 
-Public Property Let ProtocolID(Value As Integer)
+Public Property Let ProtocolID(Value As Long)
     m_ProtocolID = Value
 End Property
 
-Public Property Get ProtocolID() As Integer
+Public Property Get ProtocolID() As Long
     ProtocolID = m_ProtocolID
 End Property
 
@@ -96,49 +97,7 @@ End Property
 '---------------------
 
 '======== Instancing Method ==========
-
-' ---------------------------------
-' SUB:          GetClass
-' Description:  Retrieve a new instance of the class
-'               --------------------------------------------------------------------------
-'               Classes in a library with PublicNotCreateable instancing cannot
-'               create items of the class in other projects (using the New keyword)
-'               Variables can be declared, but the class object isn't created
-'
-'               This function allows other projects to create new instances of the class object
-'               In referencing projects, set a reference to this project & call the GetClass()
-'               function to create the new class object:
-'                   Dim NewEventVisit as framework.EventVisit
-'                   Set NewEventVisit = framework.GetClass()
-'               --------------------------------------------------------------------------
-' Assumptions:  -
-' Parameters:   -
-' Returns:      New instance of the class
-' Throws:       none
-' References:
-'   Chip Pearson, November 6, 2013
-'   http://www.cpearson.com/excel/classes.aspx
-' Source/date:  -
-' Adapted:      Bonnie Campbell, September 21, 2017 - for NCPN tools
-' Revisions:
-'   BLC - 9/21/2016 - initial version
-' ---------------------------------
-Public Function GetClass() As EventVisit
-On Error GoTo Err_Handler
-
-    Set GetClass = New EventVisit
-
-Exit_Handler:
-    Exit Function
-
-Err_Handler:
-    Select Case Err.Number
-        Case Else
-            MsgBox "Error #" & Err.Description, vbCritical, _
-                "Error encounter (#" & Err.Number & " - GetClass[EventVisit class])"
-    End Select
-    Resume Exit_Handler
-End Function
+' handled by Factory class
 
 '======== Standard Methods ===========
 

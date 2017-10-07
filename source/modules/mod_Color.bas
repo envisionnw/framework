@@ -19,7 +19,7 @@ Option Explicit
 '               BLC, 7/28/2017 - 1.08 - added lngLtrYellow
 ' --------------------------------------------------------------
 '               BLC, 8/22/2017 - 1.09 - merged prior work:
-'                                  ' COMMENTED OUT IN invasives: ConvertLongToRGB()
+'                         ' COMMENTED OUT IN invasives: ConvertLongToRGB()
 ' --------------------------------------------------------------
 ' =================================
 

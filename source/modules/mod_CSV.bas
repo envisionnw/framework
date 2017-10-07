@@ -4,11 +4,12 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_CSV
 ' Level:        Framework module
-' Version:      1.00
+' Version:      1.01
 ' Description:  Framework-wide related mathematical values, functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, September 30, 2016 for NCPN tools
-' Revisions:    BLC, 9/30/2016 - initial version
+' Revisions:    BLC, 9/30/2016 - 1.00 - initial version
+'               BLC, 10/6/2017 - 1.01 - added UploadCSVFile() from mod_App_Data
 ' =================================
 
 ' ---------------------------------
@@ -82,6 +83,42 @@ Err_Handler:
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - ImportCSV[mod_CSV])"
+    End Select
+    Resume Exit_Handler
+End Sub
+
+' ---------------------------------
+' Sub:          UploadCSVFile
+' Description:  Uploads data into database from CSV file
+' Assumptions:  -
+' Parameters:   strFilename - name of file being uploaded (string)
+' Returns:      -
+' Throws:       none
+' References:   -
+' Source/date:  Bonnie Campbell, September 1, 2016 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 9/1/2016 - initial version
+'   BLC - 10/19/2016 - renamed to UploadCSVFile from UploadSurveyFile to genericize
+' --------------------------------------------------------------------
+'   BLC - 9/7/2017  - merge uplands, invasives, big rivers dbs modifications
+' --------------------------------------------------------------------
+'                   - un-comment out
+' --------------------------------------------------------------------
+' ---------------------------------
+Public Sub UploadCSVFile(strFilename As String)
+On Error GoTo Err_Handler
+
+    'import to table
+    ImportCSV strFilename, "usys_temp_csv", True, True
+
+Exit_Handler:
+    Exit Sub
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - UploadCSVFile[mod_CSV])"
     End Select
     Resume Exit_Handler
 End Sub

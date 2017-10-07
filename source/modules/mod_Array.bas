@@ -413,14 +413,19 @@ End Sub
 
 ' ---------------------------------
 ' SUB:          MergeSort
-' Description:
+' Description:  Sorts portions of an array and inserts it into another array
 ' Assumptions:
 '               Option Base 0 << not included though included in origin code
 '               as arrays start @ 0 by default &
 '               array upper & lower bounds should be defined
 '               See https://bettersolutions.com/vba/arrays/option-base-1.htm
 '               for details
-' Parameters:   -
+' Parameters:   src - source array (variant)
+'               dest - destination array (variant)
+'               low - low value (long)
+'               high - high value (long)
+'               off - offset (long)
+'               c - comparison value (IVariantComparison)
 ' Returns:      -
 ' Throws:       none
 ' References:   none
@@ -634,6 +639,7 @@ End Function
 ' Assumptions:  Array to convert is two dimensional
 ' Parameters:   aryFields - recordset field names (string array)
 '               aryData - recordset data (variant array)
+'               delimiter - separator(string)
 ' Returns:      ADODB recordset containing array data
 ' Throws:       none
 ' References:   -

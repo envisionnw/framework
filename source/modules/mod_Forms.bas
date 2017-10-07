@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Forms
 ' Level:        Framework module
-' Version:      1.09
+' Version:      1.11
 ' Description:  generic form functions & procedures
 '
 ' Source/date:  Bonnie Campbell, 2/19/2015
@@ -26,6 +26,13 @@ Option Explicit
 '               BLC, 9/14/2017  - 1.09 - added: notes re: IsLoaded function
 '                                               from mod_Utilities: FormAssist()
 '                                               documentation & error handling
+'               BLC, 10/5/2017  - 1.10 - update documentation
+'               BLC, 10/6/2017  - 1.11 - added from mod_UI:
+'                                        SetWindowSize(), PopulateSubformControl()
+'                                        RepaintParentForm(), ChangeBackColor()
+'                                        ResetHeaders(), ShowControls(),
+'                                        ControlExists(), AddFormControl()
+'
 ' =================================
 
 '=================================================================
@@ -153,8 +160,9 @@ Public RefSub As String 'referring subroutine
 ' Adapted:      Bonnie Campbell, June 9, 2015 - for NCPN tools
 ' Revisions:
 '   BLC - 6/9/2015  - initial version
+'   BLC - 10/5/2017 - change from function to subroutine
 ' ---------------------------------
-Public Function CloseFormsReports()
+Public Sub CloseFormsReports()
 On Error GoTo Err_Handler
 
     'Close all open forms
@@ -167,7 +175,7 @@ On Error GoTo Err_Handler
     Loop
 
 Exit_Handler:
-    Exit Function
+    Exit Sub
 
 Err_Handler:
     Select Case Err.Number
@@ -176,9 +184,9 @@ Err_Handler:
             "Error encountered (#" & Err.Number & " - CloseFormsReports[mod_Forms])"
     End Select
     Resume Exit_Handler
-End Function
+End Sub
 
-' =================================
+' ---------------------------------
 ' FUNCTION:     FormIsOpen
 ' Description:  Indicates whether or not the specific form is open in form view
 ' Parameters:   none
@@ -188,7 +196,7 @@ End Function
 ' Source/date:  John R. Boetsch, 5/5/2006 as fxnSwitchboardIsOpen
 ' Adapted:      Bonnie Campbell, 4/30/2015 for NCPN tools
 ' Revisions:    BLC, 4/30/2015 - initial version
-' =================================
+' ---------------------------------
 Public Function FormIsOpen(strFormName As String) As Boolean
     On Error GoTo Err_Handler
 
@@ -219,7 +227,7 @@ Err_Handler:
     Resume Exit_Handler
 End Function
 
-' =================================
+' ---------------------------------
 ' FUNCTION:     SwitchboardIsOpen
 ' Description:  Indicates whether or not the switchboard form is open in form view
 ' Parameters:   none
@@ -231,7 +239,7 @@ End Function
 '               BLC, 4/30/2015  - moved to mod_Db framework module from mod_Custom_Functions
 '               BLC, 5/18/2015 - renamed, removed fxn prefix
 '               BLC, 6/12/2016 - revised to use AppSettings SWITCHBOARD value
-' =================================
+' ---------------------------------
 Public Function SwitchboardIsOpen() As Boolean
     On Error GoTo Err_Handler
 
@@ -245,7 +253,7 @@ Public Function SwitchboardIsOpen() As Boolean
     End If
 
 Exit_Handler:
-    Exit Function
+   Exit Function
 
 Err_Handler:
     Select Case Err.Number
@@ -256,7 +264,7 @@ Err_Handler:
     Resume Exit_Handler
 End Function
 
-' =================================
+' ---------------------------------
 ' FUNCTION:     FormIsLoaded
 ' Description:  Returns whether the specified form is loaded in Form or Datasheet view
 ' Parameters:   strFormName - string for the name of the form to check
@@ -268,7 +276,7 @@ End Function
 '               BLC, 4/30/2015 - moved from mod_Utilities to mod_UI
 '               BLC, 5/18/2015 - renamed, removed fxn prefix
 '               BLC, 9/14/2017 - removed mod_Utilities IsLoaded() is the same function
-' =================================
+' ---------------------------------
 Public Function FormIsLoaded(ByVal strFormName As String) As Integer
     On Error GoTo Err_Handler
  
@@ -478,12 +486,212 @@ Err_Handler:
 End Sub
 
 ' ---------------------------------
+' SUB:          SetWindowSize
+' Description:  sets form size (width & height)
+' Assumptions:  -
+' Note:         dimensions are in twips (1 inch = 1440 twips)
+' Parameters:   frm - form to set size for (form)
+'               lngHeight - desired height (long)
+'               lngWidth - desired width (long)
+' Returns:      -
+' Throws:       none
+' References:   none
+' Source/date:  Hasup, February 26,2014
+'   http://stackoverflow.com/questions/22021802/resize-form-in-ms-access-by-changing-detail-height
+' Adapted:      Bonnie Campbell, May 27, 2015 - for NCPN tools
+' Revisions:    BLC, 5/27/2015 - initial version
+'               BLC, 10/6/2017 - moved from mod_UI to mod_Form
+' ---------------------------------
+Public Sub SetWindowSize(ByRef frm As Form, ByRef lngHeight As Long, ByRef lngWidth As Long)
+On Error GoTo Err_Handler
+
+'    If Me.WindowHeight = 4044 Then
+'        lngHeight = 8000
+'    Else
+'        lngHeight = 4044
+'    End If
+    frm.Move frm.WindowLeft, Height:=lngHeight, Width:=lngWidth
+    
+Exit_Procedure:
+    Exit Sub
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - SetWindowSize[mod_Forms])"
+    End Select
+    Resume Exit_Procedure
+End Sub
+
+' ---------------------------------
+' SUB:          SetFormOpacity
+' Description:  Sets form opacity
+' Assumptions:  place in forms module mod_Form for protocols which utilize that module
+' Parameters:   frm - form to prepare
+'               sngOpacity - opacity of the form (single)
+'               TColor - color for the form display (long)
+' Returns:      N/A
+' Throws:       none
+' References:   none
+' Source/date:
+' Thenman, September 24, 2009
+' http://www.access-programmers.co.uk/forums/showthread.php?t=154907
+' Adapted:      Bonnie Campbell, February 9, 2016 - for NCPN tools
+' Revisions:
+'   BLC, 2/9/2016  - initial version
+'   BLC, 6/1/2016  - moved to mod_Forms from mod_App_UI (uplands)
+' ---------------------------------
+Public Sub SetFormOpacity(frm As Form, sngOpacity As Single, TColor As Long)
+On Error GoTo Err_Handler
+
+    Dim lngStyle As Long
+    
+    ' get the current window style, then set transparency
+    lngStyle = GetWindowLong(frm.hwnd, GWL_EXSTYLE)
+    SetWindowLong frm.hwnd, GWL_EXSTYLE, lngStyle Or WS_EX_LAYERED
+    SetLayeredWindowAttributes frm.hwnd, TColor, (sngOpacity * 255), LWA_ALPHA
+    
+Exit_Handler:
+    Exit Sub
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - SetFormOpacity[mod_Forms])"
+    End Select
+    Resume Exit_Handler
+End Sub
+
+' ---------------------------------
+' SUB:          RepaintParentForm
+' Description:  Repaints the control's parent(or grandparent or great grandparent...) form
+' Parameters:   ctl - control whose parent form you're looking to repaint
+' Returns:      -
+' Throws:       none
+' References:   none
+' Source/date:  Bonnie Campbell August, 2014 - NCPN tools
+' Adapted:      -
+' Revisions:    BLC, 8/20/2014 - initial version
+'               BLC, 4/30/2015 - moved from mod_Common_UI to mod_UI
+' ---------------------------------
+Public Sub RepaintParentForm(ctl As Control)
+On Error GoTo Err_Handler:
+Dim parentControl As Object
+
+    Set parentControl = ctl.Parent
+
+    Do Until parentControl Is Nothing
+
+        If TypeName(parentControl.Name) = "String" Then
+            'form? -> refresh the display
+            If getAccessObjectType(parentControl.Name) = -32768 Then
+                parentControl.Repaint
+                Exit Do
+            End If
+            Set parentControl = parentControl.Parent
+        Else
+            'form? -> refresh the display
+            If CurrentProject.AllForms(parentControl.Name).IsLoaded Then
+                parentControl.Repaint
+                Exit Do
+            End If
+        End If
+    Loop
+
+Exit_Procedure:
+    Exit Sub
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - RepaintParentForm[mod_Forms])"
+    End Select
+    Resume Exit_Procedure
+End Sub
+
+' ---------------------------------
 '  Form Controls
 ' ---------------------------------
 
 ' ---------------------------------
+' SUB:          PopulateSubformControl
+' Description:  Populate a subform control with a specific form
+'               Allows swapping of subform with context
+' Parameters:   ctrl - subform control to populate
+'               strSubFormName - name of the subform to use in the control
+' Returns:      -
+' Throws:       none
+' References:   none
+' Source/date:  Bonnie Campbell, 5/1/2015 for NCPN tools
+' Revisions:    BLC, 5/1/2015 - initial version
+'               BLC, 10/6/2017 - moved from mod_UI to mod_Forms
+' ---------------------------------
+Public Sub PopulateSubformControl(ctrl As SubForm, strSubFormName As String)
+    On Error GoTo Err_Handler
+
+    ctrl.SourceObject = strSubFormName 'Forms(strSubFormName)
+
+Exit_Procedure:
+    Exit Sub
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - PopulateSubformControl[mod_Forms])"
+    End Select
+    Resume Exit_Procedure
+End Sub
+
+' ---------------------------------
+' FUNCTION:     ControlExists
+' Description:  determines if a control exists in a form
+' Parameters:   ctlName - control to check for (string)
+'               frm - form to check on (form)
+' Returns:      boolean - true if control exists, false if not
+' Throws:       none
+' References:   none
+' Source/date:
+'   VBslammer, March 22, 2005
+'   http://www.tek-tips.com/viewthread.cfm?qid=1029435
+'   Mike Lyons September 21, 2007
+'   http://www.utteraccess.com/forum/Control-Exist-Form-t1505884.html
+' Adapted:      Bonnie Campbell, May 15, 2015 - for NCPN tools
+' Revisions:    BLC, 5/12/2015 - initial version
+'               BLC, 9/1/2016  - added false path, updated documentation
+'               BLC, 10/6/2017 - moved from mod_UI to mod_Forms
+' ---------------------------------
+Public Function ControlExists(ByRef ctlName As String, ByRef frm As Form) As Boolean
+On Error GoTo Err_Handler
+  Dim ctl As Control
+  
+  For Each ctl In frm.Controls
+    If ctl.Name = ctlName Then
+      ControlExists = True
+      GoTo Exit_Handler
+    End If
+  Next ctl
+  
+  'doesn't exist
+  ControlExists = False
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - ControlExists[mod_Forms])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
 ' SUB:          AddControl
-' Description:  initialize application values
+' Description:  add control to form
 ' Assumptions:  -
 ' Parameters:   frm - form (object)
 '               ctrl - control (object)
@@ -525,33 +733,49 @@ Err_Handler:
 End Sub
 
 ' ---------------------------------
-' SUB:          SetFormOpacity
-' Description:  Sets form opacity
-' Assumptions:  place in forms module mod_Form for protocols which utilize that module
-' Parameters:   frm - form to prepare
-'               sngOpacity - opacity of the form (single)
-'               TColor - color for the form display (long)
-' Returns:      N/A
+' SUB:          AddFormControl
+' Description:  Adds a control to a form
+' Assumptions:  -
+' Parameters:   frm - form to add controls to (form)
+'               ctlType - type of control to add (control)
+'               ctlName - name of control to add (string)
+'               ctlData - data for control (optional, variant)
+' Returns:      -
 ' Throws:       none
-' References:   none
-' Source/date:
-' Thenman, September 24, 2009
-' http://www.access-programmers.co.uk/forums/showthread.php?t=154907
-' Adapted:      Bonnie Campbell, February 9, 2016 - for NCPN tools
+' References:
+'   Chip Pearson, unknown
+'   http://www.ozgrid.com/Excel/free-training/ExcelVBA2/excelvba2lesson21.htm
+' Source/date:  Bonnie Campbell, October 11, 2016 - for NCPN tools
+' Adapted:      -
 ' Revisions:
-'   BLC, 2/9/2016  - initial version
-'   BLC, 6/1/2016  - moved to mod_Forms from mod_App_UI (uplands)
+'   BLC - 10/11/2016 - initial version
+'   BLC - 10/6/2017 - moved from mod_UI to mod_Forms
 ' ---------------------------------
-Public Sub SetFormOpacity(frm As Form, sngOpacity As Single, TColor As Long)
+Public Sub AddFormControl(frmName As String, ctlType As Long, ctlName As String, Optional ctlData As Variant, _
+                        Optional w As Integer, Optional h As Integer, _
+                        Optional xPos As Integer, Optional yPos As Integer)
 On Error GoTo Err_Handler
+    
+    'Dim progID As String
+    Dim c As Control
+    
+    'progID = "Forms." & ctlType & ".1"
+    
+'    Set c = frm.Controls.Add(progID, ctlName)
+    Set c = CreateControl(frmName, ctlType, acDetail)
 
-    Dim lngStyle As Long
+    c.Name = ctlName
     
-    ' get the current window style, then set transparency
-    lngStyle = GetWindowLong(frm.hwnd, GWL_EXSTYLE)
-    SetWindowLong frm.hwnd, GWL_EXSTYLE, lngStyle Or WS_EX_LAYERED
-    SetLayeredWindowAttributes frm.hwnd, TColor, (sngOpacity * 255), LWA_ALPHA
+    If Not ctlData Is Nothing Then
+        Set c.Recordset = ctlData
+    End If
     
+    'set dimensions & location
+    If IsNumeric(w) Then c.Width = w
+    If IsNumeric(h) Then c.Height = h
+    If IsNumeric(xPos) Then c.Left = xPos
+    If IsNumeric(yPos) Then c.Top = yPos
+
 Exit_Handler:
     Exit Sub
     
@@ -559,9 +783,199 @@ Err_Handler:
     Select Case Err.Number
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - SetFormOpacity[mod_Forms])"
+            "Error encountered (#" & Err.Number & " - AddFormControl[mod_Forms])"
     End Select
     Resume Exit_Handler
+End Sub
+
+' ---------------------------------
+' FUNCTION:     ChangeBackColor
+' Description:  change background color of control
+' Assumptions:  -
+' Parameters:   ctrl- control to change color
+'               lngColor = color (long)
+' Returns:      N/A
+' Throws:       none
+' References:   none
+' Note:         MUST be a function vs. sub to be called w/in form event ( =ChangeBackColor(Me,lngYelLime) )
+' Source/date:  Bonnie Campbell, March 4, 2015 - for NCPN tools
+' Revisions:
+'   BLC - 3/4/2015  - initial version
+' ---------------------------------
+Public Function ChangeBackColor(ctrl As Control, lngColor As Long)
+On Error GoTo Err_Handler
+
+    ctrl.backcolor = lngColor
+    
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - ChangeBackColor[mod_Forms])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' SUB:          ResetHeaders
+' Description:  reset header fields to their original backcolor
+' Assumptions:  if only a subset of form controls are to be reset, these controls should have the same Tag property value
+' Parameters:   frm - form to reset headers on
+'               allCtrls - if all form controls should be reset (boolean) (true = reset all controls,
+'                           false = reset one control [requires oCtrl to be populated])
+'               ctrlTag - control's tag string if resetting only a subset of forms controls (string)
+'               fontBold - whether text should be bold (boolean) (true = make font bold, false not bold),  (optional)
+'               backstyle - if back control back color is normal or transparent (integer) (1-normal 0-transparent) (optional)
+'               forecolor - text color (long) (optional)
+'               backcolor - backgound color of control (long) (optional)
+'               oCtrl - control to change, if only one control is to be changed (optional)
+' Returns:      N/A
+' Throws:       none
+' References:   none
+' Source/date:
+' Fionnuala January 20, 2013
+' http://stackoverflow.com/questions/3344649/how-to-loop-through-all-controls-in-a-form-including-controls-in-a-subform-ac
+' Adapted:      Bonnie Campbell, February 20, 2015 - for NCPN tools
+' Revisions:
+'   BLC - 2/20/2015  - initial version
+'   BLC - 10/6/2017  - moved from mod_UI to mod_Forms
+' ---------------------------------
+Public Sub ResetHeaders(frm As Form, _
+                        allCtrls As Boolean, _
+                        ctrlTag As String, _
+                        Optional fontBold As Boolean = True, _
+                        Optional backstyle As Integer = 1, _
+                        Optional forecolor As Long, _
+                        Optional backcolor As Long, _
+                        Optional oCtrl As Control)
+On Error GoTo Err_Handler
+
+Dim ctrl As Control
+
+    If allCtrls = True Then
+    
+        'iterate through all form controls
+        For Each ctrl In frm
+            
+            'check control type
+             If ctrl.ControlType = acTextBox Or _
+                ctrl.ControlType = acComboBox Or _
+                ctrl.ControlType = acListBox Or _
+                ctrl.ControlType = acLabel _
+             Then
+             
+                'check tag
+                If ctrl.Tag = ctrlTag Then
+                    If varType(fontBold) = vbBoolean Then ctrl.fontBold = fontBold
+                    If varType(backstyle) = vbInteger Then ctrl.backstyle = backstyle
+                    If varType(backcolor) = vbLong Then ctrl.backcolor = backcolor
+                    If varType(forecolor) = vbLong Then ctrl.forecolor = forecolor
+                End If
+                
+          End If
+          
+        Next
+    Else
+        'reset only oCtrl
+
+        'check tag
+        If oCtrl.Tag = ctrlTag Then
+        
+            'check control type
+            If oCtrl.ControlType = acTextBox Or _
+                oCtrl.ControlType = acComboBox Or _
+                oCtrl.ControlType = acListBox Or _
+                oCtrl.ControlType = acLabel _
+            Then
+          
+                If varType(fontBold) = vbBoolean Then oCtrl.fontBold = fontBold
+                If varType(backstyle) = vbInteger Then oCtrl.backstyle = backstyle
+                If varType(backcolor) = vbLong Then oCtrl.backcolor = backcolor
+                If varType(forecolor) = vbLong Then oCtrl.forecolor = forecolor
+             
+            End If
+            
+        End If
+
+    End If
+
+Exit_Sub:
+    Exit Sub
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - ResetHeaders[mod_Forms])"
+    End Select
+    Resume Exit_Sub
+End Sub
+
+' ---------------------------------
+' SUB:          ShowControls
+' Description:  toggle control visibility
+' Assumptions:  if only a subset of form controls are to be reset, these controls should have the same Tag property value
+' Parameters:   frm - form controls are on
+'               allCtrls - if all form controls should be reset (boolean) (true = reset all controls,
+'                           false = reset one control [requires oCtrl to be populated])
+'               ctrlTag - control's tag string if resetting only a subset of forms controls (string)
+'               visibility - whether control should be visible or not (boolean) (true = make font bold, false not bold),  (optional)
+'               oCtrl - control to change, if only one control is to be changed (optional)
+' Returns:      N/A
+' Throws:       none
+' References:   none
+' Source/date:
+' Fionnuala January 20, 2013
+' http://stackoverflow.com/questions/3344649/how-to-loop-through-all-controls-in-a-form-including-controls-in-a-subform-ac
+' Adapted:      Bonnie Campbell, February 20, 2015 - for NCPN tools
+' Revisions:
+'   BLC - 2/20/2015 - initial version
+'   BLC - 6/30/2015 - update documentation
+'   BLC - 10/6/2017 - moved from mod_UI to mod_Forms
+' ---------------------------------
+Public Sub ShowControls(frm As Form, _
+                        allCtrls As Boolean, _
+                        ctrlTag As String, _
+                        visibility As Boolean, _
+                        Optional oCtrl As Control)
+On Error GoTo Err_Handler
+
+Dim ctrl As Control
+
+    If allCtrls = True Then
+    
+        'iterate through all form controls
+        For Each ctrl In frm
+
+            'check tag
+            If ctrl.Tag = ctrlTag Then
+                ctrl.visible = visibility
+            End If
+
+        Next
+    Else
+        'reset only oCtrl
+
+        'check tag
+        If oCtrl.Tag = ctrlTag Then
+                oCtrl.visible = visibility
+        End If
+
+    End If
+
+Exit_Sub:
+    Exit Sub
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - ShowControls[mod_Forms])"
+    End Select
+    Resume Exit_Sub
 End Sub
 
 ' ---------------------------------
@@ -686,7 +1100,7 @@ Err_Handler:
     Resume Exit_Handler
 End Function
 
-' =================================
+' ---------------------------------
 ' SUB:          CaptureEscapeKey
 ' Description:  Handles ESCAPE key actions for certain forms
 ' Assumptions:
@@ -701,7 +1115,7 @@ End Function
 ' Source/date:  Bonnie Campbell, August 21, 2015 - for NCPN tools
 ' Revisions:    BLC, 8/21/2015 - initial version
 '               BLC, 6/1/2016  - added to mod_Forms from mod_App_UI (uplands)
-' =================================
+' ---------------------------------
 Public Sub CaptureEscapeKey(KeyCode As Integer)
 On Error GoTo Err_Handler
 
@@ -776,6 +1190,7 @@ End Sub
 ' Description:  Limit form fields to a set number of characters
 ' Assumptions:  Control passed in is a textbox
 ' Parameters:   ctrl - textbox cotnrol
+'               iMaxLen - maximum # of characters (integer)
 ' Returns:      -
 ' Throws:       none
 ' Usage:        Call LimitChange(Me.MyTextBox, 12) in control's Change event

@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Strings
 ' Level:        Framework module
-' Version:      1.14
+' Version:      1.15
 ' Description:  String related functions & subroutines
 ' Requires:     Microsoft VBScript Regular Expressions 5.5 library for RemoveChars() oReg
 '
@@ -39,6 +39,7 @@ Option Explicit
 '               BLC, 9/14/2017 - 1.14 - organized methods, added from removed mod_Utilities:
 '                                       ReplaceChars() which mirrors ReplaceChars_TSB(),
 '                                       TitleCaseNameSplit(), UnderscoreNameSplit(), Capitalize()
+'               BLC, 10/6/2017 - 1.15 - update documentation, add Wrap()
 ' =================================
 
 '---------------------
@@ -356,7 +357,7 @@ End Function
 ' Revisions:
 '   BLC - 3/16/2016  - initial version
 ' ---------------------------------
-Public Function ReplaceMulti(strOriginal As String, Params() As String)
+Public Function ReplaceMulti(strOriginal As String, Params() As String) As String
 On Error GoTo Err_Handler
 
     Dim strNew As String, aryText() As String
@@ -409,7 +410,7 @@ End Function
 '   BLC - 6/20/2017  - initial version
 ' ---------------------------------
 Public Function ReplaceTextBetween(strOriginal As String, Word1 As String, _
-                                        Word2 As String, Optional Replacement As String = "")
+                                        Word2 As String, Optional Replacement As String = "") As String
 On Error GoTo Err_Handler
 
     Dim strSegment As String, strNew As String
@@ -450,7 +451,9 @@ End Function
 ' FUNCTION:     ParseString
 ' Description:  retrieve the item from string
 ' Assumptions:  -
-' Parameters:   strTag - tag to check (string)
+' Parameters:   str - text to parse (string)
+'               idx - location of item (integer)
+'               delimiter - separator between items in string (string, optional, default = "|")
 ' Returns:      item (string)
 ' Throws:       none
 ' References:   none
@@ -459,6 +462,7 @@ End Function
 ' Revisions:
 '   BLC - 7/29/2015 - initial version
 '   BLC - 8/30/2016 - moved from Tree form
+'   BLC - 10/6/2017 - updated documentation
 ' ---------------------------------
 Public Function ParseString(str As String, idx As Integer, Optional delimiter As String = "|") As String
 On Error GoTo Err_Handler
@@ -552,7 +556,7 @@ End Function
 
 ' ---------------------------------
 ' FUNCTION:     UnderscoreNameSplit
-' Description:  splits a string into separate
+' Description:  splits a string into separate words with underscore between
 ' Assumptions:  -
 ' Parameters:   strIn - string to manipulate (string)
 ' Returns:      string split by capitals
@@ -680,6 +684,49 @@ Err_Handler:
     End Select
     Resume Exit_Handler
 End Function
+
+' ---------------------------------
+' FUNCTION:     Wrap
+' Description:  Wraps input with some sort of wrapping character
+'
+'               Accepts a variant & wraps with whatever character or
+'               group of characters passed in the optional WrapWith argument.
+'               Replaces all values equal to the WrapWith text
+'               with duplicates of that character which enables wrapping
+'               a text string that contains quotes.
+'
+'               If WrapWhat value is NULL --> function returns a empty string wrapped in quotes
+'               Generally used to wrap text in quotes or date values in the #
+' Assumptions:  -
+' Parameters:   WrapWhat - string to manipulate (variant)
+'               WrapWith - text to wrap around (string, optional, default = "")
+' Returns:      wrapped string
+' Throws:       none
+' References:
+'   Dale Fye, March 10, 2000
+' Source/date:  Unknown, unknown
+' Adapted:      Bonnie Campbell, September 14, 2017 - for NCPN tools
+' Revisions:
+'   Unknown - Unknown - initial version
+'   BLC - 10/6/2017 - moved from mod_Temp
+' ---------------------------------
+Public Function Wrap(WrapWhat As Variant, Optional WrapWith As String = """") As String
+On Error GoTo Err_Handler
+        
+    Wrap = WrapWith & Replace(WrapWhat & "", WrapWith, WrapWith & WrapWith) & WrapWith
+    
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (" & Err.Number & " - Wrap[mod_Strings])"
+    End Select
+    Resume Exit_Handler
+End Function
+
 
 ' ---------------------------------
 '   Insertions
@@ -957,7 +1004,7 @@ End Function
 '               and the 2 characters to code a valid CodePoint are computed
 ' Assumptions:  -
 ' Parameters:   CodePoint - string to check
-' Returns:      count - number o instances strFind is found in strInspect
+' Returns:      Desired Unicode character
 ' Throws:       none
 ' References:   none
 ' Source/date:
@@ -995,36 +1042,6 @@ Err_Handler:
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - StringFromCodePoint[mod_Strings])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-' FUNCTION:     XX
-' Description:  Inspects a string and determines if it is capitalized or not
-' Assumptions:  -
-' Parameters:   strIn - string to manipulate (string)
-' Returns:      whether the string is capitalized or not (boolean)
-' Throws:       none
-' References:   none
-' Source/date:  Unknown, unknown
-' Adapted:      Bonnie Campbell, September 14, 2017 - for NCPN tools
-' Revisions:
-'   Unknown - Unknown - initial version
-'   BLC - 9/14/2017 - moved from mod_Utilities (removed)
-' ---------------------------------
-Public Function XX(strIn As String) As Boolean
-On Error GoTo Err_Handler
-
-    
-Exit_Handler:
-    Exit Function
-    
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (" & Err.Number & " - XX[mod_Strings])"
     End Select
     Resume Exit_Handler
 End Function

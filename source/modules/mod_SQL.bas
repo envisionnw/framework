@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_SQL
 ' Level:        Framework module
-' VERSION:      1.08
+' VERSION:      1.10
 ' Description:  Database/SQL properties, functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, 7/24/2014
@@ -21,32 +21,9 @@ Option Explicit
 '               BLC, 4/28/2017 - 1.07 - added SQL_encode(), GetParamsFromSQL() moved from mod_Db
 '               BLC, 10/4/2017 - 1.08 - switched CurrentDb to CurrDb property to avoid
 '                                       multiple open connections
+'               BLC, 10/5/2017 - 1.09 - moved DbCurrent property to mod_Db
+'               BLC, 10/6/2017 - 1.10 - update DbCurrent > CurrDb
 ' =================================
-
-' ---------------------------------
-' PROPERTY:     dbCurrent
-' Description:  Gets a single instance of the current db to avoid multiple calls
-'               to CurrentDb which can yield to Error 3048 "Cannot open any more databases" errors
-'               due to multiple open db
-' Parameters:   -
-' Returns:      current database object
-' Throws:       -
-' References:   -
-' Source/date:  Dirk Goldgar, MS Access MVP - May 22, 2013
-'   http://social.msdn.microsoft.com/Forums/office/en-US/9993d229-8a00-4a59-a796-dfa2dad505bc/cannot-open-any-more-databases?forum=accessdev
-' Adapted:      Bonnie Campbell, July, 2014 for NCPN Riparian tools
-' Revisions:    BLC, 7/23/2014 - initial version
-' ---------------------------------
-Private m_db As DAO.Database
-Public Property Get dbCurrent() As DAO.Database
-
-    If (m_db Is Nothing) Then
-        Set m_db = CurrentDb
-    End If
-
-    Set dbCurrent = m_db
-
-End Property
 
 ' ---------------------------------
 '   Retrieve SQL
@@ -67,11 +44,12 @@ End Property
 ' Adapted:      Bonnie Campbell, July, 2014 for NCPN tools
 ' Revisions:    BLC, 7/23/2014 - initial version
 '               BLC, 6/30/2015 - rename get... to Get...
+'               BLC, 10/6/2017 - update dbCurrent > CurrDb
 ' ---------------------------------
 Public Function GetSQL(strQuery As String) As String
 On Error GoTo Err_Handler:
 
-   GetSQL = dbCurrent.QueryDefs(strQuery).SQL
+   GetSQL = CurrDb.QueryDefs(strQuery).SQL
    
 Exit_Function:
     Exit Function
@@ -666,7 +644,7 @@ End Function
 ' Revisions:
 '   BLC - 3/8/2016  - initial version
 ' ---------------------------------
-Public Function PrepareWhereClause(Params() As String)
+Public Function PrepareWhereClause(Params() As String) As String
 On Error GoTo Err_Handler
     
     Dim strWHERE As String

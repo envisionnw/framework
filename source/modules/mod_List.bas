@@ -636,7 +636,7 @@ End Sub
 ' Assumptions:  Recordset contains the same number and type of fields as the list recordset table.
 ' Parameters:   tblName - Temporary table name (string)
 '               rsList - listbox recordset (DAO.recordset)
-'               aryFieldNames - table fields (string array)
+'               strFieldNames - table fields (delimited string)
 '               aryFieldTypes - field types (variant array)
 '               blnReplace - true = replace records in the Temp table (if it exists)
 '                            false = append to records in the Temp table (if it exists)
