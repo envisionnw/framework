@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        AppComment
 ' Level:        Framework class
-' Version:      1.04
+' Version:      1.05
 '
 ' Description:  Comment object related properties, events, functions & procedures
 '
@@ -26,6 +26,7 @@ Option Explicit
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
 '               BLC - 10/4/2017 - 1.03 - SaveToDb() code cleanup
 '               BLC - 10/6/2017 - 1.04 - removed GetClass() after Factory class instatiation implemented
+'               BLC - 10/17/2017 - 1.05 - code cleanup
 ' =================================
 
 '---------------------
@@ -186,34 +187,10 @@ End Sub
 ' Adapted:      -
 ' Revisions:
 '   BLC - 11/19/2015 - initial version
+'   BLC - 10/17/2017 - code cleanup
 ' ---------------------------------
 Public Sub AddComment()
 On Error GoTo Err_Handler
-
-'context As String, recordID As Integer, description As String, _
-                    status As Integer, priority As Integer, requestor As Integer, _
-                    Optional completor As Integer
-
-'    Dim db As DAO.Database
-'    Dim rs As DAO.Recordset
-'    Dim strSQL As String
-'
-'    Set db = CurrDb
-'    Set rs = db.OpenRecordset("Comment")
-'
-'    With rs
-'        .AddNew
-'        !CommentType = Me.CommentType
-'        !TypeID = Me.TypeID
-'        !Comment = Me.Comment
-'        !CreatedBy = Me.CommentorID
-'        !CreateDate = Now()
-'
-'        .update
-'        If IsNumeric(!ID) Then
-'            Me.ID = !ID
-'        End If
-'    End With
 
     Me.SaveToDb False
 

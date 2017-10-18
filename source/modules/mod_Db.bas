@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Db
 ' Level:        Framework module
-' Version:      1.23
+' Version:      1.24
 ' Description:  Database related functions & subroutines
 ' Requires:     Microsoft Scripting Runtime (scrrun.dll) for Scripting.Dictionary
 '
@@ -70,6 +70,7 @@ Option Explicit
 '                                       multiple open connections
 '               BLC, 10/5/2017 - 1.23 - updated documentation, merged DbCurrent (mod_SQL)
 '                                       with CurrDb
+'               BLC, 10/17/2017 - 1.24 - moved SysTablesExist() from mod_Initialize_App
 ' =================================
 
 ' ---------------------------------
@@ -618,6 +619,102 @@ Err_Handler:
         Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - DbTableExists[mod_Db])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' FUNCTION:     SysTablesExist
+' Description:  Checks if select system tables exist
+' Assumptions:  -
+' Parameters:   tblType - string value representing the group of tables to check
+'                         either "db" -> backend data tables, links & app defaults
+'                         or    "app" -> release version, bugs, user roles & logins
+' Returns:      True if all tables exist, false if any do not
+' Throws:       -
+' References:   -
+' Source/date:  Bonnie Campbell, July 31, 2014 for NCPN WQ Utilities tool
+' Adapted:      -
+' Revisions:    BLC, 7/31/2014 - initial version
+'               BLC, 4/22/2015 - shifted default arrays of sys db & app tables to globals
+'                                DB_SYS_TABLES & APP_SYS_TABLES to accommodate & expose settings for
+'                                multiple apps (NCPN Invasives Reporting tool), some that do not
+'                                contain same/all tables
+'               BLC, 10/17/2017 - moved from mod_Initialize_App to mod_Db
+' ---------------------------------
+Public Function SysTablesExist(tblType As String) As Boolean
+On Error GoTo Err_Handler:
+Dim sysTables As Variant
+Dim i As Integer
+Dim missingTable As String
+
+    Select Case tblType
+            
+        Case "db"
+            ' Confirm certain system tables exist --> if not, close the application
+            '-----------------------------------------------------------------------
+            '   tsys_App_Defaults -> default application settings
+            '   tsys_BE_Updates   -> updates to post to remote back-end copies
+            '   tsys_Link_Dbs     -> info about linked back-end dbs
+            '   tsys_Link_Tables  -> info about linked tables
+            '-----------------------------------------------------------------------
+            sysTables = Split(DB_SYS_TABLES, ",")
+
+        Case "app"
+            ' Confirm certain backend system tables exist --> if not, set connected to false
+            '-----------------------------------------------------------------------
+            '   tsys_App_Releases -> list of application releases
+            '   tsys_Bug_Reports  -> tracking for known issues
+            '   tsys_Logins       -> system use monitoring
+            '   tsys_User_Roles   -> assign user access priviledges
+            '-----------------------------------------------------------------------
+            sysTables = Split(APP_SYS_TABLES, ",")
+        Case ""
+    End Select
+        
+    For i = 0 To UBound(sysTables)
+        If TableExists("tsys_" & Trim(sysTables(i))) = False Then
+            missingTable = sysTables(i)
+            GoTo Missing_Table:
+        End If
+    Next
+    
+    'return result
+    SysTablesExist = True
+    
+Exit_Handler:
+    Exit Function
+    
+Missing_Table:
+    Dim strMsg As String
+    strMsg = "Unable to find the system table: " & vbCrLf & vbCrLf & vbTab & _
+                sysTables(i) & vbCrLf & vbCrLf
+
+    Select Case missingTable
+        Case "App_Defaults", "BE_Updates", "Link_Dbs", "Link_Tables", "Link_Files"
+            strMsg = strMsg & "Notify the database administrator."
+            DoCmd.SetWarnings True
+            DoCmd.Quit acQuitSaveNone
+        Case "App_Releases", "Bug_Reports", "Logins", "User_Roles"
+            ' Close the application if missing one or more systems tables
+            strMsg = strMsg & _
+                "Either link to the correct back-end or quit and notify the" & vbCrLf & _
+                "database administrator before using this application."
+            TempVars.Item("Connected") = False
+        Case ""
+    End Select
+    
+    'display messages
+    MsgBox strMsg, vbCritical, "Application error - Missing system table"
+    
+    'return result
+    SysTablesExist = False
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - SysTablesExist[mod_Db])"
     End Select
     Resume Exit_Handler
 End Function

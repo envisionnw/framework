@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_Data
 ' Level:        Application module
-' Version:      1.40
+' Version:      1.41
 ' Description:  data functions & procedures specific to this application
 '
 ' Source/date:  Bonnie Campbell, 2/9/2015
@@ -72,6 +72,8 @@ Option Explicit
 '               BLC, 10/4/2017 - 1.39 - switched CurrentDb to CurrDb property to avoid
 '                                       multiple open connections
 '               BLC, 10/6/2017 - 1.40 - moved UploadCSVFile() to mod_CSV
+'               BLC, 10/17/2017 - 1.41 - added error 3022 - duplicate record handling,
+'                                        updated SetRecord u_site parameters
 ' =================================
 
 ' =================================
@@ -1213,6 +1215,8 @@ End Function
 '   BLC - 9/29/2017 - add SiteID parameter for i_location
 '   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
 '                     multiple open connections
+'   BLC - 10/17/2017 - added error 3022 - duplicate record handling, update u_site, i_feature, u_feature
+'                      parameters
 ' ---------------------------------
 Public Function SetRecord(Template As String, Params As Variant) As Long
 On Error GoTo Err_Handler
@@ -1321,10 +1325,10 @@ On Error GoTo Err_Handler
                                         
                 Case "i_feature"
                     '-- required parameters --
-                    .Parameters("LocationID") = Params(1)
-                    .Parameters("LocationName") = Params(2)
-                    .Parameters("Description") = Params(3)
-                    .Parameters("Directions") = Params(4)
+                    .Parameters("LocID") = Params(1)            'LocationID
+                    .Parameters("Feature") = Params(2)          'LocationName
+                    .Parameters("Descr") = Params(3)            'Description
+                    .Parameters("Dirs") = Params(4)             'Directions
                 
                 Case "i_imported_data"
                     '-- required parameters --
@@ -1675,10 +1679,12 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                     
                 Case "u_feature"
                     '-- required parameters --
-                    .Parameters("LocationID") = Params(1)
-                    .Parameters("LocationName") = Params(2)
-                    .Parameters("Description") = Params(3)
-                    .Parameters("Directions") = Params(4)
+                    .Parameters("LocID") = Params(1)        'LocationID
+                    .Parameters("feat") = Params(2)         'Feature
+                    .Parameters("Descr") = Params(3)        'FeatureDescription
+                    .Parameters("Dirs") = Params(4)         'FeatureDirections
+                    .Parameters("FID") = Params(5)
+                    ID = Params(5)
                     
                 Case "u_location"
                     '-- required parameters --
@@ -1725,15 +1731,16 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                 
                 Case "u_site"
                     '-- required parameters --
-                    .Parameters("ParkID") = Params(1)
-                    .Parameters("RiverID") = Params(2)
-                    .Parameters("Code") = Params(3)
-                    .Parameters("Name") = Params(4)
-                    .Parameters("IsActiveForProtocol") = Params(5)
+                    '.Parameters("ParkID") = Params(1)
+                    '.Parameters("RiverID") = Params(2)
+                    .Parameters("scode") = Params(3)
+                    .Parameters("sname") = Params(4)
+                    .Parameters("flag") = Params(5)         'IsActiveForProtocol
                     
                     '-- optional parameters --
-                    .Parameters("Directions") = Params(6)
-                    .Parameters("Description") = Params(7)
+                    .Parameters("sdir") = Params(6)             'Directions
+                    .Parameters("sdesc") = Params(7)             'Description
+                    .Parameters("sid") = Params(8)
                 
                 Case "u_site_isactive_flag"
                     '-- required parameters --
@@ -1978,7 +1985,14 @@ Exit_Handler:
     Exit Function
 Err_Handler:
     Select Case Err.Number
-
+          Case 3022
+            'show added record message & clear
+            DoCmd.OpenForm "MsgOverlay", acNormal, , , , acDialog, _
+                        "msg" & PARAM_SEPARATOR & "Please check your " & _
+                        "values && retry if necessary. " & _
+                        vbCrLf & "[" & Template & " - SetRecord]" & _
+                        "|Type" & PARAM_SEPARATOR & "caution" & _
+                        "|Title" & PARAM_SEPARATOR & "Duplicate Record!"
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - SetRecord[mod_App_Data])"

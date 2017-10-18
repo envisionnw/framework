@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_UI
 ' Level:        Application module
-' Version:      1.24
+' Version:      1.25
 ' Description:  Application User Interface related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
@@ -66,6 +66,7 @@ Option Explicit
 '               BLC, 9/29/2017 - 1.23 - added logger case
 '               BLC, 10/4/2017 - 1.24 - switched CurrentDb to CurrDb property to avoid
 '                                       multiple open connections
+'               BLC, 10/16/2017 - 1.25 - adjusted Contact to include IsNPS (PopulateForm())
 ' =================================
 
 ' ---------------------------------
@@ -1599,6 +1600,7 @@ End Sub
 '   BLC - 9/29/2017 - added Logger case
 '   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
 '                     multiple open connections
+'   BLC - 10/16/2017 - adjusted Contact to include IsNPS
 ' ---------------------------------
 Public Sub PopulateForm(frm As Form, ID As Long)
 On Error GoTo Err_Handler
@@ -1628,6 +1630,7 @@ On Error GoTo Err_Handler
                 .Controls("tbxPhone").ControlSource = "WorkPhone"
                 .Controls("tbxPosition").ControlSource = "PositionTitle"
                 .Controls("tbxExtension").ControlSource = "WorkExtension"
+                .Controls("tglIsNPS").ControlSource = IIf("IsNPS" = 1, True, False)
                 'contact_access data
                 .Controls("cbxUserRole").ControlSource = "Access_ID"
             Case "Events"

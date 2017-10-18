@@ -4,7 +4,7 @@ Option Explicit
 ' ---------------------------------
 ' MODULE:       mod_User
 ' Level:        Framework module
-' Version:      1.12
+' Version:      1.13
 ' Description:  Access related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, May 2014
@@ -27,6 +27,8 @@ Option Explicit
 ' ------------------------------------------------------------------------------
 '               BLC, 10/4/2017 - 1.12 - switched CurrentDb to CurrDb property to avoid
 '                                       multiple open connections
+'               BLC, 10/16/2017 - 1.13 - revised Unknown username to Unknown + timestamp to avoid
+'                                        duplicate entry
 ' ---------------------------------
 
 ' ---------------------------------
@@ -750,12 +752,18 @@ End Sub
 '                               BLC, 8/23/2017 - merged in prior work:
 '                              BLC, 6/6/2017  - revised to accommodate testing user
 ' ------------------------------------------------------------------------------
+'               BLC, 10/16/2017 - revised Unknown username to Unknown + timestamp to avoid
+'                                 duplicate entry
 ' ---------------------------------
 Public Function UserName() As String
     On Error GoTo Err_Handler
 
-    UserName = "Unknown"
-    UserName = IIf(DEV_MODE, "TestUser", Environ("Username"))
+'    UserName = "Unknown"
+'    UserName = IIf(DEV_MODE, "TestUser", Environ("Username"))
+
+    UserName = "Unknown" & Now()
+    UserName = IIf(DEV_MODE, "TestUser" & Now(), Environ("Username"))
+
 
 Exit_Handler:
     Exit Function
