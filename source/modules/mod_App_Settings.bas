@@ -89,6 +89,7 @@ Public gSubReportCount As Integer                  'global counter for subreport
 '               BLC, 6/19/2017 - added APP_RELEASE_ID constant value for 2017 Pre-Season Invasives Reporting Tool (tsys_App_Releases)
 '               BLC, 6/26/2017 - added REMOVE_RESULT_TABLES constant for 2017 Pre-Season Invasives
 ' --------------------------------------------------------------------
+'               BLC, 10/18/2017 - added CREATE_ENUMS for turning ON/OFF enum creation from enum table
 ' ---------------------------------
                                                                 'Version Control System (VCS) db (contains modules for version control)
                                                                 'Tables to save for VCS (e.g. lookups)
@@ -113,6 +114,8 @@ Public Const APP_URL As String = "science.nature.nps.gov/im/units/ncpn/datamanag
 Public DEV_MODE As Boolean                                      'Boolean flag -> enable menus, show controls when typically they'd be OFF
                                                                 '        flag is set via DEV_MODE toggle in UI
 
+Public CREATE_ENUMS As Boolean                                  'Boolean flag -> turns ON/OFF enum creation
+                                                                '                from enum table
 Public Const ACCESS_ROLES As String = "admin,power user,data entry,read only"
                                                                 'String -> used in setting user application access level & permissions
 Public Const SWITCHBOARD As String = "Main"                     'String -> main application form

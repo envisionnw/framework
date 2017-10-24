@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Strings
 ' Level:        Framework module
-' Version:      1.15
+' Version:      1.17
 ' Description:  String related functions & subroutines
 ' Requires:     Microsoft VBScript Regular Expressions 5.5 library for RemoveChars() oReg
 '
@@ -40,6 +40,8 @@ Option Explicit
 '                                       ReplaceChars() which mirrors ReplaceChars_TSB(),
 '                                       TitleCaseNameSplit(), UnderscoreNameSplit(), Capitalize()
 '               BLC, 10/6/2017 - 1.15 - update documentation, add Wrap()
+'               BLC, 10/18/2017 - 1.16 - add Truncate()
+'               BLC, 10/19/2017 - 1.17 - added ASCII tab constant
 ' =================================
 
 '---------------------
@@ -235,6 +237,8 @@ Public Const uLHArrow = &H1F844             '129092 heavy left arrow
 Public Const uLTriangleArrow = &H1F890      '129168 leftwards triangle arrowhead
 Public Const uHandshake = &H1F91D           '129309
 Public Const uLizard = &H1F98E              '129422
+
+Public Const iTabKey = 9                    'ASCII tab key value
 
 ' ---------------------------------
 '   Methods
@@ -941,6 +945,44 @@ Err_Handler:
     End Select
     Resume Exit_Handler
 End Function
+    
+' ---------------------------------
+' Function:     Truncate
+' Description:  String truncating function
+' Assumptions:  -
+' Parameters:   src - starting string (string)
+'               EndLength - desired string length (integer)
+'               TruncateFrom - left(L) or right(R) (string)
+' Returns:      -
+' Throws:       none
+' References:   -
+' Source/date:  Bonnie Campbell, October 18, 2017 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 10/18/2017 - initial version
+' ---------------------------------
+Public Function Truncate(src As String, EndLength As Integer, TruncateFrom As String) As String
+    
+        Select Case TruncateFrom
+            Case "R", "Right"
+                Truncate = Right(src, EndLength)
+            Case "L", "Left"
+                Truncate = Left(src, EndLength)
+            Case Else
+                Truncate = src
+        End Select
+        
+Exit_Handler:
+        Exit Function
+        
+Err_Handler:
+        Select Case Err.Number
+          Case Else
+            MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+                "Error encountered (#" & Err.Number & " - Truncate[mod_Strings])"
+        End Select
+        Resume Exit_Handler
+    End Function
 
 ' ---------------------------------
 '   Retrieve String Info

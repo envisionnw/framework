@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_UI
 ' Level:        Application module
-' Version:      1.25
+' Version:      1.27
 ' Description:  Application User Interface related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
@@ -67,6 +67,8 @@ Option Explicit
 '               BLC, 10/4/2017 - 1.24 - switched CurrentDb to CurrDb property to avoid
 '                                       multiple open connections
 '               BLC, 10/16/2017 - 1.25 - adjusted Contact to include IsNPS (PopulateForm())
+'               BLC, 10/18/2017 - 1.26 - added ClickAction() AppSettings case, SortListForm() Comment cases
+'               BLC, 10/19/2017 - 1.27 - adjusted Comment and Location cases (PopulateForm())
 ' =================================
 
 ' ---------------------------------
@@ -384,6 +386,7 @@ End Function
 '                      updated documentation to reflect mod_App_UI vs. mod_Init
 '   BLC - 2/2/2017  - comment: most enums handled through calls to AppEnum table
 '                     however some require CreateEnums()
+'   BLC - 10/18/2017 - add setting for turning ON/OFF enum creation
 ' ---------------------------------
 Public Sub Initialize()
 On Error GoTo Err_Handler
@@ -392,7 +395,7 @@ On Error GoTo Err_Handler
     'mod_App_Enum stub module
     'CreateEnums requires BOTH mod_Enum & mod_App_Enum files to be re-imported to
     'the database
-    CreateEnums
+    If CREATE_ENUMS = True Then CreateEnums
 
     'set application UI display
 '     SetStartupOptions "AppTitle", dbText, "NCPN Big Rivers"
@@ -427,6 +430,7 @@ End Sub
 '   BLC - 1/19/2017 - initial version
 '   BLC - 1/31/2017 - adjusted to accommodate templates list
 '   BLC - 2/21/2017 - adjusted to accommodate Contact list
+'   BLC - 10/18/2017 - added cases for Comment list
 ' ---------------------------------
 Public Sub SortListForm(frm As Form, ctrl As Control)
 On Error GoTo Err_Handler
@@ -438,6 +442,12 @@ On Error GoTo Err_Handler
     
     'set sort field
     Select Case Replace(ctrl.Name, "lbl", "")
+        Case "Comment"
+            strSort = "Comment"
+        Case "CommentType"
+            strSort = "CommentType"
+        Case "CommentTypeID"
+            strSort = "CommentType_ID"
         Case "Email"
             strSort = "Email"
         Case "HdrID"
@@ -458,6 +468,8 @@ On Error GoTo Err_Handler
             strSort = "Syntax"
         Case "Version"
             strSort = "Version"
+        Case "LastModifiedDate"
+            strSort = "LastModified"
         Case "EffectiveDate"
             strSort = "EffectiveDate"
         Case ""
@@ -656,6 +668,7 @@ End Function
 '   BLC - 1/9/2017   - revised to use SetTempVar()
 '   BLC - 2/21/2017  - revised to use Photo vs. Tree form
 '   BLC - 9/29/2017  - added Logger case
+'   BLC - 10/18/2017 - added AppSettings case
 ' ---------------------------------
 Public Sub ClickAction(action As String)
 On Error GoTo Err_Handler
@@ -783,6 +796,8 @@ On Error GoTo Err_Handler
         Case "photo"
             rName = "Photo"
             oArgs = ""
+        Case "application settings"
+            fName = "AppSettings"
         Case "sediment class settings"
             fName = "ModWentworth"
         Case "sheet settings"
@@ -1601,6 +1616,8 @@ End Sub
 '   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
 '                     multiple open connections
 '   BLC - 10/16/2017 - adjusted Contact to include IsNPS
+'   BLC - 10/18/2017 - added Comment case
+'   BLC - 10/19/2017 - added Location toggle
 ' ---------------------------------
 Public Sub PopulateForm(frm As Form, ID As Long)
 On Error GoTo Err_Handler
@@ -1612,6 +1629,10 @@ On Error GoTo Err_Handler
         
         'find the form & populate its controls from the ID
         Select Case .Name
+            Case "Comment"
+                strTable = "AppComment"
+                .Controls("tbxComment").ControlSource = "Comment"
+                .Controls("tbxID").ControlSource = "ID"
             Case "Contact"
                 'requires Contact & Contact_Access data
                 Dim qdf As DAO.QueryDef
@@ -1654,6 +1675,7 @@ On Error GoTo Err_Handler
                 .Controls("tbxDistance").ControlSource = "HeadToOrientDistance_m"
                 .Controls("tbxBearing").ControlSource = "HeadToOrientBearing"
                 .Controls("tbxNotes").ControlSource = "LocationNotes"
+                .Controls("optgLocationType").ControlSource = "LocationType"
             Case "Logger"
                 'set form fields to record fields as datasource
                 .Controls("cbxSite").ControlSource = "Site_ID"

@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_Data
 ' Level:        Application module
-' Version:      1.41
+' Version:      1.42
 ' Description:  data functions & procedures specific to this application
 '
 ' Source/date:  Bonnie Campbell, 2/9/2015
@@ -74,6 +74,7 @@ Option Explicit
 '               BLC, 10/6/2017 - 1.40 - moved UploadCSVFile() to mod_CSV
 '               BLC, 10/17/2017 - 1.41 - added error 3022 - duplicate record handling,
 '                                        updated SetRecord u_site parameters
+'               BLC, 10/18/2017 - 1.42 - added tsys_Datasheet_defaults parameters
 ' =================================
 
 ' =================================
@@ -794,6 +795,7 @@ End Function
 ' --------------------------------------------------------------------
 '   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
 '                     multiple open connections
+'   BLC - 10/18/2017 - added tsys_Datasheet_defaults parameters
 ' ---------------------------------
 Public Function GetRecords(Template As String, _
                             Optional Params As Variant) As DAO.Recordset
@@ -1140,7 +1142,8 @@ On Error GoTo Err_Handler
                 
                 Case "s_tsys_datasheet_defaults"
                     '-- required parameters --
-                                
+                   .Parameters("parkID") = TempVars("ParkID")
+                
                 Case Else
                     'handle other non-parameterized queries
                     
