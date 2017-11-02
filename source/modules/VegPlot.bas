@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        VegPlot
 ' Level:        Framework class
-' Version:      1.05
+' Version:      1.06
 '
 ' Description:  VegPlot object related properties, events, functions & procedures
 '
@@ -31,6 +31,7 @@ Option Explicit
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
 '               BLC, 10/4/2017  - 1.04 - SaveToDb() code cleaup
 '               BLC - 10/6/2017 - 1.05 - removed GetClass() after Factory class instatiation implemented
+'               BLC - 10/31/2017 - 1.06 - add ReplicatePlot, CalibrationPlot flags
 ' =================================
 
 '---------------------
@@ -55,6 +56,9 @@ Private m_NoCanopyVeg As Boolean
 Private m_NoRootedVeg As Boolean
 Private m_HasSocialTrail As Boolean
 Private m_NoIndicatorSpecies As Boolean
+Private m_ReplicatePlot As Boolean
+Private m_CalibrationPlot As Boolean
+
 '---------------------
 ' Events
 '---------------------
@@ -257,6 +261,23 @@ Public Property Get NoIndicatorSpecies() As Boolean
     NoIndicatorSpecies = m_NoIndicatorSpecies
 End Property
 
+Public Property Let CalibrationPlot(Value As Boolean)
+    m_CalibrationPlot = Value
+End Property
+
+Public Property Get CalibrationPlot() As Boolean
+    CalibrationPlot = m_CalibrationPlot
+End Property
+
+Public Property Let ReplicatePlot(Value As Boolean)
+    m_ReplicatePlot = Value
+End Property
+
+Public Property Get ReplicatePlot() As Boolean
+    ReplicatePlot = m_ReplicatePlot
+End Property
+
+
 '---------------------
 ' Methods
 '---------------------
@@ -340,6 +361,7 @@ End Sub
 '   BLC, 4/4/2016 - initial version
 '   BLC, 8/8/2016 - added update parameter to identify if this is an update vs. an insert
 '   BLC, 1/12/2017 - added % litter, woody debris
+'   BLC, 10/31/2017 - added ReplicatePlot, CalibrationPlot flags
 '---------------------------------------------------------------------------------------
 Public Sub SaveToDb(Optional IsUpdate As Boolean = False)
 On Error GoTo Err_Handler
@@ -348,7 +370,7 @@ On Error GoTo Err_Handler
     
     Template = "i_vegplot"
     
-    Dim Params(0 To 19) As Variant
+    Dim Params(0 To 22) As Variant
 
     With Me
         Params(0) = "VegPlot"
@@ -370,10 +392,12 @@ On Error GoTo Err_Handler
         Params(16) = .NoRootedVeg
         Params(17) = .HasSocialTrail
         Params(18) = .NoIndicatorSpecies
+        Params(19) = .CalibrationPlot
+        Params(20) = .ReplicatePlot
         
         If IsUpdate Then
             Template = "u_vegplot"
-            Params(19) = .ID
+            Params(21) = .ID
         End If
         
         .ID = SetRecord(Template, Params)

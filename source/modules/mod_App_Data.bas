@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_Data
 ' Level:        Application module
-' Version:      1.42
+' Version:      1.44
 ' Description:  data functions & procedures specific to this application
 '
 ' Source/date:  Bonnie Campbell, 2/9/2015
@@ -75,6 +75,8 @@ Option Explicit
 '               BLC, 10/17/2017 - 1.41 - added error 3022 - duplicate record handling,
 '                                        updated SetRecord u_site parameters
 '               BLC, 10/18/2017 - 1.42 - added tsys_Datasheet_defaults parameters
+'               BLC, 10/30/2017 - 1.43 - change location CollectionSourceID to use text vs. index (UpsertRecord())
+'               BLC, 10/31/2017 - 1.44 - added ReplicatePlot, CalibrationPlot flags, updated VegPlot case
 ' =================================
 
 ' =================================
@@ -1220,6 +1222,7 @@ End Function
 '                     multiple open connections
 '   BLC - 10/17/2017 - added error 3022 - duplicate record handling, update u_site, i_feature, u_feature
 '                      parameters
+'   BLC - 10/31/2017 - added ReplicatePlot, CalibrationPlot flags, updated VegPlot case
 ' ---------------------------------
 Public Function SetRecord(Template As String, Params As Variant) As Long
 On Error GoTo Err_Handler
@@ -1499,27 +1502,29 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                      
                 Case "i_vegplot"
                     '-- required parameters --
-                    .Parameters("EventID") = Params(1)
-                    .Parameters("SiteID") = Params(2)
-                    .Parameters("FeatureID") = Params(3)
-                    .Parameters("VegTransectID") = Params(4)
-                    .Parameters("PlotNumber") = Params(5)
-                    .Parameters("PlotDistance") = Params(6)
-                    .Parameters("ModalSedimentSize") = Params(7)
-                    .Parameters("PercentFines") = Params(8)
-                    .Parameters("PercentWater") = Params(9)
-                    .Parameters("UnderstoryRootedPctCover") = Params(10)
-                    .Parameters("PlotDensity") = Params(11)
-                    .Parameters("NoCanopyVeg") = Params(12)
-                    .Parameters("NoRootedVeg") = Params(13)
-                    .Parameters("HasSocialTrail") = Params(14)
-                    .Parameters("FilamentousAlgae") = Params(15)
-                    .Parameters("NoIndicatorSpecies") = Params(16)
+                    .Parameters("EID") = Params(1)              'Event ID
+                    .Parameters("SID") = Params(2)              'Site ID
+                    .Parameters("FID") = Params(3)              'Feature ID
+                    .Parameters("TID") = Params(4)              'VegTransect ID
+                    .Parameters("pnum") = Params(5)             'PlotNumber
+                    .Parameters("pdist") = Params(6)            'PlotDistance
+                    .Parameters("mss") = Params(7)              'ModalSedimentSize
+                    .Parameters("pctfine") = Params(8)          'PercentFines
+                    .Parameters("pctwater") = Params(9)         'PercentWater
+                    .Parameters("pcturc") = Params(10)          'UnderstoryRootedPctCover
+                    .Parameters("pd") = Params(14)              'PlotDensity
+                    .Parameters("nocanopy") = Params(15)        'NoCanopyVeg
+                    .Parameters("norooted") = Params(16)        'NoRootedVeg
+                    .Parameters("hastrails") = Params(17)       'HasSocialTrail
+                    .Parameters("fa") = Params(11)              'FilamentousAlgae
+                    .Parameters("noindsp") = Params(18)         'NoIndicatorSpecies
+                    .Parameters("cplot") = Params(19)           'CalibrationPlot
+                    .Parameters("rplot") = Params(20)           'ReplicatePlot
                     
-                    .Parameters("CreateDate") = Now()
-                    .Parameters("CreatedByID") = TempVars("AppUserID") 'ContactID")
-                    .Parameters("LastModified") = Now()
-                    .Parameters("LastModifiedByID") = TempVars("AppUserID") 'ContactID")
+'                    .Parameters("CreateDate") = Now()
+'                    .Parameters("CreatedByID") = TempVars("AppUserID") 'ContactID")
+'                    .Parameters("LastModified") = Now()
+'                    .Parameters("LastModifiedByID") = TempVars("AppUserID") 'ContactID")
                 
                 Case "i_vegtransect"
                     '-- required parameters --
@@ -1805,6 +1810,31 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                     .Parameters("iid") = Params(1)
                     .Parameters("ptype") = Params(4)
                 
+                Case "u_vegplot"
+                    '-- required parameters --
+                    .Parameters("vid") = Params(21)             'VegPlot ID
+                    .Parameters("EID") = Params(1)              'Event ID
+                    .Parameters("SID") = Params(2)              'Site ID
+                    .Parameters("FID") = Params(3)              'Feature ID
+                    .Parameters("TID") = Params(4)              'VegTransect ID
+                    .Parameters("pnum") = Params(5)             'PlotNumber
+                    .Parameters("pdist") = Params(6)            'PlotDistance
+                    .Parameters("mss") = Params(7)              'ModalSedimentSize
+                    .Parameters("pctfine") = Params(8)          'PercentFines
+                    .Parameters("pctwater") = Params(9)         'PercentWater
+                    .Parameters("pcturc") = Params(10)          'UnderstoryRootedPctCover
+                    .Parameters("pd") = Params(14)              'PlotDensity
+                    .Parameters("nocanopy") = Params(15)        'NoCanopyVeg
+                    .Parameters("norooted") = Params(16)        'NoRootedVeg
+                    .Parameters("hastrails") = Params(17)       'HasSocialTrail
+                    .Parameters("fa") = Params(11)              'FilamentousAlgae
+                    .Parameters("noindsp") = Params(18)         'NoIndicatorSpecies
+                    .Parameters("cplot") = Params(19)           'CalibrationPlot
+                    .Parameters("rplot") = Params(20)           'ReplicatePlot
+                    
+'                    .Parameters("LastModified") = Now()
+'                    .Parameters("LastModifiedByID") = TempVars("AppUserID") 'ContactID")
+                
                 Case "u_vegtransect"
                     '-- required parameters --
                     .Parameters("LocationID") = Params(1)
@@ -2032,6 +2062,8 @@ End Function
 '   BLC - 9/7/2017  - merge uplands, invasives, big rivers dbs modifications
 ' --------------------------------------------------------------------
 '   BLC - 9/29/2017 - update location ContactID
+'   BLC - 10/30/2017 - change location CollectionSourceID to use text vs. index
+'   BLC - 10/31/2017 - added ReplicatePlot, CalibrationPlot flags (VegPlot)
 ' ---------------------------------
 Public Sub UpsertRecord(ByRef frm As Form)
 On Error GoTo Err_Handler
@@ -2168,7 +2200,10 @@ On Error GoTo Err_Handler
                     'CollectionSourceName is the identifier for which
                     'feature/transect/plot the location is located on
                     'collection feature ID (A, B, C...) or Transect number (1-8)
-                    .CollectionSourceName = frm.cbxCollectionSourceID
+                    '.CollectionSourceName = frm.cbxCollectionSourceID
+                    'capture text vs. index
+                    .CollectionSourceName = frm.CollectionSourceID
+
                                                                     
                     .LocationName = frm!tbxName.Value
             
@@ -2424,6 +2459,18 @@ On Error GoTo Err_Handler
                     Set u = Nothing
                 End With
 
+            Case "VegPlot"
+                Dim vp As New VegPlot
+                With vp
+                    'values passed into form
+                    
+                    'set the generic object --> Location
+                    Set obj = vp
+                    
+                    'cleanup
+                    Set vp = Nothing
+                End With
+            
             Case "VegWalk"
                 Select Case frm.FormContext
                     Case "AllRootedSpecies"

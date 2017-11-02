@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_UI
 ' Level:        Application module
-' Version:      1.27
+' Version:      1.29
 ' Description:  Application User Interface related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
@@ -69,6 +69,8 @@ Option Explicit
 '               BLC, 10/16/2017 - 1.25 - adjusted Contact to include IsNPS (PopulateForm())
 '               BLC, 10/18/2017 - 1.26 - added ClickAction() AppSettings case, SortListForm() Comment cases
 '               BLC, 10/19/2017 - 1.27 - adjusted Comment and Location cases (PopulateForm())
+'               BLC, 10/30/2017 - 1.28 - add Location cbxCollectionSourceID setting (PopulateForm())
+'               BLC, 10/31/2017 - 1.29 - added ReplicatePlot, CalibrationPlot (VegPlot)
 ' =================================
 
 ' ---------------------------------
@@ -1618,6 +1620,8 @@ End Sub
 '   BLC - 10/16/2017 - adjusted Contact to include IsNPS
 '   BLC - 10/18/2017 - added Comment case
 '   BLC - 10/19/2017 - added Location toggle
+'   BLC - 10/30/2017 - add Location cbxCollectionSourceID setting
+'   BLC - 10/31/2017 - added ReplicatePlot, CalibrationPlot (VegPlot)
 ' ---------------------------------
 Public Sub PopulateForm(frm As Form, ID As Long)
 On Error GoTo Err_Handler
@@ -1676,6 +1680,40 @@ On Error GoTo Err_Handler
                 .Controls("tbxBearing").ControlSource = "HeadToOrientBearing"
                 .Controls("tbxNotes").ControlSource = "LocationNotes"
                 .Controls("optgLocationType").ControlSource = "LocationType"
+                
+                With .Controls("cbxCollectionSourceID")
+
+                    Select Case frm.optgLocationType.Value
+                        Case 0  'Default
+                            'hide if not applicable
+                            .visible = False
+                            frm.LocationType = ""
+                        Case 1  'Feature
+                            Set .Recordset = GetRecords("s_feature_by_site")
+                            .BoundColumn = 2
+                            .ColumnCount = 2
+                            .ColumnWidths = "0;1in"
+                            frm.LocationType = "F"
+                        Case 2  'Transect
+                            Set .Recordset = GetRecords("s_vegtransect_number_by_site")
+                            .BoundColumn = 1
+                            .ColumnCount = 3
+                            .ColumnWidths = "1in;1;0"
+                            frm.LocationType = "T"
+                        Case 3  'Plot
+                            Set .Recordset = GetRecords("s_vegplot_number_by_site")
+                            .BoundColumn = 1
+                            .ColumnCount = 4
+                            .ColumnWidths = "1in;0;0;0"
+                            frm.LocationType = "P"
+                    End Select
+                End With
+                
+'                .Controls("cbxCollectionSourceID") = "CollectionSourceID"
+                'unhide fields
+                .Controls("cbxCollectionSourceID").visible = True
+                .Controls("lblCollectionSourceID").visible = True
+                
             Case "Logger"
                 'set form fields to record fields as datasource
                 .Controls("cbxSite").ControlSource = "Site_ID"
@@ -1744,6 +1782,8 @@ On Error GoTo Err_Handler
                 .Controls("chkNoRootedVeg").ControlSource = "NoRootedVeg"
                 .Controls("chkNoIndicatorSpecies").ControlSource = "NoIndicatorSpecies"
                 .Controls("chkHasSocialTrails").ControlSource = "HasSocialTrails"
+                .Controls("chkCalibrationPlot").ControlSource = "CalibrationPlot"
+                .Controls("chkReplicatePlot").ControlSource = "ReplicatePlot"
             Case "VegTransect"
 
         End Select
