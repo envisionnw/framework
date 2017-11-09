@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        VegTransect
 ' Level:        Framework class
-' Version:      1.08
+' Version:      1.09
 '
 ' Description:  VegTransect object related properties, events, functions & procedures
 '
@@ -37,6 +37,7 @@ Option Explicit
 '               BLC - 9/21/2017  - 1.07 - set class Instancing 2-PublicNotCreatable (VB_PredeclaredId = True),
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
 '               BLC - 10/6/2017  - 1.08 - removed GetClass() after Factory class instatiation implemented
+'               BLC - 11/6/2017  - 1.09 - add site_vegtransect linkage (SaveToDb())
 ' =================================
 
 '---------------------
@@ -330,6 +331,7 @@ End Sub
 '   BLC, 4/4/2016 - initial version
 '   BLC, 8/8/2016 - added update parameter to identify if this is an update vs. an insert
 '   BLC, 9/8/2016 - code cleanup
+'   BLC, 11/6/2017 - add site_vegtransect linkage
 '---------------------------------------------------------------------------------------
 Public Sub SaveToDb(Optional IsUpdate As Boolean = False)
 On Error GoTo Err_Handler
@@ -356,6 +358,17 @@ On Error GoTo Err_Handler
     End With
     
     'SetObserverRecorder Me, "VegTransect"
+    
+    'add big rivers transect Site_VegTransect linking record
+    If APP = "Big_Rivers" Then
+    
+        Params(0) = "Site_VegTransect"
+        Params(1) = GetSiteID(TempVars("ParkCode"), TempVars("SiteCode"))   'Site ID
+        Params(2) = Me.ID   'VegTransect ID
+        SetRecord "i_site_vegtransect", Params
+    
+    End If
+
 
 Exit_Handler:
     Exit Sub

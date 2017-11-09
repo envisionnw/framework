@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        Transducer
 ' Level:        Framework class
-' Version:      1.04
+' Version:      1.05
 '
 ' Description:  Transducer object related properties, events, functions & procedures
 '
@@ -34,6 +34,7 @@ Option Explicit
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
 '               BLC - 10/4/2017 - 1.03 - SaveToDb() code cleanup
 '               BLC - 10/6/2017 - 1.04 - removed GetClass() after Factory class instatiation implemented
+'               BLC - 11/6/2017 - 1.05 - added properties for measurements (cm)
 ' =================================
 
 '---------------------
@@ -52,6 +53,10 @@ Private m_ActionDate As Date 'date
 Private m_ActionTime As Date 'time
 
 'transducer distances
+Private m_RefToWaterline As Integer
+Private m_RefToEyebolt As Integer
+Private m_EyeboltToWaterline As Integer
+Private m_EyeboltToScribeline As Integer
 
 'recorder/observer/downloader
 
@@ -165,6 +170,38 @@ Public Property Get ContactID() As Long
     ContactID = m_ContactID
 End Property
 
+Public Property Let RefToWaterline(Value As Integer)
+    m_RefToWaterline = Value
+End Property
+
+Public Property Get RefToWaterline() As Integer
+    RefToWaterline = m_RefToWaterline
+End Property
+
+Public Property Let RefToEyebolt(Value As Integer)
+    m_RefToEyebolt = Value
+End Property
+
+Public Property Get RefToEyebolt() As Integer
+    RefToEyebolt = m_RefToEyebolt
+End Property
+
+Public Property Let EyeboltToWaterline(Value As Integer)
+    m_EyeboltToWaterline = Value
+End Property
+
+Public Property Get EyeboltToWaterline() As Integer
+    EyeboltToWaterline = m_EyeboltToWaterline
+End Property
+
+Public Property Let EyeboltToScribeline(Value As Integer)
+    m_EyeboltToScribeline = Value
+End Property
+
+Public Property Get EyeboltToScribeline() As Integer
+    EyeboltToScribeline = m_EyeboltToScribeline
+End Property
+
 '---------------------
 ' Methods
 '---------------------
@@ -267,6 +304,10 @@ On Error GoTo Err_Handler
         Params(6) = .Timing
         Params(7) = .ActionDate
         Params(8) = .ActionTime
+        Params(9) = .RefToWaterline
+        Params(10) = .RefToEyebolt
+        Params(11) = .EyeboltToWaterline
+        Params(12) = .EyeboltToScribeline
     
         If IsUpdate Then
             Template = "u_transducer"

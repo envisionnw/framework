@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_Data
 ' Level:        Application module
-' Version:      1.44
+' Version:      1.48
 ' Description:  data functions & procedures specific to this application
 '
 ' Source/date:  Bonnie Campbell, 2/9/2015
@@ -77,6 +77,11 @@ Option Explicit
 '               BLC, 10/18/2017 - 1.42 - added tsys_Datasheet_defaults parameters
 '               BLC, 10/30/2017 - 1.43 - change location CollectionSourceID to use text vs. index (UpsertRecord())
 '               BLC, 10/31/2017 - 1.44 - added ReplicatePlot, CalibrationPlot flags, updated VegPlot case
+'               BLC, 11/2/2017  - 1.45 - added s_plot_numbers, s_transect_numbers (GetRecords())
+'               BLC, 11/3/2017  - 1.46 - added s_modal_sediment_size (GetRecords())
+'               BLC, 11/6/2017  - 1.47 - use GetRecords() (GetSiteID()), add i_site_vegtransect (SetRecord()),
+'                                        added s_site_id_by_code (GetRecords())
+'               BLC, 11/8/2017  - 1.48 - update UpsertRecord(), SetRecord() for % MSS
 ' =================================
 
 ' =================================
@@ -630,7 +635,7 @@ On Error GoTo Err_Handler
     
     Params(0) = Template
     Params(1) = ID
-    Params(2) = IIf(InStr(Template, "wentworth") > 0, year(Date), IsActive)
+    Params(2) = IIf(InStr(Template, "wentworth") > 0, Year(Date), IsActive)
         
     SetRecord Template, Params
     
@@ -798,6 +803,9 @@ End Function
 '   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
 '                     multiple open connections
 '   BLC - 10/18/2017 - added tsys_Datasheet_defaults parameters
+'   BLC - 11/2/2017 - added s_plot_numbers, s_transect_numbers
+'   BLC - 11/3/2017 - added s_modal_sediment_size
+'   BLC - 11/6/2017 - added s_site_id_by_code
 ' ---------------------------------
 Public Function GetRecords(Template As String, _
                             Optional Params As Variant) As DAO.Recordset
@@ -923,7 +931,14 @@ On Error GoTo Err_Handler
                 Case "s_mod_wentworth_for_eventyr"
                     '-- required parameters --
                     'default event year to current year if not passed in
-                    .Parameters("eventyr") = Nz(TempVars("EventYear"), year(Now))
+                    .Parameters("eventyr") = Nz(TempVars("EventYear"), Year(Now))
+                
+                Case "s_modal_sediment_size"    'from AppEnum
+                    '-- required parameters --
+                
+                Case "s_plot_numbers"
+                    '-- required parameters --
+                    .Parameters("maxnum") = TempVars("MaxPlotNumber")
                 
                 Case "s_river_segment_id"
                     '-- required parameters --
@@ -942,6 +957,11 @@ On Error GoTo Err_Handler
                     '-- required parameters --
                     .Parameters("pkcode") = TempVars("ParkCode")
                     .Parameters("seg") = TempVars("River")
+                
+                Case "s_site_id_by_code"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("scode") = TempVars("SiteCode")
                 
                 Case "s_site_list_by_park_river"
                     '-- required parameters --
@@ -1013,6 +1033,10 @@ On Error GoTo Err_Handler
                     '             -->  8 is replaced by # blanks to return (")
                     .SQL = Replace(Replace(.SQL, 99, TempVars("TopSpecies")), 8, TempVars("TopBlanks"))
                     
+                Case "s_transect_numbers"
+                    '-- required parameters --
+                    .Parameters("maxnum") = TempVars("MaxTransectNumber")
+                
                 Case "s_veg_walk_species_last_year_by_park"
                     '-- required parameters --
                     .Parameters("pkcode") = TempVars("ParkCode")
@@ -1223,6 +1247,7 @@ End Function
 '   BLC - 10/17/2017 - added error 3022 - duplicate record handling, update u_site, i_feature, u_feature
 '                      parameters
 '   BLC - 10/31/2017 - added ReplicatePlot, CalibrationPlot flags, updated VegPlot case
+'   BLC - 11/6/2017 - add i_site_vegtransect
 ' ---------------------------------
 Public Function SetRecord(Template As String, Params As Variant) As Long
 On Error GoTo Err_Handler
@@ -1371,7 +1396,7 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
             " version: " & TempVars("AppVersion") & " accesslvl: " & TempVars("UserAccessLevelID")
                     
                     SkipRecordAction = True
-                    
+                
                 Case "i_park"
                     '-- required parameters --
                     .Parameters("ParkCode") = Params(1)
@@ -1437,6 +1462,13 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                     '      dir may be truncated via parameter since it's a MEMO field
                     .Parameters("dir") = Params(6)          'Directions
                     .Parameters("descr") = Params(7)        'Description
+                
+                Case "i_site_vegtransect"           'populate site_vegtransect linking table
+                    '-- required parameters --
+                    .Parameters("sid") = Params(1) 'Site ID
+                    .Parameters("tid") = Params(2) 'VegTransect ID
+                    
+                    SkipRecordAction = True
                 
                 Case "i_tagline"
                     '-- required parameters --
@@ -1508,24 +1540,24 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                     .Parameters("TID") = Params(4)              'VegTransect ID
                     .Parameters("pnum") = Params(5)             'PlotNumber
                     .Parameters("pdist") = Params(6)            'PlotDistance
-                    .Parameters("mss") = Params(7)              'ModalSedimentSize
+                    .Parameters("MSSID") = Params(7)            'ModalSedimentSize ID
+                    .Parameters("pctmss") = Params(13)          'PctModalSedimentSize
                     .Parameters("pctfine") = Params(8)          'PercentFines
                     .Parameters("pctwater") = Params(9)         'PercentWater
                     .Parameters("pcturc") = Params(10)          'UnderstoryRootedPctCover
-                    .Parameters("pd") = Params(14)              'PlotDensity
-                    .Parameters("nocanopy") = Params(15)        'NoCanopyVeg
-                    .Parameters("norooted") = Params(16)        'NoRootedVeg
-                    .Parameters("hastrails") = Params(17)       'HasSocialTrail
-                    .Parameters("fa") = Params(11)              'FilamentousAlgae
-                    .Parameters("noindsp") = Params(18)         'NoIndicatorSpecies
-                    .Parameters("cplot") = Params(19)           'CalibrationPlot
-                    .Parameters("rplot") = Params(20)           'ReplicatePlot
-                    
-'                    .Parameters("CreateDate") = Now()
-'                    .Parameters("CreatedByID") = TempVars("AppUserID") 'ContactID")
-'                    .Parameters("LastModified") = Now()
-'                    .Parameters("LastModifiedByID") = TempVars("AppUserID") 'ContactID")
-                
+                    .Parameters("pctwcc") = Params(11)          'WoodyCanopyPctCover
+                    .Parameters("pctarc") = Params(12)          'AllRootedPctCover
+                    .Parameters("pd") = Params(17)              'PlotDensity
+                    .Parameters("nocanopy") = Params(18)        'NoCanopyVeg
+                    .Parameters("norooted") = Params(19)        'NoRootedVeg
+                    .Parameters("hastrails") = Params(20)       'HasSocialTrail
+                    .Parameters("fa") = Params(14)              'FilamentousAlgae
+                    .Parameters("pctlitter") = Params(15)       'PercentLitter
+                    .Parameters("pctwd") = Params(16)           'PercentWoodyDebris
+                    .Parameters("noindsp") = Params(21)         'NoIndicatorSpecies
+                    .Parameters("cplot") = Params(22)           'CalibrationPlot
+                    .Parameters("rplot") = Params(23)           'ReplicatePlot
+                                    
                 Case "i_vegtransect"
                     '-- required parameters --
                     .Parameters("LocationID") = Params(1)
@@ -1616,11 +1648,7 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                     .Parameters("qid") = Params(1)
                     .Parameters("sid") = Params(2)
                     .Parameters("pct") = Params(3)
-                    
-'                    .Parameters("") = Params(1)
-'                    .Parameters("") = Params(2)
-'                    .Parameters("") = Params(3)
-                
+                                    
         '-----------------------
         '  UPDATES
         '-----------------------
@@ -1812,28 +1840,30 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                 
                 Case "u_vegplot"
                     '-- required parameters --
-                    .Parameters("vid") = Params(21)             'VegPlot ID
+                    .Parameters("vid") = Params(23)             'VegPlot ID
                     .Parameters("EID") = Params(1)              'Event ID
                     .Parameters("SID") = Params(2)              'Site ID
                     .Parameters("FID") = Params(3)              'Feature ID
                     .Parameters("TID") = Params(4)              'VegTransect ID
                     .Parameters("pnum") = Params(5)             'PlotNumber
                     .Parameters("pdist") = Params(6)            'PlotDistance
-                    .Parameters("mss") = Params(7)              'ModalSedimentSize
+                    .Parameters("MSSID") = Params(7)            'ModalSedimentSize ID
+                    .Parameters("pctmss") = Params(13)          'PctModalSedimentSize
                     .Parameters("pctfine") = Params(8)          'PercentFines
                     .Parameters("pctwater") = Params(9)         'PercentWater
                     .Parameters("pcturc") = Params(10)          'UnderstoryRootedPctCover
-                    .Parameters("pd") = Params(14)              'PlotDensity
-                    .Parameters("nocanopy") = Params(15)        'NoCanopyVeg
-                    .Parameters("norooted") = Params(16)        'NoRootedVeg
-                    .Parameters("hastrails") = Params(17)       'HasSocialTrail
-                    .Parameters("fa") = Params(11)              'FilamentousAlgae
-                    .Parameters("noindsp") = Params(18)         'NoIndicatorSpecies
-                    .Parameters("cplot") = Params(19)           'CalibrationPlot
-                    .Parameters("rplot") = Params(20)           'ReplicatePlot
-                    
-'                    .Parameters("LastModified") = Now()
-'                    .Parameters("LastModifiedByID") = TempVars("AppUserID") 'ContactID")
+                    .Parameters("pctwcc") = Params(11)          'WoodyCanopyPctCover
+                    .Parameters("pctarc") = Params(12)          'AllRootedPctCover
+                    .Parameters("pd") = Params(17)              'PlotDensity
+                    .Parameters("nocanopy") = Params(18)        'NoCanopyVeg
+                    .Parameters("norooted") = Params(19)        'NoRootedVeg
+                    .Parameters("hastrails") = Params(20)       'HasSocialTrail
+                    .Parameters("fa") = Params(14)              'FilamentousAlgae
+                    .Parameters("pctlitter") = Params(15)       'PercentLitter
+                    .Parameters("pctwd") = Params(16)           'PercentWoodyDebris
+                    .Parameters("noindsp") = Params(21)         'NoIndicatorSpecies
+                    .Parameters("cplot") = Params(22)           'CalibrationPlot
+                    .Parameters("rplot") = Params(23)           'ReplicatePlot
                 
                 Case "u_vegtransect"
                     '-- required parameters --
@@ -2203,7 +2233,6 @@ On Error GoTo Err_Handler
                     '.CollectionSourceName = frm.cbxCollectionSourceID
                     'capture text vs. index
                     .CollectionSourceName = frm.CollectionSourceID
-
                                                                     
                     .LocationName = frm!tbxName.Value
             
@@ -2464,7 +2493,7 @@ On Error GoTo Err_Handler
                 With vp
                     'values passed into form
                     
-                    'set the generic object --> Location
+                    'set the generic object --> VegPlot
                     Set obj = vp
                     
                     'cleanup
@@ -3291,13 +3320,12 @@ End Function
 '   BLC - 6/28/2016  - initial version
 '   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
 '                     multiple open connections
+'   BLC - 11/6/2017 - use GetRecords() vs direct SQL
 ' ---------------------------------
 Public Function GetSiteID(ParkCode As String, SiteCode As String) As Long
 On Error GoTo Err_Handler
     
-    Dim db As DAO.Database
     Dim rs As DAO.Recordset
-    Dim strSQL As String
     Dim ID As Long
    
     'handle only appropriate River codes
@@ -3305,14 +3333,8 @@ On Error GoTo Err_Handler
         GoTo Exit_Handler
     End If
     
-    'generate SQL
-    strSQL = GetTemplate("s_site_id_by_code", _
-            "ParkCode" & PARAM_SEPARATOR & ParkCode & _
-            "|sitecode" & PARAM_SEPARATOR & SiteCode)
-            
     'fetch data
-    Set db = CurrDb
-    Set rs = db.OpenRecordset(strSQL)
+    Set rs = GetRecords("s_site_id_by_code")
 
     If rs.BOF And rs.EOF Then GoTo Exit_Handler
 
@@ -3481,6 +3503,86 @@ Err_Handler:
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - GetSurfaceIDs[mod_App_Data])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' Sub:          GetModSedimentSizeIDs
+' Description:  Sets a collection of modal sediment size IDs where IDs can be retrieved
+'               from class names based on the year passed in
+' Assumptions:  Assumes the year is the current sampling year
+' Parameters:   -
+' Returns:      -
+' Throws:       none
+' References:   -
+' Source/date:  Bonnie Campbell, November 3, 2017 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 11/3/2017 - initial version
+' ---------------------------------
+Public Function GetModSedimentSizeIDs() As Scripting.Dictionary
+On Error GoTo Err_Handler
+
+    Dim rs As DAO.Recordset
+    Dim strKey As String, strItem As String
+
+    'prepare dictionary
+    Dim dict As Scripting.Dictionary
+    Set dict = CreateObject("Scripting.Dictionary")
+    
+    'retrieve surfaces & surface IDs
+    Set rs = GetRecords("s_modal_sediment_size")
+    
+    If Not (rs.BOF And rs.EOF) Then
+        Do Until rs.EOF
+            
+            With dict
+            
+                strKey = rs("Label")
+                strItem = rs("ID")
+                
+                If Not .Exists(strKey) Then
+                    'add the ColName (key) & ID (value)
+                    '--------------------------------------
+                    ' NOTE:
+                    '   Cannot use notation w/ rs("fieldname")
+                    '   notation because as soon as you leave
+                    '   the Do Until the dictionary forgets
+                    '   the values since rs("fieldname") is
+                    '   out of scope.
+                    '   -> Error 3420: Object invalid or no longer set
+                    '   Use:
+                    '       .Add strKey, strItem
+                    '   Not:
+                    '       .Add strKey, rs("ID")
+                    '--------------------------------------
+                    .Add strKey, strItem
+                End If
+            
+            End With
+            
+            'Debug.Print strKey & ": " & strItem & " = " & dict(strKey)
+            
+            rs.MoveNext
+        Loop
+    End If
+    
+    'set global dictionary
+    Set g_ModalSedimentSizeIDs = dict
+    
+    'return dictionary
+    Set GetModSedimentSizeIDs = dict
+    
+Exit_Handler:
+    'Set dict = Nothing
+    Set rs = Nothing
+    Exit Function
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - GetModSedimentSizeIDs[mod_App_Data])"
     End Select
     Resume Exit_Handler
 End Function

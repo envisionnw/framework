@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_UI
 ' Level:        Application module
-' Version:      1.29
+' Version:      1.30
 ' Description:  Application User Interface related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
@@ -71,6 +71,7 @@ Option Explicit
 '               BLC, 10/19/2017 - 1.27 - adjusted Comment and Location cases (PopulateForm())
 '               BLC, 10/30/2017 - 1.28 - add Location cbxCollectionSourceID setting (PopulateForm())
 '               BLC, 10/31/2017 - 1.29 - added ReplicatePlot, CalibrationPlot (VegPlot)
+'               BLC, 11/3/2017  - 1.30 - update Location case (PopulateForm())
 ' =================================
 
 ' ---------------------------------
@@ -1005,7 +1006,7 @@ On Error GoTo Err_Handler
                 !Plot_ID = intPlotID
                 !Master_Family = strFamily
                 !Utah_Species = strUtah_Species
-                !SpeciesYears = IIf(Len(strSpeciesYears) > 0, strSpeciesYears, rs!year)
+                !SpeciesYears = IIf(Len(strSpeciesYears) > 0, strSpeciesYears, rs!Year)
                 !PlotParkSpecies = strParkPlotSpecies
                 !ParkPlot = strParkPlot
                 'update when rs!ParkPlotSpecies <> strParkPlotSpecies
@@ -1622,6 +1623,7 @@ End Sub
 '   BLC - 10/19/2017 - added Location toggle
 '   BLC - 10/30/2017 - add Location cbxCollectionSourceID setting
 '   BLC - 10/31/2017 - added ReplicatePlot, CalibrationPlot (VegPlot)
+'   BLC - 11/3/2017 - update Location case
 ' ---------------------------------
 Public Sub PopulateForm(frm As Form, ID As Long)
 On Error GoTo Err_Handler
@@ -1683,33 +1685,31 @@ On Error GoTo Err_Handler
                 
                 With .Controls("cbxCollectionSourceID")
 
-                    Select Case frm.optgLocationType.Value
-                        Case 0  'Default
-                            'hide if not applicable
-                            .visible = False
-                            frm.LocationType = ""
-                        Case 1  'Feature
+                    Select Case frm.LocationType
+                        Case "F" 'Feature
                             Set .Recordset = GetRecords("s_feature_by_site")
                             .BoundColumn = 2
                             .ColumnCount = 2
                             .ColumnWidths = "0;1in"
-                            frm.LocationType = "F"
-                        Case 2  'Transect
-                            Set .Recordset = GetRecords("s_vegtransect_number_by_site")
-                            .BoundColumn = 1
-                            .ColumnCount = 3
-                            .ColumnWidths = "1in;1;0"
-                            frm.LocationType = "T"
-                        Case 3  'Plot
-                            Set .Recordset = GetRecords("s_vegplot_number_by_site")
-                            .BoundColumn = 1
-                            .ColumnCount = 4
-                            .ColumnWidths = "1in;0;0;0"
-                            frm.LocationType = "P"
+                        Case "T" 'Transect
+                            Set .Recordset = GetRecords("s_transect_numbers")
+                                .BoundColumn = 1
+                                .ColumnCount = 2
+                                .ColumnWidths = "0;1in"
+                        Case "P" 'Plot
+                            Set .Recordset = GetRecords("s_plot_numbers")
+                                .BoundColumn = 1
+                                .ColumnCount = 1
+                                .ColumnWidths = "1in"
+                        Case ""  'default
                     End Select
+                                
+                    'select the value
+'                   .Controls("cbxCollectionSourceID") = "LocationType"
+'                    .Controls("cbxCollectionSourceID").SelText = frm.Controls("list").Form.Controls("tbxLocTypeID")
+                    .Controls("cbxCollectionSourceID").SelText = frm.Controls("list").Controls("tbxLocTypeID") 'Form.Controls("tbxLocTypeID")
                 End With
                 
-'                .Controls("cbxCollectionSourceID") = "CollectionSourceID"
                 'unhide fields
                 .Controls("cbxCollectionSourceID").visible = True
                 .Controls("lblCollectionSourceID").visible = True

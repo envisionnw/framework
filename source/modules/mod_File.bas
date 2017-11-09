@@ -776,7 +776,7 @@ End Function
 ' Source/date:  Bonnie Campbell, 9/12/2016 for NCPN tools
 ' Revisions:    BLC, 9/12/2016 - initial version
 ' =================================
-Public Function AppIsInstalled(ByVal app As String) As Boolean
+Public Function AppIsInstalled(ByVal APP As String) As Boolean
     On Error GoTo Exit_Handler
 
     Dim blnInstalled As Boolean
@@ -784,7 +784,7 @@ Public Function AppIsInstalled(ByVal app As String) As Boolean
 
     blnInstalled = False
             
-    Set oApp = CreateObject(app)
+    Set oApp = CreateObject(APP)
             
     blnInstalled = True
 

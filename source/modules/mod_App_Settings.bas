@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_Settings
 ' Level:        Application module
-' Version:      1.12
+' Version:      1.13
 ' Description:  Application-wide related values, functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
@@ -33,15 +33,18 @@ Option Explicit
 '               BLC, 9/7/2017  - 1.12 - merged common code for framework from Upland, Invasives, Big Rivers dbs
 ' --------------------------------------------------------------------
 '                     BLC, 6/15/2017 - 1.07 - merged prior version w/ current
+' --------------------------------------------------------------------
 '                               BLC, 5/1/2015 - 1.01 - added DEV_MODE constant
 '                               BLC, 5/13/2015 - 1.02 - added UI enabled/disabled color constants
 '                               BLC, 5/19/2015 - 1.03 - added FIX_LINKED_DBS flag constant
 '                               BLC, 5/28/2015 - 1.04 - added MAIN_APP_MENU constant
+' --------------------------------------------------------------------
 '                       BLC, 6/19/2017 - 1.08 - added APP_RELEASE_ID constant value for
 '                                               2017 Pre-Season Invasives Reporting Tool (tsys_App_Releases)
 '                       BLC, 6/26/2017 - 1.09 - added REMOVE_RESULT_TABLES constant
 ' --------------------------------------------------------------------
-' --------------------------------------------------------------------
+'               BLC, 11/3/2017 - 1.13 - added g_ModalSedimentSizeIDs
+'               BLC, 11/6/2017 - 1.14 - added APP to identify protocol application
 ' =================================
 
 ' ---------------------------------
@@ -51,10 +54,16 @@ Option Explicit
 ' Source/date:  Bonnie Campbell, June 2016
 ' Adapted:      -
 ' Revisions:    BLC, 6/6/2016 - initial version (NCPN WQ Big Rivers App, App_Templates)
+'               BLC, 11/3/2017 - added g_ModalSedimentSizeIDs
+'               BLC, 11/6/2017 - added APP to identify protocol application
 ' ---------------------------------
 'Public g_AppTemplates As Scripting.Dictionary     'global dictionary for application templates (if any)
 
+Public APP As String                               'global setting for protocol application
+
 Public gSubReportCount As Integer                  'global counter for subreports
+Public g_ModalSedimentSizeIDs As Scripting.Dictionary 'global dictionary for modal sediment size ID #s
+                                                     '(from AppEnum)
 
 ' ---------------------------------
 ' CONSTANTS:    global constant values
