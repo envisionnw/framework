@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_UI
 ' Level:        Application module
-' Version:      1.30
+' Version:      1.32
 ' Description:  Application User Interface related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
@@ -72,6 +72,9 @@ Option Explicit
 '               BLC, 10/30/2017 - 1.28 - add Location cbxCollectionSourceID setting (PopulateForm())
 '               BLC, 10/31/2017 - 1.29 - added ReplicatePlot, CalibrationPlot (VegPlot)
 '               BLC, 11/3/2017  - 1.30 - update Location case (PopulateForm())
+'               BLC, 11/9/2017  - 1.31 - update VegPlot case, checkboxes & toggles;
+'                                        Transducer case distances (PopulateForm())
+'               BLC, 11/11/2017 - 1.32 - update VegPlot case (PopulateForm())
 ' =================================
 
 ' ---------------------------------
@@ -1624,6 +1627,8 @@ End Sub
 '   BLC - 10/30/2017 - add Location cbxCollectionSourceID setting
 '   BLC - 10/31/2017 - added ReplicatePlot, CalibrationPlot (VegPlot)
 '   BLC - 11/3/2017 - update Location case
+'   BLC - 11/9/2017 - update VegPlot case, checkboxes & toggles; Transducer case distances
+'   BLC - 11/11/2017 - update VegPlot case
 ' ---------------------------------
 Public Sub PopulateForm(frm As Form, ID As Long)
 On Error GoTo Err_Handler
@@ -1657,7 +1662,7 @@ On Error GoTo Err_Handler
                 .Controls("tbxPhone").ControlSource = "WorkPhone"
                 .Controls("tbxPosition").ControlSource = "PositionTitle"
                 .Controls("tbxExtension").ControlSource = "WorkExtension"
-                .Controls("tglIsNPS").ControlSource = IIf("IsNPS" = 1, True, False)
+                .Controls("tglIsNPS").ControlSource = "IsNPS" 'IIf("IsNPS" = 1, True, False)
                 'contact_access data
                 .Controls("cbxUserRole").ControlSource = "Access_ID"
             Case "Events"
@@ -1767,23 +1772,36 @@ On Error GoTo Err_Handler
                 .Controls("tbxSerialNo").ControlSource = "SerialNumber"
                 .Controls("tbxSampleDate").ControlSource = "ActionDate"
                 .Controls("tbxSampleTime").ControlSource = "ActionTime"
-                .Controls("chkSurveyed").ControlSource = "IsSurveyed"
+                .Controls("chkSurveyed").ControlSource = IIf("IsSurveyed" = 1, True, False)
+                .Controls("tbxRefToWaterline").ControlSources = "RefToWaterline"
+                .Controls("tbxRefToEyebolt").ControlSources = "RefToEyebolt"
+                .Controls("tbxEyeboltToWaterline").ControlSources = "EyeboltToWaterline"
+                .Controls("tbxEyeboltToScribeline").ControlSources = "EyeboltToScribeline"
+                
             Case "VegPlot"
                 'set form fields to record fields as datasource
                 .Controls("tbxID").ControlSource = "ID"
                 .Controls("tbxNumber").ControlSource = "PlotNumber"
-                .Controls("tbxDistance").ControlSource = "Distance"
+                .Controls("tbxDistance").ControlSource = "PlotDistance_m"
                 .Controls("cbxModalSedSize").ControlSource = "ModalSedSize"
+                .Controls("tbxPctMSS").ControlSource = "PctModalSedimentSize"
                 .Controls("tbxPctFines").ControlSource = "PctFines"
                 .Controls("tbxPctWater").ControlSource = "PctWater"
-                .Controls("tbxPctURC").ControlSource = "PctURC"
+                .Controls("tbxPctLitter").ControlSource = "PctLitter"
+                .Controls("tbxPctWoodyDebris").ControlSource = "PctWoodyDebris"
+                .Controls("tbxPctFA").ControlSource = "PctFilamentousAlgae"
+                .Controls("tbxPctStandingDead").ControlSource = "PctStandingDead"
+                .Controls("tbxPctWCC").ControlSource = "WoodyCanopyPctCover"
+                .Controls("tbxPctURC").ControlSource = "UnderstoryRootedPctCover"
+                .Controls("tbxPctARC").ControlSource = "AllRootedPctCover"
                 .Controls("tbxPlotDensity").ControlSource = "PlotDensity"
-                .Controls("chkNoCanopyVeg").ControlSource = "NoCanopyVeg"
-                .Controls("chkNoRootedVeg").ControlSource = "NoRootedVeg"
-                .Controls("chkNoIndicatorSpecies").ControlSource = "NoIndicatorSpecies"
-                .Controls("chkHasSocialTrails").ControlSource = "HasSocialTrails"
-                .Controls("chkCalibrationPlot").ControlSource = "CalibrationPlot"
-                .Controls("chkReplicatePlot").ControlSource = "ReplicatePlot"
+                .Controls("tglNoCanopyVeg").ControlSource = "NoCanopyVeg" 'IIf("NoCanopyVeg" = 1, True, False)
+                .Controls("tglNoRootedVeg").ControlSource = "NoRootedVeg" 'IIf("NoRootedVeg" = 1, True, False)
+                .Controls("tglNoIndicatorSpecies").ControlSource = "NoIndicatorSpecies" 'IIf("NoIndicatorSpecies" = 1, True, False)
+                .Controls("tglHasSocialTrails").ControlSource = "HasSocialTrails" 'IIf("HasSocialTrails" = 1, True, False)
+                .Controls("chkCalibrationPlot").ControlSource = "CalibrationPlot" 'IIf("CalibrationPlot" = 1, True, False)
+                .Controls("chkReplicatePlot").ControlSource = "ReplicatePlot" 'IIf("ReplicatePlot" = 1, True, False)
+
             Case "VegTransect"
 
         End Select

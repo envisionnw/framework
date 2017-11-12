@@ -1,10 +1,10 @@
 Option Compare Database
 Option Explicit
 
-' =================================
+' ---------------------------------
 ' MODULE:       mod_Strings
 ' Level:        Framework module
-' Version:      1.17
+' Version:      1.18
 ' Description:  String related functions & subroutines
 ' Requires:     Microsoft VBScript Regular Expressions 5.5 library for RemoveChars() oReg
 '
@@ -42,7 +42,8 @@ Option Explicit
 '               BLC, 10/6/2017 - 1.15 - update documentation, add Wrap()
 '               BLC, 10/18/2017 - 1.16 - add Truncate()
 '               BLC, 10/19/2017 - 1.17 - added ASCII tab constant
-' =================================
+'               BLC, 11/10/2017 - 1.18 - added Ne() similar to Nz(), SetTrace()
+' ---------------------------------
 
 '---------------------
 ' Declarations
@@ -248,7 +249,75 @@ Public Const iTabKey = 9                    'ASCII tab key value
 '   Replacements
 ' ---------------------------------
 
-' =================================
+' ---------------------------------
+' FUNCTION:     Ne
+' Description:  evaluate value and return it or an alternate value
+'               similar to Nz()
+' Assumptions:  -
+' Parameters:   InspectValue - value to inspect (variant)
+'               ZeroValue - value to return if the inspection value is either empty or 0 (variant)
+' Returns:      item (string)
+' Throws:       none
+' References:   none
+' Source/date:  Bonnie Campbell, November 10, 2017 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 11/10/2017 - initial version
+' ---------------------------------
+Public Function Ne(InspectValue As Variant, ZeroValue As Variant) As Variant
+On Error GoTo Err_Handler
+
+    If Len(InspectValue) = 0 Or InspectValue = 0 Then
+        Ne = ZeroValue
+    Else
+        Ne = InspectValue
+    End If
+    
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (" & Err.Number & " - Ne[mod_Strings])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' FUNCTION:     SetTrace
+' Description:  evaluate value to determine if it was trace and return it or an alternate value
+'
+' Assumptions:  "T" is the UI setting for trace values
+' Parameters:   InspectValue - value to check (variant)
+'               TraceValue - value to return if the inspection value is "T" (variant)
+' Returns:      item (string)
+' Throws:       none
+' References:   none
+' Source/date:  Bonnie Campbell, November 11, 2017 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 11/11/2017 - initial version
+' ---------------------------------
+Public Function SetTrace(InspectValue As Variant, TraceValue As Variant) As Variant
+On Error GoTo Err_Handler
+
+    SetTrace = IIf(UCase(InspectValue) = "T", TraceValue, InspectValue)
+    
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (" & Err.Number & " - SetTrace[mod_Strings])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
 ' FUNCTION:     ReplaceChars
 ' Description:  Replaces characters in a string
 ' Parameters:   strTextIn - string to work on
@@ -260,7 +329,7 @@ Public Const iTabKey = 9                    'ASCII tab key value
 ' Source/date:  Unknown, unknown
 ' Revisions:    Unknown - Unknown
 '               BLC, 9/14/2017 - added from mod_Utilities
-' =================================
+' ---------------------------------
 Public Function ReplaceChars(strTextIn As String, strFind As String, _
     strReplace As String) As String
 On Error GoTo Err_Handler
@@ -292,7 +361,7 @@ Err_Handler:
     Resume Exit_Handler
 End Function
 
-' =================================
+' ---------------------------------
 ' FUNCTION:     ReplaceString
 ' Description:  Replaces a substring in a string with another
 ' Parameters:   strTextIn - string to work on
@@ -309,7 +378,7 @@ End Function
 '               BLC, 9/14/2017 - ReplaceString_TSB from mod_Utilities (removed) similar
 '                                with required CaseSensitive parameter
 '                                removed f prefix from fCaseSensitive parameter
-' =================================
+' ---------------------------------
 Public Function ReplaceString(strTextIn As String, strFind As String, _
     strReplace As String, Optional CaseSensitive As Boolean = False) As String
 On Error GoTo Err_Handler
@@ -593,7 +662,7 @@ End Function
 '   Alterations
 ' ---------------------------------
 
-' =================================
+' ---------------------------------
 ' FUNCTION:     ChangeDelimiter
 ' Description:  Replaces delimiters in an input string; default is to change double-quotes
 '               to single quotes
@@ -607,7 +676,7 @@ End Function
 ' Revisions:    JRB, 5/17/2006
 '               BLC, 4/30/2015 - moved from mod_Utilities
 '               BLC, 5/18/2015 - renamed, removed fxn prefix
-' =================================
+' ---------------------------------
 Public Function ChangeDelimiter(strInputText As String, _
     Optional strCurrDelimiter As String = """", _
     Optional strNewDelimiter As String = "'") As String
@@ -730,7 +799,6 @@ Err_Handler:
     End Select
     Resume Exit_Handler
 End Function
-
 
 ' ---------------------------------
 '   Insertions

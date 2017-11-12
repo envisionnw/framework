@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        VegPlot
 ' Level:        Framework class
-' Version:      1.09
+' Version:      1.10
 '
 ' Description:  VegPlot object related properties, events, functions & procedures
 '
@@ -35,6 +35,8 @@ Option Explicit
 '               BLC - 11/2/2017 - 1.07 - changed % covers to double from integer, added MSS, WCC, ARC % cover
 '               BLC - 11/3/2017 - 1.08 - add ModalSedimentSize_ID property
 '               BLC - 11/8/2017 - 1.09 - add PctModalSedimentSize property
+'               BLC - 11/10/2017 - 1.10 - revised to HasSocialTrails & PctFines (plurals)
+'               BLC - 11/11/2017 - 1.11 - revised PercentWoodyDebris > PctWoodyDebris, added PctStandingDead
 ' =================================
 
 '---------------------
@@ -49,19 +51,20 @@ Private m_PlotNumber As Integer
 Private m_PlotDistance As Integer
 Private m_ModalSedimentSizeID As Long
 Private m_ModalSedimentSize As String '3
-Private m_PercentFines As Double
-Private m_PercentWater As Double
+Private m_PctFines As Double
+Private m_PctWater As Double
 Private m_UnderstoryRootedPctCover As Double
 Private m_WoodyCanopyPctCover As Double
 Private m_AllRootedPctCover As Double
 Private m_PctFilamentousAlgae As Double
 Private m_PctModalSedimentSize As Double
-Private m_PercentLitter As Double
-Private m_PercentWoodyDebris As Double
+Private m_PctLitter As Double
+Private m_PctWoodyDebris As Double
+Private m_PctStandingDead As Double
 Private m_PlotDensity As Integer
 Private m_NoCanopyVeg As Boolean
 Private m_NoRootedVeg As Boolean
-Private m_HasSocialTrail As Boolean
+Private m_HasSocialTrails As Boolean
 Private m_NoIndicatorSpecies As Boolean
 Private m_ReplicatePlot As Boolean
 Private m_CalibrationPlot As Boolean
@@ -159,28 +162,28 @@ Public Property Get ModalSedimentSize() As String
     ModalSedimentSize = m_ModalSedimentSize
 End Property
 
-Public Property Let PercentFines(Value As Double)
+Public Property Let PctFines(Value As Double)
     If IsBetween(Value, 0, 100, True) Then
-        m_PercentFines = Value
+        m_PctFines = Value
     Else
         RaiseEvent InvalidPercent(Value)
     End If
 End Property
 
-Public Property Get PercentFines() As Double
-    PercentFines = m_PercentFines
+Public Property Get PctFines() As Double
+    PctFines = m_PctFines
 End Property
 
-Public Property Let PercentWater(Value As Double)
+Public Property Let PctWater(Value As Double)
     If IsBetween(Value, 0, 100, True) Then
-        m_PercentWater = Value
+        m_PctWater = Value
     Else
         RaiseEvent InvalidPercent(Value)
     End If
 End Property
 
-Public Property Get PercentWater() As Double
-    PercentWater = m_PercentWater
+Public Property Get PctWater() As Double
+    PctWater = m_PctWater
 End Property
 
 Public Property Let UnderstoryRootedPctCover(Value As Double)
@@ -243,28 +246,40 @@ Public Property Get PctFilamentousAlgae() As Double
     PctFilamentousAlgae = m_PctFilamentousAlgae
 End Property
 
-Public Property Let PercentLitter(Value As Double)
+Public Property Let PctLitter(Value As Double)
     If IsBetween(Value, 0, 100, True) Then
-        m_PercentLitter = Value
+        m_PctLitter = Value
     Else
         RaiseEvent InvalidPercent(Value)
     End If
 End Property
 
-Public Property Get PercentLitter() As Double
-    PercentLitter = m_PercentLitter
+Public Property Get PctLitter() As Double
+    PctLitter = m_PctLitter
 End Property
 
-Public Property Let PercentWoodyDebris(Value As Double)
+Public Property Let PctWoodyDebris(Value As Double)
     If IsBetween(Value, 0, 100, True) Then
-        m_PercentWoodyDebris = Value
+        m_PctWoodyDebris = Value
     Else
         RaiseEvent InvalidPercent(Value)
     End If
 End Property
 
-Public Property Get PercentWoodyDebris() As Double
-    PercentWoodyDebris = m_PercentWoodyDebris
+Public Property Get PctWoodyDebris() As Double
+    PctWoodyDebris = m_PctWoodyDebris
+End Property
+
+Public Property Let PctStandingDead(Value As Double)
+    If IsBetween(Value, 0, 100, True) Then
+        m_PctStandingDead = Value
+    Else
+        RaiseEvent InvalidPercent(Value)
+    End If
+End Property
+
+Public Property Get PctStandingDead() As Double
+    PctStandingDead = m_PctStandingDead
 End Property
 
 Public Property Let PlotDensity(Value As Integer)
@@ -297,12 +312,12 @@ Public Property Get NoRootedVeg() As Boolean
     NoRootedVeg = m_NoRootedVeg
 End Property
 
-Public Property Let HasSocialTrail(Value As Boolean)
-    m_HasSocialTrail = Value
+Public Property Let HasSocialTrails(Value As Boolean)
+    m_HasSocialTrails = Value
 End Property
 
-Public Property Get HasSocialTrail() As Boolean
-    HasSocialTrail = m_HasSocialTrail
+Public Property Get HasSocialTrails() As Boolean
+    HasSocialTrails = m_HasSocialTrails
 End Property
 
 Public Property Let NoIndicatorSpecies(Value As Boolean)
@@ -416,6 +431,7 @@ End Sub
 '   BLC, 10/31/2017 - added ReplicatePlot, CalibrationPlot flags
 '   BLC, 11/2/2017 - added % WCC, ARC, MSS
 '   BLC, 11/8/2017 - added % MSS
+'   BLC, 11/11/2017 - revised Percent > Pct (WoodyDebris, Litter, Fines, Water)
 '---------------------------------------------------------------------------------------
 Public Sub SaveToDb(Optional IsUpdate As Boolean = False)
 On Error GoTo Err_Handler
@@ -424,7 +440,7 @@ On Error GoTo Err_Handler
     
     Template = "i_vegplot"
     
-    Dim Params(0 To 24) As Variant
+    Dim Params(0 To 26) As Variant
 
     With Me
         Params(0) = "VegPlot"
@@ -435,26 +451,27 @@ On Error GoTo Err_Handler
         Params(5) = .PlotNumber
         Params(6) = .PlotDistance
         Params(7) = .ModalSedimentSizeID    'vs. ModalSedimentSize class
-        Params(8) = .PercentFines
-        Params(9) = .PercentWater
+        Params(8) = .PctFines
+        Params(9) = .PctWater
         Params(10) = .UnderstoryRootedPctCover
         Params(11) = .WoodyCanopyPctCover
         Params(12) = .AllRootedPctCover
         Params(13) = .PctModalSedimentSize
         Params(14) = .PctFilamentousAlgae
-        Params(15) = .PercentLitter
-        Params(16) = .PercentWoodyDebris
-        Params(17) = .PlotDensity
-        Params(18) = .NoCanopyVeg
-        Params(19) = .NoRootedVeg
-        Params(20) = .HasSocialTrail
-        Params(21) = .NoIndicatorSpecies
-        Params(22) = .CalibrationPlot
-        Params(23) = .ReplicatePlot
+        Params(15) = .PctLitter
+        Params(16) = .PctWoodyDebris
+        Params(17) = .PctStandingDead
+        Params(18) = .PlotDensity
+        Params(19) = .NoCanopyVeg
+        Params(20) = .NoRootedVeg
+        Params(21) = .HasSocialTrails
+        Params(22) = .NoIndicatorSpecies
+        Params(23) = .CalibrationPlot
+        Params(24) = .ReplicatePlot
         
         If IsUpdate Then
             Template = "u_vegplot"
-            Params(24) = .ID
+            Params(25) = .ID
         End If
         
         .ID = SetRecord(Template, Params)

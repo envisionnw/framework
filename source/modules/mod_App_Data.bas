@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_Data
 ' Level:        Application module
-' Version:      1.48
+' Version:      1.51
 ' Description:  data functions & procedures specific to this application
 '
 ' Source/date:  Bonnie Campbell, 2/9/2015
@@ -82,6 +82,10 @@ Option Explicit
 '               BLC, 11/6/2017  - 1.47 - use GetRecords() (GetSiteID()), add i_site_vegtransect (SetRecord()),
 '                                        added s_site_id_by_code (GetRecords())
 '               BLC, 11/8/2017  - 1.48 - update UpsertRecord(), SetRecord() for % MSS
+'               BLC, 11/9/2017  - 1.49 - added s_location_by_site, s_location_by_feature (GetRecords()),
+'                                        added Comment case (UpsertRecord())
+'               BLC, 11/10/2017 - 1.50 - added Transducer distances (UpsertRecord())
+'               BLC, 11/11/2017 - 1.51 - updated UpsertRecord, SetRecord for vegplot cases
 ' =================================
 
 ' =================================
@@ -806,6 +810,7 @@ End Function
 '   BLC - 11/2/2017 - added s_plot_numbers, s_transect_numbers
 '   BLC - 11/3/2017 - added s_modal_sediment_size
 '   BLC - 11/6/2017 - added s_site_id_by_code
+'   BLC - 11/9/2017 - added s_location_by_site, s_location_by_feature
 ' ---------------------------------
 Public Function GetRecords(Template As String, _
                             Optional Params As Variant) As DAO.Recordset
@@ -908,6 +913,12 @@ On Error GoTo Err_Handler
                     .Parameters("pkcode") = TempVars("ParkCode")
                     .Parameters("scode") = TempVars("SiteCode")
                 
+                Case "s_location_by_feature"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("scode") = TempVars("SiteCode")
+                    .Parameters("feat") = TempVars("Feature")
+                
                 Case "s_location_by_park_river"
                     '-- required parameters --
                     .Parameters("pkcode") = TempVars("ParkCode")
@@ -917,6 +928,11 @@ On Error GoTo Err_Handler
                     '-- required parameters --
                     .Parameters("pkcode") = TempVars("ParkCode")
                     .Parameters("seg") = TempVars("River")
+                
+                Case "s_location_by_site"
+                    '-- required parameters --
+                    .Parameters("pkcode") = TempVars("ParkCode")
+                    .Parameters("scode") = TempVars("SiteCode")
                 
                 Case "s_location_list_by_park_river"
                     '-- required parameters --
@@ -1248,6 +1264,7 @@ End Function
 '                      parameters
 '   BLC - 10/31/2017 - added ReplicatePlot, CalibrationPlot flags, updated VegPlot case
 '   BLC - 11/6/2017 - add i_site_vegtransect
+'   BLC - 11/11/2017 - updated i_vegplot, u_vegplot
 ' ---------------------------------
 Public Function SetRecord(Template As String, Params As Variant) As Long
 On Error GoTo Err_Handler
@@ -1542,21 +1559,22 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                     .Parameters("pdist") = Params(6)            'PlotDistance
                     .Parameters("MSSID") = Params(7)            'ModalSedimentSize ID
                     .Parameters("pctmss") = Params(13)          'PctModalSedimentSize
-                    .Parameters("pctfine") = Params(8)          'PercentFines
+                    .Parameters("pctfines") = Params(8)         'PercentFines
                     .Parameters("pctwater") = Params(9)         'PercentWater
                     .Parameters("pcturc") = Params(10)          'UnderstoryRootedPctCover
                     .Parameters("pctwcc") = Params(11)          'WoodyCanopyPctCover
                     .Parameters("pctarc") = Params(12)          'AllRootedPctCover
-                    .Parameters("pd") = Params(17)              'PlotDensity
-                    .Parameters("nocanopy") = Params(18)        'NoCanopyVeg
-                    .Parameters("norooted") = Params(19)        'NoRootedVeg
-                    .Parameters("hastrails") = Params(20)       'HasSocialTrail
-                    .Parameters("fa") = Params(14)              'FilamentousAlgae
-                    .Parameters("pctlitter") = Params(15)       'PercentLitter
-                    .Parameters("pctwd") = Params(16)           'PercentWoodyDebris
-                    .Parameters("noindsp") = Params(21)         'NoIndicatorSpecies
-                    .Parameters("cplot") = Params(22)           'CalibrationPlot
-                    .Parameters("rplot") = Params(23)           'ReplicatePlot
+                    .Parameters("pd") = Params(18)              'PlotDensity
+                    .Parameters("nocanopy") = Params(19)        'NoCanopyVeg
+                    .Parameters("norooted") = Params(20)        'NoRootedVeg
+                    .Parameters("hastrails") = Params(21)       'HasSocialTrails
+                    .Parameters("pctfa") = Params(14)           'PctFilamentousAlgae
+                    .Parameters("pctlitter") = Params(15)       'PctLitter
+                    .Parameters("pctwd") = Params(16)           'PctWoodyDebris
+                    .Parameters("pctsd") = Params(17)           'PctStandingDead
+                    .Parameters("noindsp") = Params(22)         'NoIndicatorSpecies
+                    .Parameters("cplot") = Params(23)           'CalibrationPlot
+                    .Parameters("rplot") = Params(24)           'ReplicatePlot
                                     
                 Case "i_vegtransect"
                     '-- required parameters --
@@ -1849,21 +1867,22 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                     .Parameters("pdist") = Params(6)            'PlotDistance
                     .Parameters("MSSID") = Params(7)            'ModalSedimentSize ID
                     .Parameters("pctmss") = Params(13)          'PctModalSedimentSize
-                    .Parameters("pctfine") = Params(8)          'PercentFines
-                    .Parameters("pctwater") = Params(9)         'PercentWater
+                    .Parameters("pctfines") = Params(8)         'PctFines
+                    .Parameters("pctwater") = Params(9)         'PctWater
                     .Parameters("pcturc") = Params(10)          'UnderstoryRootedPctCover
                     .Parameters("pctwcc") = Params(11)          'WoodyCanopyPctCover
                     .Parameters("pctarc") = Params(12)          'AllRootedPctCover
-                    .Parameters("pd") = Params(17)              'PlotDensity
-                    .Parameters("nocanopy") = Params(18)        'NoCanopyVeg
-                    .Parameters("norooted") = Params(19)        'NoRootedVeg
-                    .Parameters("hastrails") = Params(20)       'HasSocialTrail
+                    .Parameters("pd") = Params(18)              'PlotDensity
+                    .Parameters("nocanopy") = Params(19)        'NoCanopyVeg
+                    .Parameters("norooted") = Params(20)        'NoRootedVeg
+                    .Parameters("hastrails") = Params(21)       'HasSocialTrails
                     .Parameters("fa") = Params(14)              'FilamentousAlgae
-                    .Parameters("pctlitter") = Params(15)       'PercentLitter
-                    .Parameters("pctwd") = Params(16)           'PercentWoodyDebris
-                    .Parameters("noindsp") = Params(21)         'NoIndicatorSpecies
-                    .Parameters("cplot") = Params(22)           'CalibrationPlot
-                    .Parameters("rplot") = Params(23)           'ReplicatePlot
+                    .Parameters("pctlitter") = Params(15)       'PctLitter
+                    .Parameters("pctwd") = Params(16)           'PctWoodyDebris
+                    .Parameters("pctsd") = Params(17)           'PctStandingDead
+                    .Parameters("noindsp") = Params(22)         'NoIndicatorSpecies
+                    .Parameters("cplot") = Params(23)           'CalibrationPlot
+                    .Parameters("rplot") = Params(24)           'ReplicatePlot
                 
                 Case "u_vegtransect"
                     '-- required parameters --
@@ -2094,6 +2113,9 @@ End Function
 '   BLC - 9/29/2017 - update location ContactID
 '   BLC - 10/30/2017 - change location CollectionSourceID to use text vs. index
 '   BLC - 10/31/2017 - added ReplicatePlot, CalibrationPlot flags (VegPlot)
+'   BLC - 11/9/2017 - add Comment case
+'   BLC - 11/10/2017 - added Transducer distances
+'   BLC - 11/11/2017 - updated VegPlot
 ' ---------------------------------
 Public Sub UpsertRecord(ByRef frm As Form)
 On Error GoTo Err_Handler
@@ -2130,6 +2152,17 @@ On Error GoTo Err_Handler
             '-------------------
             ' --- BIG RIVERS ---
             '-------------------
+            Case "Comment"
+                Dim cmt As New AppComment
+                With cmt
+                    'form values
+                    .CommentType = frm!tbx
+                    .TypeID = Trim(Split(frm!Context, "-")(1))
+                    .Comment = frm!tbxComment
+                    .CommentorID = TempVars("")
+                
+                End With
+            
             Case "Contact"
                 Dim p As New Person
     
@@ -2351,7 +2384,6 @@ On Error GoTo Err_Handler
                     Set ra = Nothing
                 End With
             
-            
             Case "Site"
                 Dim s As New Site
                 
@@ -2420,6 +2452,10 @@ On Error GoTo Err_Handler
                     .Timing = frm!cbxTiming.SelText
                     .ActionDate = Format(frm!tbxSampleDate.Value, "YYYY-mm-dd")
                     .ActionTime = Format(frm!tbxSampleTime.Value, "hh:mm.ss")
+                    .RefToEyebolt = frm!tbxRefToEyebolt
+                    .RefToWaterline = frm!tbxRefToWaterline
+                    .EyeboltToWaterline = frm!tbxEyeboltToWaterline
+                    .EyeboltToScribeline = frm!tbxEyeboltToScribeline
                     
                     .ID = frm!tbxID.Value '0 if new, edit if > 0
                 
@@ -2492,6 +2528,30 @@ On Error GoTo Err_Handler
                 Dim vp As New VegPlot
                 With vp
                     'values passed into form
+                    .EventID = frm!cbxEventID
+                    .SiteID = TempVars("SiteID")
+                    .FeatureID = TempVars("FeatureID")
+                    .VegTransectID = frm!cbxVegTransectID
+                    .PlotNumber = frm!tbxPlotNumber
+                    .PlotDistance = frm!tbxPlotDistance
+                    .WoodyCanopyPctCover = frm!tbxPctWCC
+                    .UnderstoryRootedPctCover = frm!tbxPctURC
+                    .AllRootedPctCover = frm!tbxPctARC
+                    .ModalSedimentSizeID = frm!cbxMSSID
+                    .PctModalSedimentSize = frm!tbxPctMSS
+                    .PctFines = frm!tbxPctFines
+                    .PctWater = frm!tbxPctWater
+                    .PctLitter = frm!tbxPctLitter
+                    .PctWoodyDebris = frm!tbxPctWoodyDebris
+                    .PctFilamentousAlgae = frm!tbxPctFA
+                    .PctStandingDead = frm!tbxPctStandingDead
+                    .PlotDensity = frm!tbxPlotDensity
+                    .HasSocialTrails = IIf(frm!tglHasSocialTrails = True, 1, 0)
+                    .NoCanopyVeg = IIf(frm!tglNoCanopyVeg = True, 1, 0)
+                    .NoIndicatorSpecies = IIf(frm!tglNoIndicatorSpecies = True, 1, 0)
+                    .NoRootedVeg = IIf(frm!tglNoRootedVeg = True, 1, 0)
+                    .CalibrationPlot = IIf(frm!chkCalibrationPlot = True, 1, 0)
+                    .ReplicatePlot = IIf(frm!chkReplicatePlot = True, 1, 0)
                     
                     'set the generic object --> VegPlot
                     Set obj = vp

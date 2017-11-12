@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Forms
 ' Level:        Framework module
-' Version:      1.11
+' Version:      1.12
 ' Description:  generic form functions & procedures
 '
 ' Source/date:  Bonnie Campbell, 2/19/2015
@@ -32,7 +32,7 @@ Option Explicit
 '                                        RepaintParentForm(), ChangeBackColor()
 '                                        ResetHeaders(), ShowControls(),
 '                                        ControlExists(), AddFormControl()
-'
+'               BLC - 11/10/2017 - 1.12 - add control existance checks
 ' =================================
 
 '=================================================================
@@ -428,6 +428,7 @@ End Sub
 '   BLC - 6/27/2016 - shifted to mod_Forms from big rivers forms
 '   BLC - 7/28/2016 - added clearing lblMsg caption
 '   BLC - 8/30/2016 - added RefSub to identify form subs called by ClearForm
+'   BLC - 11/10/2017 - add control existance checks
 ' ---------------------------------
 Public Sub ClearForm(ByRef frm As Form)
 On Error GoTo Err_Handler
@@ -458,15 +459,23 @@ On Error GoTo Err_Handler
             End Select
         Next
         
-        .Controls("tbxIcon") = StringFromCodepoint(uBullet)
-        .Controls("tbxIcon").forecolor = lngRed
-        .Controls("tbxID") = 0
-        .Controls("lblMsgIcon").Caption = ""
-        .Controls("lblMsg").Caption = ""
-        .Controls("lblMsgIcon").forecolor = lngRobinEgg
+        'set values if controls exist
+        If ControlExists("tbxIcon", frm) Then
+            .Controls("tbxIcon") = StringFromCodepoint(uBullet)
+            .Controls("tbxIcon").forecolor = lngRed
+        End If
         
-        .Controls("btnSave").Enabled = False
+        If ControlExists("tbxID", frm) Then .Controls("tbxID") = 0
         
+        'assume MsgIcon & Msg both are either on form or not
+        If ControlExists("lblMsgIcon", frm) Then
+            .Controls("lblMsgIcon").Caption = ""
+            .Controls("lblMsg").Caption = ""
+            .Controls("lblMsgIcon").forecolor = lngRobinEgg
+        End If
+        
+        If ControlExists("btnSave", frm) Then .Controls("btnSave").Enabled = False
+                
         .list.Requery
         
         .Requery

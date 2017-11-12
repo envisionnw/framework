@@ -49,7 +49,7 @@ Private Type PlotData
     PlotDensity As Integer
     NoCanopyVeg As Byte
     NoRootedVeg As Byte
-    HasSocialTrail As Byte
+    HasSocialTrails As Byte
     FilamentousAlgae As Byte
     NoIndicatorSpecies As Byte
     Litter As Double
@@ -138,12 +138,12 @@ Public Property Let NoRootedVeg(Value As Byte)
     this.NoRootedVeg = Value
 End Property
 
-Public Property Get HasSocialTrail() As Byte
-    HasSocialTrail = this.HasSocialTrail
+Public Property Get HasSocialTrails() As Byte
+    HasSocialTrails = this.HasSocialTrails
 End Property
 
-Public Property Let HasSocialTrail(Value As Byte)
-    this.HasSocialTrail = Value
+Public Property Let HasSocialTrails(Value As Byte)
+    this.HasSocialTrails = Value
 End Property
 
 Public Property Get FilamentousAlgae() As Double
@@ -188,7 +188,7 @@ Public Property Get CsvRows() As String
         Temp(7) = this.PlotDensity
         Temp(8) = this.NoCanopyVeg
         Temp(9) = this.NoRootedVeg
-        Temp(10) = this.HasSocialTrail
+        Temp(10) = this.HasSocialTrails
         Temp(11) = this.FilamentousAlgae
         Temp(12) = this.NoIndicatorSpecies
         Temp(13) = this.Litter
