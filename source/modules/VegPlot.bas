@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        VegPlot
 ' Level:        Framework class
-' Version:      1.10
+' Version:      1.12
 '
 ' Description:  VegPlot object related properties, events, functions & procedures
 '
@@ -37,6 +37,7 @@ Option Explicit
 '               BLC - 11/8/2017 - 1.09 - add PctModalSedimentSize property
 '               BLC - 11/10/2017 - 1.10 - revised to HasSocialTrails & PctFines (plurals)
 '               BLC - 11/11/2017 - 1.11 - revised PercentWoodyDebris > PctWoodyDebris, added PctStandingDead
+'               BLC - 11/12/2017 - 1.12 - revised booleans to byte for 1,0 values
 ' =================================
 
 '---------------------
@@ -62,12 +63,12 @@ Private m_PctLitter As Double
 Private m_PctWoodyDebris As Double
 Private m_PctStandingDead As Double
 Private m_PlotDensity As Integer
-Private m_NoCanopyVeg As Boolean
-Private m_NoRootedVeg As Boolean
-Private m_HasSocialTrails As Boolean
-Private m_NoIndicatorSpecies As Boolean
-Private m_ReplicatePlot As Boolean
-Private m_CalibrationPlot As Boolean
+Private m_NoCanopyVeg As Byte
+Private m_NoRootedVeg As Byte
+Private m_HasSocialTrails As Byte
+Private m_NoIndicatorSpecies As Byte
+Private m_ReplicatePlot As Byte
+Private m_CalibrationPlot As Byte
 
 '---------------------
 ' Events
@@ -296,54 +297,59 @@ Public Property Get PlotDensity() As Integer
     PlotDensity = m_PlotDensity
 End Property
 
-Public Property Let NoCanopyVeg(Value As Boolean)
-    m_NoCanopyVeg = Value
+Public Property Let NoCanopyVeg(Value As Byte)
+    If Value = 1 Or Value = 0 Then _
+        m_NoCanopyVeg = Value
 End Property
 
-Public Property Get NoCanopyVeg() As Boolean
+Public Property Get NoCanopyVeg() As Byte
     NoCanopyVeg = m_NoCanopyVeg
 End Property
 
-Public Property Let NoRootedVeg(Value As Boolean)
-    m_NoRootedVeg = Value
+Public Property Let NoRootedVeg(Value As Byte)
+    If Value = 1 Or Value = 0 Then _
+        m_NoRootedVeg = Value
 End Property
 
-Public Property Get NoRootedVeg() As Boolean
+Public Property Get NoRootedVeg() As Byte
     NoRootedVeg = m_NoRootedVeg
 End Property
 
-Public Property Let HasSocialTrails(Value As Boolean)
-    m_HasSocialTrails = Value
+Public Property Let HasSocialTrails(Value As Byte)
+    If Value = 1 Or Value = 0 Then _
+        m_HasSocialTrails = Value
 End Property
 
-Public Property Get HasSocialTrails() As Boolean
+Public Property Get HasSocialTrails() As Byte
     HasSocialTrails = m_HasSocialTrails
 End Property
 
-Public Property Let NoIndicatorSpecies(Value As Boolean)
-    m_NoIndicatorSpecies = Value
+Public Property Let NoIndicatorSpecies(Value As Byte)
+    If Value = 1 Or Value = 0 Then _
+        m_NoIndicatorSpecies = Value
 End Property
 
-Public Property Get NoIndicatorSpecies() As Boolean
+Public Property Get NoIndicatorSpecies() As Byte
     NoIndicatorSpecies = m_NoIndicatorSpecies
 End Property
 
-Public Property Let CalibrationPlot(Value As Boolean)
-    m_CalibrationPlot = Value
+Public Property Let CalibrationPlot(Value As Byte)
+    If Value = 1 Or Value = 0 Then _
+        m_CalibrationPlot = Value
 End Property
 
-Public Property Get CalibrationPlot() As Boolean
+Public Property Get CalibrationPlot() As Byte
     CalibrationPlot = m_CalibrationPlot
 End Property
 
-Public Property Let ReplicatePlot(Value As Boolean)
-    m_ReplicatePlot = Value
+Public Property Let ReplicatePlot(Value As Byte)
+    If Value = 1 Or Value = 0 Then _
+        m_ReplicatePlot = Value
 End Property
 
-Public Property Get ReplicatePlot() As Boolean
+Public Property Get ReplicatePlot() As Byte
     ReplicatePlot = m_ReplicatePlot
 End Property
-
 
 '---------------------
 ' Methods

@@ -86,6 +86,7 @@ Option Explicit
 '                                        added Comment case (UpsertRecord())
 '               BLC, 11/10/2017 - 1.50 - added Transducer distances (UpsertRecord())
 '               BLC, 11/11/2017 - 1.51 - updated UpsertRecord, SetRecord for vegplot cases
+'               BLC, 11/12/2017 - 1.52 - added unknown cases (SetRecord())
 ' =================================
 
 ' =================================
@@ -1265,6 +1266,7 @@ End Function
 '   BLC - 10/31/2017 - added ReplicatePlot, CalibrationPlot flags, updated VegPlot case
 '   BLC - 11/6/2017 - add i_site_vegtransect
 '   BLC - 11/11/2017 - updated i_vegplot, u_vegplot
+'   BLC - 11/12/2017 - added i_unknown, u_unknown_identify, u_unknown
 ' ---------------------------------
 Public Function SetRecord(Template As String, Params As Variant) As Long
 On Error GoTo Err_Handler
@@ -1548,6 +1550,27 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                     .Parameters("MasterPlantCode") = Params(2)
                     .Parameters("PercentCover") = Params(3)
                     .Parameters("IsSeedling") = Params(4)
+                
+                Case "i_unknown"
+                    '-- required parameters --
+                    .Parameters("ucode") = Params(1)
+                    .Parameters("ptype") = Params(2)
+                    .Parameters("pdescr") = Params(3)
+                    .Parameters("sfeat") = Params(4)
+                    .Parameters("ltype") = Params(5)
+                    .Parameters("lmarg") = Params(6)
+                    .Parameters("lch") = Params(7)
+                    .Parameters("sch") = Params(8)
+                    .Parameters("fch") = Params(9)
+                    .Parameters("gch") = Params(10)
+                    .Parameters("forb") = Params(11)
+                    .Parameters("pere") = Params(12)
+                    .Parameters("bguess") = Params(13)
+                    .Parameters("pix") = Params(14)
+                    .Parameters("coll") = Params(15)
+                    .Parameters("collmeth") = Params(16)
+                    .Parameters("lid") = Params(17)
+                    .Parameters("cid") = Params(18)
                      
                 Case "i_vegplot"
                     '-- required parameters --
@@ -1916,6 +1939,35 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                     .Parameters("PercentCover") = Params(3)
                     .Parameters("IsSeedling") = Params(4)
                 
+                Case "u_unknown"
+                    '-- required parameters --
+                    .Parameters("uid") = Params(25)
+                    .Parameters("ucode") = Params(1)
+                    .Parameters("ptype") = Params(2)
+                    .Parameters("pdescr") = Params(3)
+                    .Parameters("sfeat") = Params(4)
+                    .Parameters("ltype") = Params(5)
+                    .Parameters("lmarg") = Params(6)
+                    .Parameters("lch") = Params(7)
+                    .Parameters("sch") = Params(8)
+                    .Parameters("fch") = Params(9)
+                    .Parameters("gch") = Params(10)
+                    .Parameters("forb") = Params(11)
+                    .Parameters("pere") = Params(12)
+                    .Parameters("bguess") = Params(13)
+                    .Parameters("pix") = Params(14)
+                    .Parameters("coll") = Params(15)
+                    .Parameters("collmeth") = Params(16)
+                    .Parameters("lid") = Params(17)
+                    .Parameters("cid") = Params(18)
+                
+                Case "u_unknown_identify"
+                    '-- required parameters --
+                    .Parameters("uid") = Params(1)
+                    .Parameters("ccode") = Params(2)
+                    .Parameters("idate") = Params(3)
+                    .Parameters("cid") = Params(4)
+                
                 Case "u_waterway"
                     '-- required parameters --
                     .Parameters("ParkID") = Params(1)
@@ -2116,6 +2168,7 @@ End Function
 '   BLC - 11/9/2017 - add Comment case
 '   BLC - 11/10/2017 - added Transducer distances
 '   BLC - 11/11/2017 - updated VegPlot
+'   BLC - 11/12/2017 - add UnknownSpecies case
 ' ---------------------------------
 Public Sub UpsertRecord(ByRef frm As Form)
 On Error GoTo Err_Handler
@@ -2524,6 +2577,21 @@ On Error GoTo Err_Handler
                     Set u = Nothing
                 End With
 
+            Case "UnknownSpecies"
+                Dim unk As New UnknownSpecies
+                
+                With unk
+                
+                
+                    .ID = frm!tbxID.Value '0 if new, edit if > 0
+                                
+                    'set the generic object --> unk
+                    Set obj = unk
+                    
+                    'cleanup
+                    Set unk = Nothing
+                End With
+            
             Case "VegPlot"
                 Dim vp As New VegPlot
                 With vp

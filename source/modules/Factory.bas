@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        Factory
 ' Level:        Framework class
-' Version:      1.00
+' Version:      1.01
 '
 ' Description:  Factory object related properties, events, functions & procedures
 '
@@ -34,6 +34,7 @@ Option Explicit
 ' References:
 ' Revisions:    --------------- Reference Library ------------------
 '               BLC - 9/27/2017  - 1.00 - initial version
+'               BLC - 11/12/2017 - 1.01 - added unknown class
 ' =================================
 
 '---------------------------------------------------------------------------
@@ -1229,6 +1230,41 @@ Err_Handler:
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - NewUnderstoryCoverSpecies[Factory class])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' FUNCTION:     NewUnknownSpecies
+' Description:  Creates new class object
+'
+' Assumptions:  -
+' Parameters:   -
+'               -
+' Returns:      object of the desired class
+' Throws:       none
+' References:   -
+' Source/date:
+'   Hammond Mason, July 9, 2015
+'   https://hammondmason.wordpress.com/2015/07/09/object-oriented-vba-design-patterns-simple-factory/
+' Adapted:      Bonnie Campbell, November 12, 2017 - for NCPN tools
+' Revisions:
+'   BLC - 11/12/2017 - initial version
+' ---------------------------------
+Public Function NewUnknownSpecies()
+On Error GoTo Err_Handler
+    
+    Set NewUnknownSpecies = New UnknownSpecies
+
+Exit_Handler:
+    'cleanup
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - NewUnknownSpecies[Factory class])"
     End Select
     Resume Exit_Handler
 End Function
