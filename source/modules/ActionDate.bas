@@ -71,11 +71,11 @@ Public Property Get Record() As String
     Record = m_Record
 End Property
 
-Public Property Let Contact(Value As Person)
+Public Property Let Contact(Value As person)
     m_Contact = Value
 End Property
 
-Public Property Get Contact() As Person
+Public Property Get Contact() As person
     Contact = m_Contact
 End Property
 

@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_UI
 ' Level:        Application module
-' Version:      1.32
+' Version:      1.33
 ' Description:  Application User Interface related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
@@ -75,6 +75,7 @@ Option Explicit
 '               BLC, 11/9/2017  - 1.31 - update VegPlot case, checkboxes & toggles;
 '                                        Transducer case distances (PopulateForm())
 '               BLC, 11/11/2017 - 1.32 - update VegPlot case (PopulateForm())
+'               BLC, 11/11/2017 - 1.33 - add VegPlot BeaverBrowse (PopulateForm())
 ' =================================
 
 ' ---------------------------------
@@ -1629,6 +1630,7 @@ End Sub
 '   BLC - 11/3/2017 - update Location case
 '   BLC - 11/9/2017 - update VegPlot case, checkboxes & toggles; Transducer case distances
 '   BLC - 11/11/2017 - update VegPlot case
+'   BLC - 12/5/2017 - add VegPlot BeaverBrowse
 ' ---------------------------------
 Public Sub PopulateForm(frm As Form, ID As Long)
 On Error GoTo Err_Handler
@@ -1777,7 +1779,27 @@ On Error GoTo Err_Handler
                 .Controls("tbxRefToEyebolt").ControlSources = "RefToEyebolt"
                 .Controls("tbxEyeboltToWaterline").ControlSources = "EyeboltToWaterline"
                 .Controls("tbxEyeboltToScribeline").ControlSources = "EyeboltToScribeline"
-                
+            Case "Unknown"
+                'set form fields to record fields as datasource
+                .Controls("tbxID").ControlSource = "ID"
+                .Controls("tbxUnknownCode").ControlSource = "UnknownCode"
+                .Controls("optgPlantType").ControlSource = "PlantType"
+                .Controls("tbxDescription").ControlSource = "Description"
+                .Controls("tbxFeature").ControlSource = "SalientFeature"
+                .Controls("tbxLeafType").ControlSource = "LeafType"
+                .Controls("tbxLeafMargin").ControlSource = "LeafMargin"
+                .Controls("tbxLeafCharacter").ControlSource = "LeafCharacter"
+                .Controls("tbxStemCharacter").ControlSource = "StemCharacter"
+                .Controls("tbxFlowerCharacter").ControlSource = "FlowerCharcter"
+                .Controls("tbxGeneralCharacter").ControlSource = "GeneralCharacter"
+                .Controls("optgForbGrassType").ControlSource = "ForbGrassType"
+                .Controls("optgPerennialGrassType").ControlSource = "PerennialGrassType"
+                .Controls("tbxBestGuess").ControlSource = "BestGuess"
+                .Controls("chkHasPhotos").ControlSource = "HasPhotos"
+                .Controls("chkCollected").ControlSource = "Collected"
+                .Controls("tbxCollectionMethod").ControlSource = "CollectionMethod"
+                .Controls("cbxLocationID").ControlSource = "Location_ID"
+                .Controls("cbxCollectedByID").ControlSource = "CollectedBy_ID"
             Case "VegPlot"
                 'set form fields to record fields as datasource
                 .Controls("tbxID").ControlSource = "ID"
@@ -1798,11 +1820,18 @@ On Error GoTo Err_Handler
                 .Controls("tglNoCanopyVeg").ControlSource = "NoCanopyVeg" 'IIf("NoCanopyVeg" = 1, True, False)
                 .Controls("tglNoRootedVeg").ControlSource = "NoRootedVeg" 'IIf("NoRootedVeg" = 1, True, False)
                 .Controls("tglNoIndicatorSpecies").ControlSource = "NoIndicatorSpecies" 'IIf("NoIndicatorSpecies" = 1, True, False)
-                .Controls("tglHasSocialTrails").ControlSource = "HasSocialTrails" 'IIf("HasSocialTrails" = 1, True, False)
-                .Controls("chkCalibrationPlot").ControlSource = "CalibrationPlot" 'IIf("CalibrationPlot" = 1, True, False)
-                .Controls("chkReplicatePlot").ControlSource = "ReplicatePlot" 'IIf("ReplicatePlot" = 1, True, False)
+                '.Controls("tglHasSocialTrails").ControlSource = "HasSocialTrails" 'IIf("HasSocialTrails" = 1, True, False)
+                .Controls("chkCalibrationPlot").ControlSource = IIf("CalibrationPlot" = 1, True, False) '"CalibrationPlot" 'IIf("CalibrationPlot" = 1, True, False)
+                .Controls("chkReplicatePlot").ControlSource = IIf("ReplicatePlot" = 1, True, False) '"ReplicatePlot" 'IIf("ReplicatePlot" = 1, True, False)
+                .Controls("tbxPctSocialTrails").ControlSource = "PctSocialTrails"
+                .Controls("tglBeaverBrowse").ControlSource = "BeaverBrowse"
 
             Case "VegTransect"
+
+            Case "VegWalk"
+                'set form fields to record fields as datasource
+                .Controls("tbxID").ControlSource = "ID"
+                .Controls("tbxWalkStartDate").ControlSource = "StartDate"
 
         End Select
     

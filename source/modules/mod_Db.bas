@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Db
 ' Level:        Framework module
-' Version:      1.24
+' Version:      1.25
 ' Description:  Database related functions & subroutines
 ' Requires:     Microsoft Scripting Runtime (scrrun.dll) for Scripting.Dictionary
 '
@@ -71,6 +71,7 @@ Option Explicit
 '               BLC, 10/5/2017 - 1.23 - updated documentation, merged DbCurrent (mod_SQL)
 '                                       with CurrDb
 '               BLC, 10/17/2017 - 1.24 - moved SysTablesExist() from mod_Initialize_App
+'               BLC, 11/24/2017 - 1.25 - revised to ShowMsg vs displayMsg, , updated to use DisplayMsg() (DeleteRecord())
 ' =================================
 
 ' ---------------------------------
@@ -2297,7 +2298,7 @@ End Sub
 ' Assumptions:  Assumes tbl name is properly capitalized & matches db table name
 ' Parameters:   tbl - table name (string)
 '               ID - record ID (long)
-'               displayMsg - whether message should be displayed (boolean, default = true)
+'               ShowMsg - whether message should be displayed (boolean, default = true)
 ' Returns:      -
 ' Throws:       none
 ' References:   -
@@ -2308,8 +2309,9 @@ End Sub
 '   BLC - 6/2/2016 - moved from forms (TaglineList, EventsList) to mod_App_UI
 '   BLC - 6/27/2016- revised to match
 '   BLC - 3/30/2017- added displayMsg to enable silent deletes
+'   BLC - 11/24/2017 - revised to ShowMsg vs displayMsg, updated to use DisplayMsg()
 ' ---------------------------------
-Public Sub DeleteRecord(tbl As String, ID As Long, Optional displayMsg As Boolean = True)
+Public Sub DeleteRecord(tbl As String, ID As Long, Optional ShowMsg As Boolean = True)
 On Error GoTo Err_Handler
     Dim strSQL As String
 
@@ -2322,11 +2324,13 @@ Debug.Print strSQL
     DoCmd.RunSQL strSQL
     DoCmd.SetWarnings True
     
-    If displayMsg Then
+    If ShowMsg Then
         'show deleted record message & clear
-        DoCmd.OpenForm "MsgOverlay", acNormal, , , , acDialog, _
-            tbl & PARAM_SEPARATOR & ID & _
-            "|Type" & PARAM_SEPARATOR & "info"
+        Dim msg As String
+        msg = "Record # " & ID & " from " & tbl & " deleted."
+        
+        DisplayMsg "", msg, "info", "Record Deleted"
+        
     End If
         
 Exit_Handler:

@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        RecordAction
 ' Level:        Framework class
-' Version:      1.05
+' Version:      1.06
 '
 ' Description:  Record action object related properties, events, functions & procedures
 '
@@ -29,6 +29,7 @@ Option Explicit
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
 '               BLC - 10/4/2017 - 1.04 - SaveToDb() code cleanup
 '               BLC - 10/6/2017 - 1.05 - removed GetClass() after Factory class instatiation implemented
+'               BLC - 12/5/2017 - 1.06 - update to handle passed in ActionDate
 ' =================================
 
 '---------------------
@@ -222,6 +223,7 @@ End Sub
 ' Revisions:
 '   BLC, 4/4/2016 - initial version
 '   BLC, 8/8/2016 - added update parameter to identify if this is an update vs. an insert
+'   BLC, 12/5/2017 - updated to handle passed in action date
 '---------------------------------------------------------------------------------------
 Public Sub SaveToDb(Optional IsUpdate As Boolean = False)
 On Error GoTo Err_Handler
@@ -230,10 +232,10 @@ On Error GoTo Err_Handler
 
     Params(0) = Me.RefTable
     Params(1) = Me.RefID
-    Params(2) = Me.ID
+    Params(2) = Me.ContactID
     Params(3) = Me.RefAction
-    Params(4) = CDate(Format(Now(), "YYYY-mm-dd hh:nn:ss AMPM"))
-    
+    Params(4) = Ne(Me.ActionDate, CDate(Format(Now(), "YYYY-mm-dd hh:nn:ss AMPM")))
+ 
     Me.ID = SetRecord("i_record_action", Params)
 
 Exit_Handler:

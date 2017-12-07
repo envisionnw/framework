@@ -656,10 +656,10 @@ End Function
 ' Revisions:
 '   BLC - 9/27/2017 - initial version
 ' ---------------------------------
-Public Function NewPerson() As Person
+Public Function NewPerson() As person
 On Error GoTo Err_Handler
     
-    Set NewPerson = New Person
+    Set NewPerson = New person
 
 Exit_Handler:
     'cleanup

@@ -29,7 +29,7 @@ Option Explicit
 '---------------------
 ' Declarations
 '---------------------
-Dim AppUser As New Person
+Dim AppUser As New person
 
 Private m_Username As String
 Private m_Password As String
@@ -67,12 +67,12 @@ Public Property Get Logins() As Integer
     Logins = m_Logins
 End Property
 
-Public Property Let Activity(Value As String)
+Public Property Let activity(Value As String)
     m_Activity = Value
 End Property
 
-Public Property Get Activity() As String
-    Activity = m_Activity
+Public Property Get activity() As String
+    activity = m_Activity
 End Property
 
 '---------------------
@@ -174,7 +174,7 @@ On Error GoTo Err_Handler
     With Me
         Params(0) = "i_login" '"tsys_Db_Templates"
         Params(1) = .UserName
-        Params(2) = .Activity
+        Params(2) = .activity
 
 '        If IsUpdate Then
 '            template = "u_contact"

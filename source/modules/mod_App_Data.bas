@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_Data
 ' Level:        Application module
-' Version:      1.51
+' Version:      1.55
 ' Description:  data functions & procedures specific to this application
 '
 ' Source/date:  Bonnie Campbell, 2/9/2015
@@ -87,6 +87,10 @@ Option Explicit
 '               BLC, 11/10/2017 - 1.50 - added Transducer distances (UpsertRecord())
 '               BLC, 11/11/2017 - 1.51 - updated UpsertRecord, SetRecord for vegplot cases
 '               BLC, 11/12/2017 - 1.52 - added unknown cases (SetRecord())
+'               BLC, 11/24/2017 - 1.53 - fix i_feature parameters (SetRecord())
+'               BLC, 11/26/2017 - 1.54 - added VegSpecies, updated VegWalk, VegPlot (UpsertRecord()),
+'                                        updated VegPlot for social trails pct
+'               BLC, 12/5/2017  - 1.55 - added VegPlot BeaverBrowse (SetRecord, UpsertRecord)
 ' =================================
 
 ' =================================
@@ -812,6 +816,7 @@ End Function
 '   BLC - 11/3/2017 - added s_modal_sediment_size
 '   BLC - 11/6/2017 - added s_site_id_by_code
 '   BLC - 11/9/2017 - added s_location_by_site, s_location_by_feature
+'   BLC - 12/5/2017 - updated s_feature_id, s_record_action_by_refID
 ' ---------------------------------
 Public Function GetRecords(Template As String, _
                             Optional Params As Variant) As DAO.Recordset
@@ -902,7 +907,8 @@ On Error GoTo Err_Handler
                 Case "s_feature_id"
                     '-- required parameters --
                     .Parameters("pkcode") = TempVars("ParkCode")
-                    .Parameters("scode") = TempVars("SiteCode")
+                    '.Parameters("scode") = TempVars("SiteCode")
+                    .Parameters("feat") = TempVars("Feature")
                 
                 Case "s_feature_list"
                     '-- required parameters --
@@ -956,6 +962,11 @@ On Error GoTo Err_Handler
                 Case "s_plot_numbers"
                     '-- required parameters --
                     .Parameters("maxnum") = TempVars("MaxPlotNumber")
+                
+                Case "s_record_action_by_refID"
+                    '-- required parameters --
+                    .Parameters("reftype") = Params(0)  'RefType
+                    .Parameters("refID") = Params(1)    'RefID
                 
                 Case "s_river_segment_id"
                     '-- required parameters --
@@ -1267,6 +1278,9 @@ End Function
 '   BLC - 11/6/2017 - add i_site_vegtransect
 '   BLC - 11/11/2017 - updated i_vegplot, u_vegplot
 '   BLC - 11/12/2017 - added i_unknown, u_unknown_identify, u_unknown
+'   BLC - 11/24/2017 - fix i_feature parameters
+'   BLC - 11/26/2017 - revise i_vegplot parameters (social trails)
+'   BLC - 12/5/2017 - add vegplot BeaverBrowse, update i_vegplot pctfa parameter
 ' ---------------------------------
 Public Function SetRecord(Template As String, Params As Variant) As Long
 On Error GoTo Err_Handler
@@ -1375,8 +1389,8 @@ On Error GoTo Err_Handler
                                         
                 Case "i_feature"
                     '-- required parameters --
-                    .Parameters("LocID") = Params(1)            'LocationID
-                    .Parameters("Feature") = Params(2)          'LocationName
+                    .Parameters("LocID") = Params(1)            'FeatureID
+                    .Parameters("feat") = Params(2)             'FeatureName
                     .Parameters("Descr") = Params(3)            'Description
                     .Parameters("Dirs") = Params(4)             'Directions
                 
@@ -1590,7 +1604,7 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                     .Parameters("pd") = Params(18)              'PlotDensity
                     .Parameters("nocanopy") = Params(19)        'NoCanopyVeg
                     .Parameters("norooted") = Params(20)        'NoRootedVeg
-                    .Parameters("hastrails") = Params(21)       'HasSocialTrails
+                    '.Parameters("hastrails") = Params(21)       'HasSocialTrails
                     .Parameters("pctfa") = Params(14)           'PctFilamentousAlgae
                     .Parameters("pctlitter") = Params(15)       'PctLitter
                     .Parameters("pctwd") = Params(16)           'PctWoodyDebris
@@ -1598,7 +1612,9 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                     .Parameters("noindsp") = Params(22)         'NoIndicatorSpecies
                     .Parameters("cplot") = Params(23)           'CalibrationPlot
                     .Parameters("rplot") = Params(24)           'ReplicatePlot
-                                    
+                    .Parameters("pctst") = Params(25)           'SocialTrailsPct
+                    .Parameters("bb") = Params(26)              'BeaverBrowse
+                    
                 Case "i_vegtransect"
                     '-- required parameters --
                     .Parameters("LocationID") = Params(1)
@@ -1898,7 +1914,7 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                     .Parameters("pd") = Params(18)              'PlotDensity
                     .Parameters("nocanopy") = Params(19)        'NoCanopyVeg
                     .Parameters("norooted") = Params(20)        'NoRootedVeg
-                    .Parameters("hastrails") = Params(21)       'HasSocialTrails
+                    '.Parameters("hastrails") = Params(21)       'HasSocialTrails
                     .Parameters("fa") = Params(14)              'FilamentousAlgae
                     .Parameters("pctlitter") = Params(15)       'PctLitter
                     .Parameters("pctwd") = Params(16)           'PctWoodyDebris
@@ -1906,6 +1922,8 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                     .Parameters("noindsp") = Params(22)         'NoIndicatorSpecies
                     .Parameters("cplot") = Params(23)           'CalibrationPlot
                     .Parameters("rplot") = Params(24)           'ReplicatePlot
+                    .Parameters("pctst") = Params(25)           'PctSocialTrails
+                    .Parameters("bb") = Params(26)              'BeaverBrowse
                 
                 Case "u_vegtransect"
                     '-- required parameters --
@@ -2080,16 +2098,16 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
 'Debug.Print .sql
             .Execute dbFailOnError
                 
+            If ID = 0 Then
+                'retrieve identity
+                ID = db.OpenRecordset("SELECT @@IDENTITY;")(0)
+            End If
+    
     ' -------------------
     '  Record Action
     ' -------------------
             'handle unrecorded actions & those which don't generate an ID
             If SkipRecordAction Then GoTo Exit_Handler
-            
-            If ID = 0 Then
-                'retrieve identity
-                ID = db.OpenRecordset("SELECT @@IDENTITY;")(0)
-            End If
             
             'set record action
             .SQL = GetTemplate("i_record_action")
@@ -2108,10 +2126,11 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
         
         End With
 
-        SetRecord = ID
     End With
                 
 Exit_Handler:
+    SetRecord = ID
+    
     'cleanup
     Set qdf = Nothing
     Set db = Nothing
@@ -2169,6 +2188,8 @@ End Function
 '   BLC - 11/10/2017 - added Transducer distances
 '   BLC - 11/11/2017 - updated VegPlot
 '   BLC - 11/12/2017 - add UnknownSpecies case
+'   BLC - 11/26/2017 - added VegSpecies, updated VegWalk, VegPlot
+'   BLC - 12/5/2017 - added VegPlot BeaverBrowse, PctSocialTrails
 ' ---------------------------------
 Public Sub UpsertRecord(ByRef frm As Form)
 On Error GoTo Err_Handler
@@ -2217,7 +2238,7 @@ On Error GoTo Err_Handler
                 End With
             
             Case "Contact"
-                Dim p As New Person
+                Dim p As New person
     
                 With p
                     'values passed into form
@@ -2551,7 +2572,7 @@ On Error GoTo Err_Handler
                 End With
             
             Case "UserRole"
-                Dim u As New Person
+                Dim u As New person
                     
                 With u
                     'values passed into form
@@ -2582,9 +2603,27 @@ On Error GoTo Err_Handler
                 
                 With unk
                 
-                
                     .ID = frm!tbxID.Value '0 if new, edit if > 0
-                                
+            
+                    .UnknownCode = frm!tbxUnknownCode
+                    .PlantType = frm!optgPlantType
+                    .PlantDescription = frm!tbxDescription
+                    .SalientFeature = frm!tbxFeature
+                    .LeafType = frm!tbxLeafType
+                    .LeafMargin = frm!tbxLeafMargin
+                    .LeafCharacter = frm!tbxLeafCharacter
+                    .StemCharacter = frm!tbxStemCharacter
+                    .FlowerCharacter = frm!tbxFlowerCharacter
+                    .GeneralCharacter = frm!tbxGeneralCharacter
+                    .ForbGrassType = frm!optgForbGrassType
+                    .PerennialGrassType = frm!optgPerennialGrassType
+                    .BestGuess = frm!tbxBestGuess
+                    .HasPhotos = IIf(frm!chkHasPhotos = True, 1, 0)
+                    .Collected = IIf(frm!chkCollected = True, 1, 0)
+                    .CollectionMethod = frm!tbxCollectionMethod
+                    .LocationID = frm!tbxLocationID
+                    .CollectedByID = frm!cbxCollectedById
+                    
                     'set the generic object --> unk
                     Set obj = unk
                     
@@ -2614,12 +2653,14 @@ On Error GoTo Err_Handler
                     .PctFilamentousAlgae = frm!tbxPctFA
                     .PctStandingDead = frm!tbxPctStandingDead
                     .PlotDensity = frm!tbxPlotDensity
-                    .HasSocialTrails = IIf(frm!tglHasSocialTrails = True, 1, 0)
+                    '.HasSocialTrails = IIf(frm!tglHasSocialTrails = True, 1, 0)
                     .NoCanopyVeg = IIf(frm!tglNoCanopyVeg = True, 1, 0)
                     .NoIndicatorSpecies = IIf(frm!tglNoIndicatorSpecies = True, 1, 0)
                     .NoRootedVeg = IIf(frm!tglNoRootedVeg = True, 1, 0)
                     .CalibrationPlot = IIf(frm!chkCalibrationPlot = True, 1, 0)
                     .ReplicatePlot = IIf(frm!chkReplicatePlot = True, 1, 0)
+                    .PctSocialTrails = frm!tbxPctSocialTrails
+                    .BeaverBrowse = IIf(frm!tglBeaverBrowse = True, 1, 0)
                     
                     'set the generic object --> VegPlot
                     Set obj = vp
@@ -2628,7 +2669,7 @@ On Error GoTo Err_Handler
                     Set vp = Nothing
                 End With
             
-            Case "VegWalk"
+            Case "VegSpecies"
                 Select Case frm.FormContext
                     Case "AllRootedSpecies"
                         Dim ars As New RootedSpecies
@@ -2636,6 +2677,10 @@ On Error GoTo Err_Handler
                         With ars
                             'values passed into form
                             .ID = frm!tbxID.Value '0 if new, edit if > 0
+                            
+                            .VegPlotID = frm!tbxVegPlotID
+                            .MasterPlantCode = frm!cbxSpecies
+                            .PercentCover = frm!tbxPctCover
                             
                             'set the generic object --> Woody Canopy Species
                             Set obj = ars
@@ -2651,6 +2696,11 @@ On Error GoTo Err_Handler
                             'values passed into form
                             .ID = frm!tbxID.Value '0 if new, edit if > 0
                             
+                            .VegPlotID = frm!tbxVegPlotID
+                            .MasterPlantCode = frm!cbxSpecies
+                            .PercentCover = frm!tbxPctCover
+                            .IsSeedling = IIf(frm!chkIsSeedling = True, 1, 0)
+                            
                             'set the generic object --> Woody Canopy Species
                             Set obj = ucs
                             
@@ -2658,19 +2708,23 @@ On Error GoTo Err_Handler
                             Set ucs = Nothing
                         End With
 
-                    Case "VegWalk"
-                        Dim vw As New VegWalk
+                    Case "VegWalkSpecies"
+                        Dim vws As New VegWalkSpecies
                         
-                        With vw
+                        With vws
                             'values passed into form
-                        
+                    
                             .ID = frm!tbxID.Value '0 if new, edit if > 0
-                                        
+                            
+                            .VegWalkID = ""
+                            .MasterPlantCode = frm!cbxSpecies
+                            .IsSeedling = IIf(frm!chkIsSeedling = True, 1, 0)
+                            
                             'set the generic object --> Location
-                            Set obj = vw
+                            Set obj = vws
                             
                             'cleanup
-                            Set vw = Nothing
+                            Set vws = Nothing
                         End With
                     
                     Case "WoodyCanopySpecies"
@@ -2680,6 +2734,10 @@ On Error GoTo Err_Handler
                             'values passed into form
                             .ID = frm!tbxID.Value '0 if new, edit if > 0
                             
+                            .VegPlotID = frm!tbxVegPlotID
+                            .MasterPlantCode = frm!cbxSpecies
+                            .PercentCover = frm!tbxPctCover
+                            
                             'set the generic object --> Woody Canopy Species
                             Set obj = wcs
                             
@@ -2688,7 +2746,26 @@ On Error GoTo Err_Handler
                         End With
                 
                 End Select
-                
+
+                Case "VegWalk"
+                    Dim vw As New VegWalk
+                    
+                    With vw
+                        'values passed into form
+                    
+                        .ID = frm!tbxID.Value '0 if new, edit if > 0
+                        .EventID = frm!cbxEventID
+                        .CollectionPlaceID = frm.CollectionPlaceID
+                        .CollectionType = frm.CollectionType
+                        .StartDate = frm!tbxWalkStartDate
+                        'set the generic object --> Location
+                        Set obj = vw
+                        
+                        'cleanup
+                        Set vw = Nothing
+                    End With
+                    
+            
             '-------------------
             ' --- UPLAND & INVASIVES ---
             '-------------------
@@ -2872,6 +2949,8 @@ End Sub
 ' Assumptions:  -
 ' Parameters:   obj - object to set observer/recorder on (object)
 '               tbl - name of table being modified (string)
+'               activity - observer (O) or recorder (R) (string)
+'               person - ID of individual (long)
 ' Returns:      -
 ' Throws:       none
 ' References:   -
@@ -2884,25 +2963,34 @@ End Sub
 ' --------------------------------------------------------------------
 '                   - un-comment out
 ' --------------------------------------------------------------------
+'   BLC - 12/5/2017 - fix to RefID vs ID, handle either observer or recorder
 ' ---------------------------------
-Public Sub SetObserverRecorder(obj As Object, tbl As String)
+Public Sub SetObserverRecorder(obj As Object, tbl As String, _
+                                activity As String, person As Long)
 On Error GoTo Err_Handler
 
     'handle record actions
     Dim act As New RecordAction
     With act
 
-    'Recorder
-        .RefAction = "R"
-        .ContactID = obj.RecorderID
-        .RefID = obj.ID
-        .RefTable = tbl
-        .SaveToDb
+'    'Recorder
+'        .RefAction = "R"
+'        .ContactID = obj.RecorderID
+'        .RefID = obj.ID
+'        .RefTable = tbl
+'        .SaveToDb
+'
+'    'Observer
+'        .RefAction = "O"
+'        .ContactID = obj.ObserverID
+'        .RefID = obj.ID
+'        .RefTable = tbl
+'        .SaveToDb
 
-    'Observer
-        .RefAction = "O"
-        .ContactID = obj.ObserverID
-        .RefID = obj.ID
+        'Observer or Recorder
+        .RefAction = activity
+        .ContactID = person
+        .RefID = obj.RefID
         .RefTable = tbl
         .SaveToDb
 
@@ -3506,19 +3594,26 @@ End Function
 '   BLC - 10/4/2016  - update to use parameter query
 '   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
 '                     multiple open connections
+'   BLC - 12/5/2017 - revise to use GetRecords()
 ' ---------------------------------
 Public Function GetFeatureID(ParkCode As String, Feature As String) As Long
 On Error GoTo Err_Handler
     
-    Dim db As DAO.Database
-    Dim rs As DAO.Recordset
-    Dim strSQL As String
+'    Dim db As DAO.Database
+'    Dim rs As DAO.Recordset
+'    Dim strSQL As String
     Dim ID As Long
    
     'handle only appropriate River codes
     If Len(ParkCode) <> 4 Or Len(Feature) < 1 Then
         GoTo Exit_Handler
     End If
+    
+    Dim Params(0 To 2) As Variant
+    Params(0) = ParkCode
+    Params(1) = Feature
+    
+    ID = GetRecords("s_feature_id", Params)(0)
     
 '    'generate SQL
 '    strSQL = GetTemplate("s_feature_id", _

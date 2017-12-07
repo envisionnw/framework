@@ -434,7 +434,7 @@ On Error GoTo Err_Handler
     End With
 
     'set observer/recorder
-    SetObserverRecorder Me, "Photo"
+'    SetObserverRecorder Me, "Photo"
 
 Exit_Handler:
     Exit Sub

@@ -340,7 +340,7 @@ On Error GoTo Err_Handler
         .ID = SetRecord(Template, Params)
     End With
 
-    SetObserverRecorder Me, "Site"
+'    SetObserverRecorder Me, "Site"
 
 Exit_Handler:
     Exit Sub

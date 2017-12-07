@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        VegPlot
 ' Level:        Framework class
-' Version:      1.12
+' Version:      1.14
 '
 ' Description:  VegPlot object related properties, events, functions & procedures
 '
@@ -38,6 +38,8 @@ Option Explicit
 '               BLC - 11/10/2017 - 1.10 - revised to HasSocialTrails & PctFines (plurals)
 '               BLC - 11/11/2017 - 1.11 - revised PercentWoodyDebris > PctWoodyDebris, added PctStandingDead
 '               BLC - 11/12/2017 - 1.12 - revised booleans to byte for 1,0 values
+'               BLC - 11/26/2017 - 1.13 - revised HasSocialTrails to PctSocialTrails
+'               BLC - 12/5/2017  - 1.14 - added BeaverBrowse
 ' =================================
 
 '---------------------
@@ -69,6 +71,8 @@ Private m_HasSocialTrails As Byte
 Private m_NoIndicatorSpecies As Byte
 Private m_ReplicatePlot As Byte
 Private m_CalibrationPlot As Byte
+Private m_PctSocialTrails As Double
+Private m_BeaverBrowse As Byte
 
 '---------------------
 ' Events
@@ -351,6 +355,27 @@ Public Property Get ReplicatePlot() As Byte
     ReplicatePlot = m_ReplicatePlot
 End Property
 
+Public Property Get PctSocialTrails() As Double
+    PctSocialTrails = m_PctSocialTrails
+End Property
+
+Public Property Let PctSocialTrails(Value As Double)
+    If IsBetween(Value, 0, 100, True) Then
+        m_PctSocialTrails = Value
+    Else
+        RaiseEvent InvalidPercent(Value)
+    End If
+End Property
+
+Public Property Let BeaverBrowse(Value As Byte)
+    If Value = 1 Or Value = 0 Then _
+        m_BeaverBrowse = Value
+End Property
+
+Public Property Get BeaverBrowse() As Byte
+    BeaverBrowse = m_BeaverBrowse
+End Property
+
 '---------------------
 ' Methods
 '---------------------
@@ -438,6 +463,7 @@ End Sub
 '   BLC, 11/2/2017 - added % WCC, ARC, MSS
 '   BLC, 11/8/2017 - added % MSS
 '   BLC, 11/11/2017 - revised Percent > Pct (WoodyDebris, Litter, Fines, Water)
+'   BLC, 12/5/2017 - added BeaverBrowse
 '---------------------------------------------------------------------------------------
 Public Sub SaveToDb(Optional IsUpdate As Boolean = False)
 On Error GoTo Err_Handler
@@ -446,7 +472,7 @@ On Error GoTo Err_Handler
     
     Template = "i_vegplot"
     
-    Dim Params(0 To 26) As Variant
+    Dim Params(0 To 28) As Variant
 
     With Me
         Params(0) = "VegPlot"
@@ -470,14 +496,16 @@ On Error GoTo Err_Handler
         Params(18) = .PlotDensity
         Params(19) = .NoCanopyVeg
         Params(20) = .NoRootedVeg
-        Params(21) = .HasSocialTrails
+        'Params(21) = .HasSocialTrails
         Params(22) = .NoIndicatorSpecies
         Params(23) = .CalibrationPlot
         Params(24) = .ReplicatePlot
+        Params(25) = .PctSocialTrails
+        Params(26) = .BeaverBrowse
         
         If IsUpdate Then
             Template = "u_vegplot"
-            Params(25) = .ID
+            Params(28) = .ID
         End If
         
         .ID = SetRecord(Template, Params)

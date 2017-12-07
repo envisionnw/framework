@@ -55,9 +55,9 @@ Private m_Status As Integer
 Private m_RequestedByID As Integer
 Private m_FollowupByID As Integer
 Private m_CompletedByID As Integer
-Private m_Requestor As Person
-Private m_FollowupBy As Person
-Private m_CompletedBy As Person
+Private m_Requestor As person
+Private m_FollowupBy As person
+Private m_CompletedBy As person
 Private m_RequestDate As Date
 Private m_FollowupDate As Date
 Private m_CompleteDate As Date

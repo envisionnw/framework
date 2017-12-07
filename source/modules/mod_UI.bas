@@ -4,7 +4,7 @@ Option Explicit
 ' ---------------------------------
 ' MODULE:       mod_UI
 ' Level:        Framework module
-' Version:      1.17
+' Version:      1.18
 ' Description:  User interface related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
@@ -36,6 +36,7 @@ Option Explicit
 '                                       SetWindowSize(), PopulateSubformControl(),
 '                                       RepaintParentForm(), ChangeBackColor(), ResetHeaders(),
 '                                       ShowControls(), AddFormControl() to mod_Forms
+'               BLC, 11/24/2017 - 1.18 - revised to include general messages
 ' ---------------------------------
 
 ' ---------------------------------
@@ -1264,19 +1265,25 @@ End Sub
 ' ---------------------------------
 ' SUB:          DisplayMsg
 ' Description:  display a message specific for the database
-' Assumptions:  -
+' Assumptions:  general messages will include empty msg value,
+'               plus text, type & title as desired
 ' Parameters:   msg - type of message to display (string)
+'               msgText - text for message (optional, string, default "")
+'               msgType - type for message sets background (optional, string, default "")
+'               msgTitle - title for message (optional, string, default "")
 ' Returns:      -
 ' Throws:       none
 ' References:   none
 ' Source/date:  Bonnie Campbell, January 26, 2017 - for NCPN tools
 ' Revisions:
 '   BLC - 1/26/2017  - initial version
+'   BLC - 11/24/2017 - revised to include general messages
 ' ---------------------------------
-Public Sub displayMsg(msg As String)
+Public Sub DisplayMsg(msg As String, _
+                        Optional msgText As String = "", _
+                        Optional msgType As String = "", _
+                        Optional msgTitle As String = "")
 On Error GoTo Err_Handler
-
-    Dim msgText As String, msgType As String, msgTitle As String
     
     Select Case msg
         Case "mx"   'fixing
@@ -1291,6 +1298,7 @@ On Error GoTo Err_Handler
             msgText = "Functionality not yet defined && developed."
             msgType = "caution"
             msgTitle = "Feature Unavailable"
+        Case "" 'general messages - text, type, title passed in
     End Select
 
     'show msg
