@@ -4,7 +4,7 @@ Option Explicit
 ' ---------------------------------
 ' MODULE:       mod_User
 ' Level:        Framework module
-' Version:      1.13
+' Version:      1.14
 ' Description:  Access related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, May 2014
@@ -29,6 +29,7 @@ Option Explicit
 '                                       multiple open connections
 '               BLC, 10/16/2017 - 1.13 - revised Unknown username to Unknown + timestamp to avoid
 '                                        duplicate entry
+'               BLC, 12/13/2017 - 1.14 - updated AccessID template name (s_access_level vs s_access_lvl)
 ' ---------------------------------
 
 ' ---------------------------------
@@ -844,6 +845,7 @@ End Function
 ' Source/date:  B. Campbell, 6/7/2016
 ' Revisions:    BLC, 6/7/2016 - initial version
 '               BLC, 9/26/2016 - adjusted to use GetRecords vs. GetTemplate
+'               BLC, 12/13/2017 - revised template to s_access_level vs s_access_lvl
 ' ---------------------------------
 Public Function AccessID(AccessLevel As String) As Long
     On Error GoTo Err_Handler
@@ -856,7 +858,7 @@ Public Function AccessID(AccessLevel As String) As Long
     TempVars.Add "TempLvl", LCase(AccessLevel)
     'strSQL = GetTemplate("s_access_level", "lvl" & PARAM_SEPARATOR & LCase(AccessLevel))
     
-    Set rs = GetRecords("s_access_lvl") 'CurrDb.OpenRecordset(strSQL, dbOpenSnapshot)
+    Set rs = GetRecords("s_access_level") 'CurrDb.OpenRecordset(strSQL, dbOpenSnapshot)
     
     If rs.RecordCount > 0 Then
         AccessID = rs("ID")

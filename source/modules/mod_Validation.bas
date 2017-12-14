@@ -4,7 +4,7 @@ Option Explicit
 ' ---------------------------------
 ' MODULE:       mod_Validation
 ' Level:        Framework module
-' Version:      1.09
+' Version:      1.10
 ' Description:  validation functions & procedures
 '
 ' Source/date:  Bonnie Campbell, 2/10/2015
@@ -26,6 +26,7 @@ Option Explicit
 '               BLC - 10/6/2017 - 1.08 - added comma to IsParagraph()
 '               BLC - 10/19/2017 - 1.09 - added apostrophe, elipsis, parenthesis, , *&%$@#:;[]{}+=
 '                                         to IsParagraph()
+'               BLC - 12/11/2017 - 1.10 - added IsInt()
 ' ---------------------------------
 
 ' ---------------------------------
@@ -376,6 +377,44 @@ End Function
 ' ---------------------------------
 '  Numeric
 ' ---------------------------------
+
+' ---------------------------------
+' FUNCTION:     IsInt
+' Description:  Checks if value is an integer or not
+' Assumptions:  -
+' Parameters:   chkValue - value to check
+' Returns:      boolean - True (value is an integer), False (value isn't an integer)
+' Throws:       none
+' References:
+'   jamesuk, April 28, 2008
+'   http://www.utteraccess.com/forum/VBA-check-integer-t1636550.html
+' Source/date:  -
+' Adapted:      Bonnie Campbell, December 11, 2017 - for NCPN tools
+' Revisions:
+'   BLC - 12/11/2017 - initial version
+' ---------------------------------
+Function IsInt(ByVal chkValue) As Boolean
+On Error GoTo Err_Handler
+
+    'if value is an integer Int(x) will equal x
+    If Int(chkValue) = chkValue Then
+        IsInt = True
+    Else
+        IsInt = False
+    End If
+    
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - IsInt[mod_Validation])"
+    End Select
+    Resume Exit_Handler
+
+End Function
 
 ' ---------------------------------
 ' FUNCTION:     IsZero

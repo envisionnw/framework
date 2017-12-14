@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        Factory
 ' Level:        Framework class
-' Version:      1.01
+' Version:      1.02
 '
 ' Description:  Factory object related properties, events, functions & procedures
 '
@@ -35,6 +35,7 @@ Option Explicit
 ' Revisions:    --------------- Reference Library ------------------
 '               BLC - 9/27/2017  - 1.00 - initial version
 '               BLC - 11/12/2017 - 1.01 - added unknown class
+'               BLC - 12/14/2017 - 1.02 - added tempphoto class
 ' =================================
 
 '---------------------------------------------------------------------------
@@ -60,6 +61,7 @@ Option Explicit
 '   Photo                   Waterway
 '   Quadrat                 WoodyCanopySpecies
 '   RecordAction
+'   TempPhoto               Unknown
 '---------------------------------------------------------------------------
 
 '---------------------
@@ -1125,6 +1127,41 @@ Err_Handler:
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - NewTemplate[Factory class])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' FUNCTION:     NewTempPhoto
+' Description:  Creates new class object
+'
+' Assumptions:  -
+' Parameters:   -
+'               -
+' Returns:      object of the desired class
+' Throws:       none
+' References:   -
+' Source/date:
+'   Hammond Mason, July 9, 2015
+'   https://hammondmason.wordpress.com/2015/07/09/object-oriented-vba-design-patterns-simple-factory/
+' Adapted:      Bonnie Campbell, September 27, 2017 - for NCPN tools
+' Revisions:
+'   BLC - 12/14/2017 - initial version
+' ---------------------------------
+Public Function NewTempPhoto() As TempPhoto
+On Error GoTo Err_Handler
+    
+    Set NewTempPhoto = New TempPhoto
+
+Exit_Handler:
+    'cleanup
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - NewTempPhoto[Factory class])"
     End Select
     Resume Exit_Handler
 End Function

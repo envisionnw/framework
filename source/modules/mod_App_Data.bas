@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_Data
 ' Level:        Application module
-' Version:      1.55
+' Version:      1.57
 ' Description:  data functions & procedures specific to this application
 '
 ' Source/date:  Bonnie Campbell, 2/9/2015
@@ -91,6 +91,8 @@ Option Explicit
 '               BLC, 11/26/2017 - 1.54 - added VegSpecies, updated VegWalk, VegPlot (UpsertRecord()),
 '                                        updated VegPlot for social trails pct
 '               BLC, 12/5/2017  - 1.55 - added VegPlot BeaverBrowse (SetRecord, UpsertRecord)
+'               BLC, 12/8/2017  - 1.56 - update VegPlot UpsertRecord()
+'               BLC, 12/13/2017 - 1.57 - added s_access_lvl case (GetRecords())
 ' =================================
 
 ' =================================
@@ -817,6 +819,8 @@ End Function
 '   BLC - 11/6/2017 - added s_site_id_by_code
 '   BLC - 11/9/2017 - added s_location_by_site, s_location_by_feature
 '   BLC - 12/5/2017 - updated s_feature_id, s_record_action_by_refID
+'   BLC - 12/12/2017 - add s_usys_temp_photo_list
+'   BLC - 12/13/2017 - add s_access_lvl
 ' ---------------------------------
 Public Function GetRecords(Template As String, _
                             Optional Params As Variant) As DAO.Recordset
@@ -856,6 +860,10 @@ On Error GoTo Err_Handler
             '-------------------
             ' --- BIG RIVERS ---
             '-------------------
+                Case "s_access_level"
+                    '-- required parameters --
+                    .Parameters("lvl") = TempVars("TempLvl")
+
                 Case "s_app_enum_list"
                     '-- required parameters --
                     .Parameters("etype") = TempVars("EnumType")
@@ -1065,6 +1073,9 @@ On Error GoTo Err_Handler
                     '-- required parameters --
                     .Parameters("maxnum") = TempVars("MaxTransectNumber")
                 
+                Case "s_usys_temp_photo_list"
+                    '-- required parameters --
+                                
                 Case "s_veg_walk_species_last_year_by_park"
                     '-- required parameters --
                     .Parameters("pkcode") = TempVars("ParkCode")
@@ -2190,6 +2201,8 @@ End Function
 '   BLC - 11/12/2017 - add UnknownSpecies case
 '   BLC - 11/26/2017 - added VegSpecies, updated VegWalk, VegPlot
 '   BLC - 12/5/2017 - added VegPlot BeaverBrowse, PctSocialTrails
+'   BLC - 12/8/2017 - update VegPlot EventID, VegTransectID
+'   BLC - 12/12/2017 - add TempPhoto
 ' ---------------------------------
 Public Sub UpsertRecord(ByRef frm As Form)
 On Error GoTo Err_Handler
@@ -2378,9 +2391,21 @@ On Error GoTo Err_Handler
                     'values passed into form
                 
                     .ID = frm!tbxID.Value '0 if new, edit if > 0
-                                
-                    'set the generic object --> Location
-                    Set obj = p
+                    .PhotographerID = frm!cbxPhotographer
+                    .PhotoType = frm!cbxPhotoType
+                    .FileName = frm!tbxFilename
+                    .PhotoNumber = frm!tbxPhotoNumber
+                    .SubjectLocation = frm!tbxSubjectLocation
+                    .PhotogLocation = frm!tbxPhotogLocation
+                    .DirectionFacing = frm!optDirFacing
+                    .PhotoDate = frm!PhotoDate
+                    .IsCloseup = frm!chkIsCloseup
+                    .IsReplacement = frm!chkIsReplacement
+                    .IsSkipped = frm!chkIsSkipped
+                    .NCPNImageID = frm!tbxNCPNImageID
+                    
+                    'set the generic object --> Photo
+                    Set obj = ph
                     
                     'cleanup
                     Set ph = Nothing
@@ -2419,7 +2444,7 @@ On Error GoTo Err_Handler
                         Case "T" 'transect
                         Case "O" 'overview
                         Case "R" 'reference
-                        Case "O" 'other
+                        Case "OO" 'other
                     End Select
                     .PhotographerID = frm.fsub.Form.Controls("cbxPhotog")
                     .FileName = "" 'lblPhotoFilename 'aryFileInfo(0)
@@ -2488,6 +2513,26 @@ On Error GoTo Err_Handler
                 
             Case "SurveyFile"
             
+            
+            Case "TempPhoto"
+                Dim tp As New TempPhoto
+                With tp
+                
+                    .ID = frm!tbxID.Value
+                    .EventID = frm!cbxEvent
+                    .PhotographerID = frm!cbxPhotographer
+                    .FileName = frm!tbxFilename
+                    .Path = frm!tbxPhotoPath
+                    .PhotoDate = frm!tbxPhotoDate
+                    .PhotoType = frm!cbxPhotoType
+                    
+                    'set the generic object --> TempPhoto
+                    Set obj = tp
+                    
+                    'cleanup
+                    Set tp = Nothing
+                
+                End With
             Case "Task"
                 Dim tk As New Task
                 
@@ -2635,32 +2680,43 @@ On Error GoTo Err_Handler
                 Dim vp As New VegPlot
                 With vp
                     'values passed into form
-                    .EventID = frm!cbxEventID
                     .SiteID = TempVars("SiteID")
                     .FeatureID = TempVars("FeatureID")
-                    .VegTransectID = frm!cbxVegTransectID
-                    .PlotNumber = frm!tbxPlotNumber
-                    .PlotDistance = frm!tbxPlotDistance
-                    .WoodyCanopyPctCover = frm!tbxPctWCC
-                    .UnderstoryRootedPctCover = frm!tbxPctURC
-                    .AllRootedPctCover = frm!tbxPctARC
-                    .ModalSedimentSizeID = frm!cbxMSSID
-                    .PctModalSedimentSize = frm!tbxPctMSS
-                    .PctFines = frm!tbxPctFines
-                    .PctWater = frm!tbxPctWater
-                    .PctLitter = frm!tbxPctLitter
-                    .PctWoodyDebris = frm!tbxPctWoodyDebris
-                    .PctFilamentousAlgae = frm!tbxPctFA
-                    .PctStandingDead = frm!tbxPctStandingDead
-                    .PlotDensity = frm!tbxPlotDensity
+                    
+                    'form values
+                    .EventID = frm!cbxEvent
+                    .VegTransectID = Ne(Nz(frm!cbxTransect, 0), 0)
+                    .PlotNumber = Ne(frm!tbxPlotNumber, 0)
+                    .PlotDistance = Ne(frm!tbxPlotDistance, 0)
+                    .ModalSedimentSizeID = frm!cbxModalSedSize
+                    
+                    .PlotDensity = Ne(Nz(frm!tbxPlotDensity, 0), 0)
+                    
+                    'pct values
+                    .WoodyCanopyPctCover = SetTrace(Ne(frm!tbxPctWCC, 0), 0.5)
+                    .UnderstoryRootedPctCover = SetTrace(Ne(frm!tbxPctURC, 0), 0.5)
+                    .AllRootedPctCover = SetTrace(Ne(frm!tbxPctARC, 0), 0.5)
+                    .PctFines = SetTrace(frm!tbxPctFines, 0.5)
+                    .PctWater = SetTrace(frm!tbxPctWater, 0.5)
+                    .PctSocialTrails = SetTrace(frm!tbxPctSocialTrails, 0.5)
+                    .PctLitter = SetTrace(frm!tbxPctLitter, 0.5)
+                    .PctWoodyDebris = SetTrace(frm!tbxPctWoodyDebris, 0.5)
+                    .PctStandingDead = SetTrace(frm!tbxPctStandingDead, 0.5)
+                    .PctFilamentousAlgae = SetTrace(frm!tbxPctFA, 0.5)
+                    
+                    .PctModalSedimentSize = SetTrace(frm!tbxPctMSS, 0.5)
+                    
+                    'chk/tgl values -> change Access -1 (true) to clearer 1 for use in SQL
+                    '                  so value of 1 = has no canopy veg, 0 = has canopy veg etc.
+                    
                     '.HasSocialTrails = IIf(frm!tglHasSocialTrails = True, 1, 0)
                     .NoCanopyVeg = IIf(frm!tglNoCanopyVeg = True, 1, 0)
-                    .NoIndicatorSpecies = IIf(frm!tglNoIndicatorSpecies = True, 1, 0)
                     .NoRootedVeg = IIf(frm!tglNoRootedVeg = True, 1, 0)
+                    '.NoIndicatorSpecies = IIf(frm!tglNoIndicatorSpecies = True, 1, 0) 'replaced w/ PctSocialTrails
+                    .BeaverBrowse = IIf(frm!tglBeaverBrowse = True, 1, 0)
+                    
                     .CalibrationPlot = IIf(frm!chkCalibrationPlot = True, 1, 0)
                     .ReplicatePlot = IIf(frm!chkReplicatePlot = True, 1, 0)
-                    .PctSocialTrails = frm!tbxPctSocialTrails
-                    .BeaverBrowse = IIf(frm!tglBeaverBrowse = True, 1, 0)
                     
                     'set the generic object --> VegPlot
                     Set obj = vp

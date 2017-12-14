@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Db
 ' Level:        Framework module
-' Version:      1.25
+' Version:      1.26
 ' Description:  Database related functions & subroutines
 ' Requires:     Microsoft Scripting Runtime (scrrun.dll) for Scripting.Dictionary
 '
@@ -72,6 +72,7 @@ Option Explicit
 '                                       with CurrDb
 '               BLC, 10/17/2017 - 1.24 - moved SysTablesExist() from mod_Initialize_App
 '               BLC, 11/24/2017 - 1.25 - revised to ShowMsg vs displayMsg, , updated to use DisplayMsg() (DeleteRecord())
+'               BLC, 12/13/2017 - 1.26 - add RefreshTemplates()
 ' =================================
 
 ' ---------------------------------
@@ -312,6 +313,46 @@ Err_Handler:
 End Function
 
 ' ---------------------------------
+' FUNCTION:     getAccessObjectType
+' Description:  looks up object type in Access sys tables
+' Parameters:   strName  - name of object w/in Access
+' Returns:      long (type) or NULL if object doesn't exist
+'                   ----------------
+'                   1 = Access Table
+'                   4 = OBDB-Linked Table / View
+'                   5 = Access Query
+'                   6 = Attached (Linked) File  (such as Excel, another Access Table or query, text file, etc.)
+'                   -32768 = Access Form
+'                   -32764 = Access Report
+'                   -32761 = Access Module
+'                   ----------------
+' Throws:       none
+' References:   Tom Davidson, April 8, 2011
+'   http://stackoverflow.com/questions/2090578/ms-access-determine-object-type
+
+' Source/date:  Bonnie Campbell August 20, 2014 - NCPN tools
+' Adapted:      -
+' Revisions:    BLC, 8/20/2014 - initial version
+'               BLC, 4/30/2015 - moved from mod_Common_UI
+' ---------------------------------
+Public Function getAccessObjectType(strObject As String) As Variant
+On Error GoTo Err_Handler:
+
+    getAccessObjectType = DLookup("Type", "MSysObjects", "NAME = '" & strObject & "'")
+   
+Exit_Handler:
+    Exit Function
+
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - getAccessObjectType[mod_Db])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
 '  Database & Recordset Actions
 ' ---------------------------------
 
@@ -349,6 +390,105 @@ Err_Handler:
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - ClearTable[mod_Db])"
+    End Select
+    Resume Exit_Handler
+End Sub
+
+' ---------------------------------
+' FUNCTION:     AddField
+' Description:  Adds field to recordset
+' Assumptions:  Table is in the current database (not linked)
+' Parameters:   tdf - table to add field to
+'               fldName - field name (string)
+'               fldType - vartype for field (optional)
+'               fldSize - size of field (optional)
+' Returns:      -
+' Throws:       none
+' References:
+'   Microsoft, March 9, 2015
+'   https://msdn.microsoft.com/en-us/library/office/ff820791.aspx
+' Source/date:  Bonnie Campbell, December 8, 2017 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 12/8/2017  - initial version
+' ---------------------------------
+Public Sub AddField(tdf As DAO.TableDef, fldName As String, Optional fldType, Optional fldSize)
+On Error GoTo Err_Handler
+    
+    With tdf
+        If .Updatable = False Then
+        
+            Dim msg As String
+            
+            msg = "Oops! " & tdf.Name & " cannot be updated"
+            
+            DoCmd.OpenForm "MsgOverlay", acNormal, , , , acDialog, _
+                "msg" & PARAM_SEPARATOR & msg & _
+                "|Type" & PARAM_SEPARATOR & "caution"
+            
+            GoTo Exit_Handler
+            
+        End If
+        
+        .Fields.Append .CreateField(fldName, fldType, fldSize)
+    End With
+    
+Exit_Handler:
+    Exit Sub
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - AddField[mod_Db])"
+    End Select
+    Resume Exit_Handler
+End Sub
+
+' ---------------------------------
+' FUNCTION:     RemoveField
+' Description:  Adds field to recordset
+' Assumptions:  Table is in the current database (not linked)
+' Parameters:   tdf - table to add field to
+'               fldName - field name (string)
+' Returns:      -
+' Throws:       none
+' References:
+'   Microsoft, March 9, 2015
+'   https://msdn.microsoft.com/en-us/library/office/ff820791.aspx
+' Source/date:  Bonnie Campbell, December 8, 2017 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 12/8/2017  - initial version
+' ---------------------------------
+Public Sub RemoveField(tdf As DAO.TableDef, fldName As String)
+On Error GoTo Err_Handler
+    
+    With tdf
+        If .Updatable = False Then
+        
+            Dim msg As String
+    
+            msg = "Oops! " & tdf.Name & " cannot be updated"
+        
+            DoCmd.OpenForm "MsgOverlay", acNormal, , , , acDialog, _
+                "msg" & PARAM_SEPARATOR & msg & _
+                "|Type" & PARAM_SEPARATOR & "caution"
+               
+            GoTo Exit_Handler
+        End If
+        
+        .Fields.Delete fldName
+    End With
+    
+Exit_Handler:
+    Exit Sub
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - RemoveField[mod_Db])"
     End Select
     Resume Exit_Handler
 End Sub
@@ -798,50 +938,6 @@ Err_Handler:
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - qryExists[mod_Db])"
-    End Select
-    Resume Exit_Handler
-End Function
-
-' ---------------------------------
-'  Get Database Application Info
-' ---------------------------------
-
-' ---------------------------------
-' FUNCTION:     getAccessObjectType
-' Description:  looks up object type in Access sys tables
-' Parameters:   strName  - name of object w/in Access
-' Returns:      long (type) or NULL if object doesn't exist
-'                   ----------------
-'                   1 = Access Table
-'                   4 = OBDB-Linked Table / View
-'                   5 = Access Query
-'                   6 = Attached (Linked) File  (such as Excel, another Access Table or query, text file, etc.)
-'                   -32768 = Access Form
-'                   -32764 = Access Report
-'                   -32761 = Access Module
-'                   ----------------
-' Throws:       none
-' References:   Tom Davidson, April 8, 2011
-'   http://stackoverflow.com/questions/2090578/ms-access-determine-object-type
-
-' Source/date:  Bonnie Campbell August 20, 2014 - NCPN tools
-' Adapted:      -
-' Revisions:    BLC, 8/20/2014 - initial version
-'               BLC, 4/30/2015 - moved from mod_Common_UI
-' ---------------------------------
-Public Function getAccessObjectType(strObject As String) As Variant
-On Error GoTo Err_Handler:
-
-    getAccessObjectType = DLookup("Type", "MSysObjects", "NAME = '" & strObject & "'")
-   
-Exit_Handler:
-    Exit Function
-
-Err_Handler:
-    Select Case Err.Number
-      Case Else
-        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
-            "Error encountered (#" & Err.Number & " - getAccessObjectType[mod_Db])"
     End Select
     Resume Exit_Handler
 End Function
@@ -2081,6 +2177,42 @@ Err_Handler:
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - GetTemplate[mod_Db])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' Function:     RefreshTemplates
+' Description:  Refreshes global template dictionary
+' Assumptions:  -
+' Parameters:   -
+' Returns:      -
+' Throws:       none
+' References:   -
+' Source/date:  Bonnie Campbell, December 13, 2017 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 12/13/2017 - initial version
+' ---------------------------------
+Public Function RefreshTemplates() As Boolean
+On Error GoTo Err_Handler
+
+    'clear existing templates
+    Set g_AppTemplates = Nothing
+    
+    'run template generation to refresh
+    GetTemplates
+    
+    'assume template dictionary is refreshed
+    RefreshTemplates = True
+    
+Exit_Handler:
+    Exit Function
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - RefreshTemplates[mod_Db])"
     End Select
     Resume Exit_Handler
 End Function

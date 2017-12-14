@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        Person
 ' Level:        Framework class
-' Version:      1.06
+' Version:      1.07
 '
 ' Description:  Person object related properties, events, functions & procedures
 '
@@ -31,6 +31,7 @@ Option Explicit
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
 
 '               BLC - 10/6/2017  - 1.06 - removed GetClass() after Factory class instatiation implemented
+'               BLC - 12/14/2017 - 1.07 - revised Phone to Single vs. Variant
 ' =================================
 
 '---------------------
@@ -44,7 +45,7 @@ Private m_Name As String
 Private m_Email As String
 Private m_Organization As String
 Private m_PosTitle As String
-Private m_WorkPhone As Variant 'Integer
+Private m_WorkPhone As Single 'Variant 'Integer
 Private m_WorkExtension As Variant 'Integer
 Private m_Role As String
 Private m_AccessLevel As Integer
@@ -139,7 +140,7 @@ Public Property Get Organization() As String
     Organization = m_Organization
 End Property
 
-Public Property Let WorkPhone(Value As Variant) 'Integer)
+Public Property Let WorkPhone(Value As Single) 'Variant) 'Integer)
     If Not IsNull(Value) Then
         If IsPhone(CStr(Value)) Then
             m_WorkPhone = Value
@@ -152,7 +153,7 @@ Public Property Let WorkPhone(Value As Variant) 'Integer)
     End If
 End Property
 
-Public Property Get WorkPhone() As Variant 'Integer
+Public Property Get WorkPhone() As Single 'Variant 'Integer
     WorkPhone = m_WorkPhone
 End Property
 

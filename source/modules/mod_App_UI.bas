@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_UI
 ' Level:        Application module
-' Version:      1.33
+' Version:      1.35
 ' Description:  Application User Interface related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
@@ -75,7 +75,9 @@ Option Explicit
 '               BLC, 11/9/2017  - 1.31 - update VegPlot case, checkboxes & toggles;
 '                                        Transducer case distances (PopulateForm())
 '               BLC, 11/11/2017 - 1.32 - update VegPlot case (PopulateForm())
-'               BLC, 11/11/2017 - 1.33 - add VegPlot BeaverBrowse (PopulateForm())
+'               BLC, 12/5/2017 - 1.33 - add VegPlot BeaverBrowse (PopulateForm())
+'               BLC, 12/7/2017 - 1.34 - add VegPlot, Event SortListForm cases
+'               BLC, 12/8/2017 - 1.35 - added obs-photos ClickAction() case, VegPlot PopulateForm()
 ' =================================
 
 ' ---------------------------------
@@ -438,6 +440,7 @@ End Sub
 '   BLC - 1/31/2017 - adjusted to accommodate templates list
 '   BLC - 2/21/2017 - adjusted to accommodate Contact list
 '   BLC - 10/18/2017 - added cases for Comment list
+'   BLC - 12/7/2017 - added cases for VegPlot, Event lists
 ' ---------------------------------
 Public Sub SortListForm(frm As Form, ctrl As Control)
 On Error GoTo Err_Handler
@@ -463,16 +466,28 @@ On Error GoTo Err_Handler
                 Case "ContactList"
                     strSort = "c.ID"
             End Select
+        Case "Location"
+            strSort = "Location"
+        Case "ModalSedSize"
+            strSort = "ModalSedimentSize_ID"
         Case "Name"
             strSort = "LastName"
-        Case "Template"
-            strSort = "TemplateName"
-        Case "SOPNum"
-            strSort = "SOPNumber"
+        Case "PctMSS"
+            strSort = "PctModalSedimentSize"
+        Case "PlotNumDist"
+            strSort = IIf(TempVars("ParkCode") = "DINO", "PlotNumber", "PlotDistance_m")
+        Case "Site"
+            strSort = "Site"
         Case "SOP"
             strSort = "FullName"
+        Case "SOPNum"
+            strSort = "SOPNumber"
+        Case "StartDate"
+            strSort = "StartDate"
         Case "Syntax"
             strSort = "Syntax"
+        Case "Template"
+            strSort = "TemplateName"
         Case "Version"
             strSort = "Version"
         Case "LastModifiedDate"
@@ -676,6 +691,7 @@ End Function
 '   BLC - 2/21/2017  - revised to use Photo vs. Tree form
 '   BLC - 9/29/2017  - added Logger case
 '   BLC - 10/18/2017 - added AppSettings case
+'   BLC - 12/8/2017  - add photos
 ' ---------------------------------
 Public Sub ClickAction(action As String)
 On Error GoTo Err_Handler
@@ -743,7 +759,7 @@ On Error GoTo Err_Handler
 '                TempVars.Add "originForm", "DisableDoubleClick"
 '            End If
         'Observations
-        Case "photos"
+        Case "photos", "obs-photos"
             fName = "Photo" '"Tree"
         Case "transducers"
             fName = "Transducer"
@@ -1631,6 +1647,7 @@ End Sub
 '   BLC - 11/9/2017 - update VegPlot case, checkboxes & toggles; Transducer case distances
 '   BLC - 11/11/2017 - update VegPlot case
 '   BLC - 12/5/2017 - add VegPlot BeaverBrowse
+'   BLC - 12/8/2017 - update VegPlot case
 ' ---------------------------------
 Public Sub PopulateForm(frm As Form, ID As Long)
 On Error GoTo Err_Handler
@@ -1674,8 +1691,6 @@ On Error GoTo Err_Handler
                 .Controls("cbxSite").ControlSource = "Site_ID"
                 .Controls("cbxLocation").ControlSource = "Location_ID"
                 .Controls("tbxStartDate").ControlSource = "StartDate"
-                .Controls("lblMsgIcon").Caption = ""
-                .Controls("lblMsg").Caption = ""
             Case "Feature"
                 'set form fields to record fields as datasource
                 .Controls("tbxID").ControlSource = "ID"
@@ -1803,29 +1818,30 @@ On Error GoTo Err_Handler
             Case "VegPlot"
                 'set form fields to record fields as datasource
                 .Controls("tbxID").ControlSource = "ID"
+                .Controls("cbxEvent").ControlSource = "Event_ID"
+                .Controls("cbxTransect").ControlSource = "VegTransect_ID"
+                .Controls("cbxModalSedSize").ControlSource = "ModalSedSize"
                 .Controls("tbxNumber").ControlSource = "PlotNumber"
                 .Controls("tbxDistance").ControlSource = "PlotDistance_m"
-                .Controls("cbxModalSedSize").ControlSource = "ModalSedSize"
-                .Controls("tbxPctMSS").ControlSource = "PctModalSedimentSize"
+                .Controls("tbxPctWCC").ControlSource = "WoodyCanopyPctCover"
+                .Controls("tbxPctURC").ControlSource = "UnderstoryRootedPctCover"
+                .Controls("tbxPctARC").ControlSource = "AllRootedPctCover"
                 .Controls("tbxPctFines").ControlSource = "PctFines"
                 .Controls("tbxPctWater").ControlSource = "PctWater"
                 .Controls("tbxPctLitter").ControlSource = "PctLitter"
                 .Controls("tbxPctWoodyDebris").ControlSource = "PctWoodyDebris"
-                .Controls("tbxPctFA").ControlSource = "PctFilamentousAlgae"
                 .Controls("tbxPctStandingDead").ControlSource = "PctStandingDead"
-                .Controls("tbxPctWCC").ControlSource = "WoodyCanopyPctCover"
-                .Controls("tbxPctURC").ControlSource = "UnderstoryRootedPctCover"
-                .Controls("tbxPctARC").ControlSource = "AllRootedPctCover"
+                .Controls("tbxPctMSS").ControlSource = "PctModalSedimentSize"
+                .Controls("tbxPctFA").ControlSource = "PctFilamentousAlgae"
+                .Controls("tbxPctSocialTrails").ControlSource = "PctSocialTrails"
                 .Controls("tbxPlotDensity").ControlSource = "PlotDensity"
                 .Controls("tglNoCanopyVeg").ControlSource = "NoCanopyVeg" 'IIf("NoCanopyVeg" = 1, True, False)
                 .Controls("tglNoRootedVeg").ControlSource = "NoRootedVeg" 'IIf("NoRootedVeg" = 1, True, False)
                 .Controls("tglNoIndicatorSpecies").ControlSource = "NoIndicatorSpecies" 'IIf("NoIndicatorSpecies" = 1, True, False)
-                '.Controls("tglHasSocialTrails").ControlSource = "HasSocialTrails" 'IIf("HasSocialTrails" = 1, True, False)
-                .Controls("chkCalibrationPlot").ControlSource = IIf("CalibrationPlot" = 1, True, False) '"CalibrationPlot" 'IIf("CalibrationPlot" = 1, True, False)
-                .Controls("chkReplicatePlot").ControlSource = IIf("ReplicatePlot" = 1, True, False) '"ReplicatePlot" 'IIf("ReplicatePlot" = 1, True, False)
-                .Controls("tbxPctSocialTrails").ControlSource = "PctSocialTrails"
                 .Controls("tglBeaverBrowse").ControlSource = "BeaverBrowse"
-
+                '.Controls("tglHasSocialTrails").ControlSource = "HasSocialTrails" 'IIf("HasSocialTrails" = 1, True, False)
+                .Controls("chkCalibrationPlot").ControlSource = "CalibrationPlot" 'IIf("CalibrationPlot" = 1, True, False)
+                .Controls("chkReplicatePlot").ControlSource = "ReplicatePlot" 'IIf("ReplicatePlot" = 1, True, False)
             Case "VegTransect"
 
             Case "VegWalk"
@@ -1834,17 +1850,10 @@ On Error GoTo Err_Handler
                 .Controls("tbxWalkStartDate").ControlSource = "StartDate"
 
         End Select
-    
-'        'save record changes from form first to avoid "Write Conflict" errors
-'        'where form & SQL are attempting to save record
-'        'frm.Dirty = False
-'
-'        If frm.Dirty Then
-'            MsgBox frm.Name & " DIRTY"
-'            frm.Dirty = False
-'        Else
-'            MsgBox frm.Name & " CLEAN"
-'        End If
+
+        'clear msg/msg icon if present
+        If ControlExists("lblMsgIcon", frm) Then .Controls("lblMsgIcon").Caption = ""
+        If ControlExists("lblMsg", frm) Then .Controls("lblMsg").Caption = ""
         
         strSQL = GetTemplate("s_form_edit", "tbl" & PARAM_SEPARATOR & strTable & "|id" & PARAM_SEPARATOR & ID)
         

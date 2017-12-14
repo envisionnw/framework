@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Forms
 ' Level:        Framework module
-' Version:      1.12
+' Version:      1.13
 ' Description:  generic form functions & procedures
 '
 ' Source/date:  Bonnie Campbell, 2/19/2015
@@ -33,6 +33,7 @@ Option Explicit
 '                                        ResetHeaders(), ShowControls(),
 '                                        ControlExists(), AddFormControl()
 '               BLC - 11/10/2017 - 1.12 - add control existance checks
+'               BLC - 12/14/2017 - 1.13 - add checkbox and toggle button
 ' =================================
 
 '=================================================================
@@ -429,6 +430,7 @@ End Sub
 '   BLC - 7/28/2016 - added clearing lblMsg caption
 '   BLC - 8/30/2016 - added RefSub to identify form subs called by ClearForm
 '   BLC - 11/10/2017 - add control existance checks
+'   BLC - 12/14/2017 - add checkbox and toggle button
 ' ---------------------------------
 Public Sub ClearForm(ByRef frm As Form)
 On Error GoTo Err_Handler
@@ -456,6 +458,10 @@ On Error GoTo Err_Handler
                     'ctrl.ItemData (0)
                     ' Johanness, October 12, 2012
                     ' http://stackoverflow.com/questions/12697427/vba-clear-selections-of-a-combobox
+                Case acCheckBox
+                    ctrl.Value = ""
+                Case acToggleButton
+                    ToggleCaption ctrl, False
             End Select
         Next
         
