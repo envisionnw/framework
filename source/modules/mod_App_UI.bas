@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_UI
 ' Level:        Application module
-' Version:      1.35
+' Version:      1.36
 ' Description:  Application User Interface related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
@@ -78,6 +78,7 @@ Option Explicit
 '               BLC, 12/5/2017 - 1.33 - add VegPlot BeaverBrowse (PopulateForm())
 '               BLC, 12/7/2017 - 1.34 - add VegPlot, Event SortListForm cases
 '               BLC, 12/8/2017 - 1.35 - added obs-photos ClickAction() case, VegPlot PopulateForm()
+'               BLC, 12/14/2017 - 1.36 - updated Loggers ClickAction() case
 ' =================================
 
 ' ---------------------------------
@@ -692,6 +693,7 @@ End Function
 '   BLC - 9/29/2017  - added Logger case
 '   BLC - 10/18/2017 - added AppSettings case
 '   BLC - 12/8/2017  - add photos
+'   BLC - 12/14/2017 - updated Loggers case
 ' ---------------------------------
 Public Sub ClickAction(action As String)
 On Error GoTo Err_Handler
@@ -819,16 +821,19 @@ On Error GoTo Err_Handler
         Case "photo"
             rName = "Photo"
             oArgs = ""
+        Case "transducer"
+            rName = "Transducer"
+        Case "loggers"
+            fName = "Logger"
+            oArgs = ""
+        Case "tasks"
+            fName = "Task"
         Case "application settings"
             fName = "AppSettings"
         Case "sediment class settings"
             fName = "ModWentworth"
         Case "sheet settings"
             fName = "SetDatasheetDefaults"
-        Case "transducer"
-            rName = "Transducer"
-        Case "tasks"
-            fName = "Task"
         'Reports
         Case "# Plots"
             rName = "NumPlots"

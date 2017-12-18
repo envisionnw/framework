@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Color
 ' Level:        Framework module
-' Version:      1.09
+' Version:      1.10
 ' Description:  color functions & procedures
 '
 ' Source/date:  Bonnie Campbell, 2/9/2015
@@ -21,6 +21,7 @@ Option Explicit
 '               BLC, 8/22/2017 - 1.09 - merged prior work:
 '                         ' COMMENTED OUT IN invasives: ConvertLongToRGB()
 ' --------------------------------------------------------------
+'               BLC, 12/18/2017 - 1.10 - added lngLtBgdGray, lngLtTextGray
 ' =================================
 
 ' ---------------------------------
@@ -88,6 +89,8 @@ Public Const lngTan As Long = 9221330       '?RGB(210,180,140) #D2B48C tan
 Public Const lngBurlywood As Long = 8894686 '?RGB(222,184,135) burlywood
 Public Const lngLtRose As Long = 11845354   '?RGB(234,190,180) #EABEB4
 Public Const lngRose As Long = 11843306     '?RGB(234,182,180) #EAB6B4
+Public Const lngLtBgdGray As Long = 12566463 '?RGB(191,191,191) #BFBFBF Background 1, Darker 25%
+Public Const lngLtTextGray As Long = 14277081 '?RGB(217,217,217) #D9D9D9 Background 1, Darker 15%
 
 ' ---------------------------------
 '  Subroutines & Functions
