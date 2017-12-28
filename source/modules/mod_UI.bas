@@ -4,7 +4,7 @@ Option Explicit
 ' ---------------------------------
 ' MODULE:       mod_UI
 ' Level:        Framework module
-' Version:      1.18
+' Version:      1.19
 ' Description:  User interface related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
@@ -37,6 +37,7 @@ Option Explicit
 '                                       RepaintParentForm(), ChangeBackColor(), ResetHeaders(),
 '                                       ShowControls(), AddFormControl() to mod_Forms
 '               BLC, 11/24/2017 - 1.18 - revised to include general messages
+'               BLC, 12/27/2017 - 1.19 - updated ToggleCaption to check for false text
 ' ---------------------------------
 
 ' ---------------------------------
@@ -909,6 +910,8 @@ End Sub
 ' Adapted:      -
 ' Revisions:
 '   BLC - 1/11/2017 - initial version
+'   BLC - 12/27/2017 - revised to use control caption vs control on IF
+'                     (avoids error #94 invalid use of Null)
 ' ---------------------------------
 Public Sub ToggleCaption(ctrl As ToggleButton, blnCheckbox As Boolean, _
                 Optional TrueText As String = "", _
@@ -918,7 +921,7 @@ On Error GoTo Err_Handler
     'set default if checkbox desired
     If blnCheckbox Then TrueText = StringFromCodepoint(uCheck)
     
-    If ctrl Then
+    If Nz(ctrl.Caption, "") = FalseText Then
         ctrl.Caption = TrueText
     Else
         ctrl.Caption = FalseText

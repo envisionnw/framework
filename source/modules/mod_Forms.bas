@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Forms
 ' Level:        Framework module
-' Version:      1.13
+' Version:      1.14
 ' Description:  generic form functions & procedures
 '
 ' Source/date:  Bonnie Campbell, 2/19/2015
@@ -34,6 +34,7 @@ Option Explicit
 '                                        ControlExists(), AddFormControl()
 '               BLC - 11/10/2017 - 1.12 - add control existance checks
 '               BLC - 12/14/2017 - 1.13 - add checkbox and toggle button
+'               BLC - 12/27/2017 - 1.14 - update to avoid black box inside checkboxes (ClearForm)
 ' =================================
 
 '=================================================================
@@ -431,6 +432,7 @@ End Sub
 '   BLC - 8/30/2016 - added RefSub to identify form subs called by ClearForm
 '   BLC - 11/10/2017 - add control existance checks
 '   BLC - 12/14/2017 - add checkbox and toggle button
+'   BLC - 12/27/2017 - update to avoid black box inside checkboxes
 ' ---------------------------------
 Public Sub ClearForm(ByRef frm As Form)
 On Error GoTo Err_Handler
@@ -459,7 +461,7 @@ On Error GoTo Err_Handler
                     ' Johanness, October 12, 2012
                     ' http://stackoverflow.com/questions/12697427/vba-clear-selections-of-a-combobox
                 Case acCheckBox
-                    ctrl.Value = ""
+                    ctrl.Value = 0 'false vs "" to avoid black box inside checkbox
                 Case acToggleButton
                     ToggleCaption ctrl, False
             End Select

@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_UI
 ' Level:        Application module
-' Version:      1.36
+' Version:      1.37
 ' Description:  Application User Interface related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
@@ -79,6 +79,7 @@ Option Explicit
 '               BLC, 12/7/2017 - 1.34 - add VegPlot, Event SortListForm cases
 '               BLC, 12/8/2017 - 1.35 - added obs-photos ClickAction() case, VegPlot PopulateForm()
 '               BLC, 12/14/2017 - 1.36 - updated Loggers ClickAction() case
+'               BLC, 12/27/2017 - 1.37 - update PopulateForm VegPlot case to set combobox values
 ' =================================
 
 ' ---------------------------------
@@ -1653,6 +1654,7 @@ End Sub
 '   BLC - 11/11/2017 - update VegPlot case
 '   BLC - 12/5/2017 - add VegPlot BeaverBrowse
 '   BLC - 12/8/2017 - update VegPlot case
+'   BLC - 12/27/2017 - update VegPlot to set combobox values
 ' ---------------------------------
 Public Sub PopulateForm(frm As Form, ID As Long)
 On Error GoTo Err_Handler
@@ -1823,9 +1825,21 @@ On Error GoTo Err_Handler
             Case "VegPlot"
                 'set form fields to record fields as datasource
                 .Controls("tbxID").ControlSource = "ID"
-                .Controls("cbxEvent").ControlSource = "Event_ID"
-                .Controls("cbxTransect").ControlSource = "VegTransect_ID"
-                .Controls("cbxModalSedSize").ControlSource = "ModalSedSize"
+                '.Controls("cbxEvent").ControlSource = "Event_ID"
+                .Controls("tbxEventID").ControlSource = "Event_ID"
+                '.Controls("cbxTransect").ControlSource = "VegTransect_ID"
+                .Controls("tbxTransectID").ControlSource = "VegTransect_ID"
+                .Controls("tbxMSSID").ControlSource = "ModalSedimentSize_ID"
+                '.Controls("cbxModalSedSize").ControlSource = "ModalSedSize"
+                Dim i As Integer
+                With .Controls("cbxModalSedSize")
+                    For i = 0 To .ListCount - 1
+                        If .Column(0, i) = frm.Controls("tbxMSSID") Then
+                            .Value = .ItemData(i)
+                            Exit For
+                        End If
+                    Next
+                End With
                 .Controls("tbxNumber").ControlSource = "PlotNumber"
                 .Controls("tbxDistance").ControlSource = "PlotDistance_m"
                 .Controls("tbxPctWCC").ControlSource = "WoodyCanopyPctCover"

@@ -4,7 +4,7 @@ Option Explicit
 ' ---------------------------------
 ' MODULE:       mod_Strings
 ' Level:        Framework module
-' Version:      1.18
+' Version:      1.19
 ' Description:  String related functions & subroutines
 ' Requires:     Microsoft VBScript Regular Expressions 5.5 library for RemoveChars() oReg
 '
@@ -43,6 +43,7 @@ Option Explicit
 '               BLC, 10/18/2017 - 1.16 - add Truncate()
 '               BLC, 10/19/2017 - 1.17 - added ASCII tab constant
 '               BLC, 11/10/2017 - 1.18 - added Ne() similar to Nz(), SetTrace()
+'               BLC, 12/27/2017 - 1.19 - added constants: uLedger, uNotebook, uPicDocument
 ' ---------------------------------
 
 '---------------------
@@ -162,6 +163,8 @@ Public Const uPushpinRnd = &H1F4CD          '128205 round-head pushpin
 Public Const uPaperclip = &H1F4CE           '128206
 Public Const uRuler = &H1F4CF               '128207 straight ruler
 Public Const uRulerTriangle = &H1F4D0       '128208 roofing triangle
+Public Const uLedger = &H1F4D2              '128210 ledger
+Public Const uNotebook = &H1F4D4            '128212 notebook w/ decorative cover
 Public Const uBooks = &H1F4DA               '128218
 Public Const uMemo = &H1F4DD                '128221
 Public Const uInbox = &H1F4E5               '128229 inbox tray
@@ -206,7 +209,8 @@ Public Const uPencil = &H1F589              '128393
 Public Const uThumbsUpRev = &H1F592         '128402 reversed thumbs up
 Public Const uThumbsDownRev = &H1F593       '128403 reversed thumbs down
 Public Const uFingerPointL = &H1F59C        '128412 black left pointing backhand
-Public Const uPicFramed = &H1F5BB           '128444 picture w/ frame
+Public Const uPicFramed = &H1F5BB           '128443 picture w/ frame
+Public Const uPicDocument = &H1F5BA         '128444 document with text & picture
 Public Const uFolder = &H1F5C0              '128448
 Public Const uFolderOpen = &H1F5C1          '128449
 Public Const uNoteEmpty = &H1F5C5           '128453
