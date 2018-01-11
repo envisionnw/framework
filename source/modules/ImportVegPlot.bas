@@ -172,11 +172,11 @@ End Property
 
 'Also in Plot.cls
 Public Property Get CsvRows() As String
-    Dim key As Variant
+    Dim Key As Variant
     Dim output() As String
     ReDim output(mCover.Count - 1)
     Dim i As Long
-    For Each key In mCover.Keys
+    For Each Key In mCover.Keys
         Dim Temp(16) As String
         Temp(0) = this.PlotID
         Temp(1) = this.VisitDate
@@ -192,11 +192,11 @@ Public Property Get CsvRows() As String
         Temp(11) = this.FilamentousAlgae
         Temp(12) = this.NoIndicatorSpecies
         Temp(13) = this.Litter
-        Temp(14) = key
-        Temp(15) = mCover(key)
+        Temp(14) = Key
+        Temp(15) = mCover(Key)
         output(i) = Join(Temp, ",")
         i = i + 1
-    Next key
+    Next Key
     CsvRows = Join(output, vbCrLf)
 End Property
 

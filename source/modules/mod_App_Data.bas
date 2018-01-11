@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_Data
 ' Level:        Application module
-' Version:      1.57
+' Version:      1.58
 ' Description:  data functions & procedures specific to this application
 '
 ' Source/date:  Bonnie Campbell, 2/9/2015
@@ -75,25 +75,196 @@ Option Explicit
 '               BLC, 10/17/2017 - 1.41 - added error 3022 - duplicate record handling,
 '                                        updated SetRecord u_site parameters
 '               BLC, 10/18/2017 - 1.42 - added tsys_Datasheet_defaults parameters
-'               BLC, 10/30/2017 - 1.43 - change location CollectionSourceID to use text vs. index (UpsertRecord())
+'               BLC, 10/30/2017 - 1.43 - change location CollectionSourceID to use text vs. index (UpsertRecord)
 '               BLC, 10/31/2017 - 1.44 - added ReplicatePlot, CalibrationPlot flags, updated VegPlot case
-'               BLC, 11/2/2017  - 1.45 - added s_plot_numbers, s_transect_numbers (GetRecords())
-'               BLC, 11/3/2017  - 1.46 - added s_modal_sediment_size (GetRecords())
-'               BLC, 11/6/2017  - 1.47 - use GetRecords() (GetSiteID()), add i_site_vegtransect (SetRecord()),
-'                                        added s_site_id_by_code (GetRecords())
-'               BLC, 11/8/2017  - 1.48 - update UpsertRecord(), SetRecord() for % MSS
-'               BLC, 11/9/2017  - 1.49 - added s_location_by_site, s_location_by_feature (GetRecords()),
-'                                        added Comment case (UpsertRecord())
-'               BLC, 11/10/2017 - 1.50 - added Transducer distances (UpsertRecord())
+'               BLC, 11/2/2017  - 1.45 - added s_plot_numbers, s_transect_numbers (GetRecords)
+'               BLC, 11/3/2017  - 1.46 - added s_modal_sediment_size (GetRecords)
+'               BLC, 11/6/2017  - 1.47 - use GetRecords (GetSiteID), add i_site_vegtransect (SetRecord),
+'                                        added s_site_id_by_code (GetRecords)
+'               BLC, 11/8/2017  - 1.48 - update UpsertRecord, SetRecord for % MSS
+'               BLC, 11/9/2017  - 1.49 - added s_location_by_site, s_location_by_feature (GetRecords),
+'                                        added Comment case (UpsertRecord)
+'               BLC, 11/10/2017 - 1.50 - added Transducer distances (UpsertRecord)
 '               BLC, 11/11/2017 - 1.51 - updated UpsertRecord, SetRecord for vegplot cases
-'               BLC, 11/12/2017 - 1.52 - added unknown cases (SetRecord())
-'               BLC, 11/24/2017 - 1.53 - fix i_feature parameters (SetRecord())
-'               BLC, 11/26/2017 - 1.54 - added VegSpecies, updated VegWalk, VegPlot (UpsertRecord()),
+'               BLC, 11/12/2017 - 1.52 - added unknown cases (SetRecord)
+'               BLC, 11/24/2017 - 1.53 - fix i_feature parameters (SetRecord)
+'               BLC, 11/26/2017 - 1.54 - added VegSpecies, updated VegWalk, VegPlot (UpsertRecord),
 '                                        updated VegPlot for social trails pct
 '               BLC, 12/5/2017  - 1.55 - added VegPlot BeaverBrowse (SetRecord, UpsertRecord)
-'               BLC, 12/8/2017  - 1.56 - update VegPlot UpsertRecord()
-'               BLC, 12/13/2017 - 1.57 - added s_access_lvl case (GetRecords())
+'               BLC, 12/8/2017  - 1.56 - update VegPlot (UpsertRecord)
+'               BLC, 12/13/2017 - 1.57 - added s_access_lvl case (GetRecords)
+'               BLC, 1/10/2018  - 1.58 - added s_comments, s_tasks (GetRecords),
+'                                        SetReportRecordset & rpt_recordset global variable,
+'                                        add PhotoBatchUpdate, Logger cases (UpsertRecord)
+'                                        update i_photo case (SetRecord), add GetPhotoTypes
 ' =================================
+
+' =================================
+'   Declarations
+' =================================
+Public rpt_recordset As DAO.Recordset   'used in SetReportRecordset()
+'   AppPhotoTypes global dictionary --> defined in app photo types (Big Rivers AppEnum) [mod_App_Data]
+Public g_AppPhotoTypes As Scripting.Dictionary
+
+' =================================
+'   Dictionary Methods
+' =================================
+' ---------------------------------
+' SUB:     GetPhotoTypes
+' Description:  loads PhotoTypes into memory as a global dictionary object (dictTemplates)
+'               makes current Templates available without querying the db AppEnum table
+' Parameters:   PType - specifies phototype to retrieve (F,T,O,R,OO, etc.)
+' Returns:      -
+' Assumptions:  -
+' Throws:       none
+' References:   tsys_Db_Templates, Microsoft Scripting Runtime (dictionary object)
+'   HansUp, June 27, 2013
+'   http://stackoverflow.com/questions/17328092/how-to-display-access-query-results-without-having-to-create-Temporary-query
+' Source/date:  Bonnie Campbell, June 2014
+' Revisions:    BLC, 6/16/2014 - initial version
+'               BLC, 5/13/2016 - shifted from mod_Db_Templates to mod_Db & adjusted to match tsys_Db_Templates
+'               BLC, 5/19/2016 - revised documentation & renamed GetPhotoTypes() vs. GetSQLTemplates() since tsys_Db_Templates
+'                                can accommodate more than SQL
+'               BLC, 6/5/2016  - revised to set strSyntax to "T-SQL" to avoid error due to multiple items of same name in dict
+'               BLC, 6/6/2016  - added error handling for duplicate Templates, renamed global to g_AppTemplates
+'               BLC, 2/1/2017  - added error handling for improper parameter syntax (param name:param type)
+'               BLC, 2/2/2017  - added clearing of global g_AppTemplates to allow re-definition
+'                                without restarting db
+'               BLC, 3/23/2017 - revised to use "SQL" for default syntax (most should be "SQL" i.e. usable in SQL server & Access)
+'               BLC, 3/30/2017 - added ID, Dependencies, FieldCheck, FieldOK values to dictionary object
+'                                to capture these properties of a Template
+'               BLC, 4/18/2017 - revised Dim to set dictTemplates as Scripting.Dictionary vs. Dictionary (latter
+'                                produces compile error on .Add - Method or Data Member not found)
+'               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
+'                                multiple open connections
+' ---------------------------------
+Public Sub GetPhotoTypes(Optional PType As String = "")
+
+    Dim db As DAO.Database
+    Dim rs As DAO.Recordset
+    Dim strSQL As String, strSQLWhere As String, Key As String
+    Dim Value As Variant
+    
+    'sql -> ID, Version, IsSupported, Context, Syntax, TemplateName, Params, Template, Remarks,
+    '       EffectiveDate, RetireDate, CreateDate, CreatedBy_ID, LastModified, LastModifiedBy_ID
+    strSQL = "SELECT * FROM AppEnum WHERE EnumType = 'PhotoType';"
+    
+    Set db = CurrDb
+    Set rs = db.OpenRecordset(strSQL)
+    
+    'handle no records
+    If rs.EOF Then
+        MsgBox "Sorry, no photo types were found in this database version.", vbExclamation, _
+            "Photo Types Not Found"
+        DoCmd.CancelEvent
+        GoTo Exit_Handler
+    End If
+    
+    'prepare dictionary
+    Dim dict As New Scripting.Dictionary
+    Dim ary(1 To 4) As String
+    Dim i As Integer
+    
+    'prepare the dictionary key array
+'    ary(1) = "Context"
+'    ary(2) = "TemplateName"
+'    ary(3) = "Template" 'Template
+'    ary(4) = "Params"
+'    ary(5) = "Syntax"
+'    ary(6) = "ID"
+'    ary(7) = "FieldCheck"
+'    ary(8) = "FieldOK"
+'    ary(9) = "Dependencies"
+'    ary(10) = "DataScope"
+'    ary(11) = "Version"
+    ary(1) = "ID"
+    ary(2) = "Label"
+    ary(3) = "Summary"
+    
+    'prepare array of dictionaries
+    Dim dictPhotoTypes As Scripting.Dictionary
+    Set dictPhotoTypes = New Scripting.Dictionary
+    
+    rs.MoveLast
+    rs.MoveFirst
+    Do Until rs.EOF
+        'create new dictionary object
+        Set dict = New Scripting.Dictionary
+        
+        'populate the dictionary
+        For i = 1 To UBound(ary)
+            
+            Key = ary(i)
+            
+            Value = Nz(rs.Fields(ary(i)), "")
+            
+            'add key if it isn't already there
+            If Not dict.Exists(Key) Then
+                If IsNull(Value) Then MsgBox Key, vbOKCancel, "is NULL"
+                'Debug.Print Nz(Value, key & "-NULL")
+                dict.Add Key, Value
+            End If
+        
+        Next
+        
+        'add Template dictionary to dictionary of Templates
+        dictPhotoTypes.Add dict("PhotoType"), dict
+        
+'        Debug.Print dict("TemplateName") & " " & dict.Item("ID")
+        rs.MoveNext
+    Loop
+    
+    'load global AppTemplates As Scripting.Dictionary of Templates
+    Set g_AppPhotoTypes = Nothing    'clear first
+    
+    Set g_AppPhotoTypes = dictPhotoTypes
+    
+Exit_Handler:
+    'cleanup
+    Set rs = Nothing
+    Set dict = Nothing
+    Set dictPhotoTypes = Nothing
+    Exit Sub
+
+Err_Handler:
+    Select Case Err.Number
+      Case 457  'Duplicate PhotoType -- AppEnum finds more than one w/ same name (improbable)
+        MsgBox "A duplicate PhotoType was found." & vbCrLf & vbCrLf & _
+            "When you click 'OK' a query will run to identify the problem PhotoType." & vbCrLf & vbCrLf & _
+            "You can close the query after it runs (save it if you like)." & vbCrLf & vbCrLf & _
+            "Please contact your data manager to resolve this issue." & vbCrLf & vbCrLf & _
+            "Error #" & Err.Number & " - GetPhotoTypes[mod_Db]:" & vbCrLf & _
+            Err.Description, vbExclamation, "Duplicate Db PhotoType Found! [AppEnum]"
+
+            Dim strErrorSQL As String
+            strErrorSQL = "SELECT Lable, Count(Label) AS NumberOfDupes " & _
+                    "FROM AppEnum " & _
+                    "GROUP By Label " & _
+                    "HAVING Count(Label) > 1;"
+
+            Dim qdf As DAO.QueryDef
+            
+            If Not QueryExists("UsysTempQuery") Then
+                Set qdf = CurrDb.CreateQueryDef("UsysTempQuery")
+            Else
+                Set qdf = CurrDb.QueryDefs("UsysTempQuery")
+            End If
+            
+            qdf.SQL = strErrorSQL
+            
+            DoCmd.OpenQuery "USysTempQuery", acViewNormal
+
+            '********** FATAL ERROR ****************
+            'terminate *ALL* VBA code to prevent other popups
+            'Exit Sub
+            Stop
+            
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - GetPhotoTypes[mod_Db])"
+    End Select
+    Resume Exit_Handler
+End Sub
 
 ' =================================
 '   List Methods
@@ -606,7 +777,7 @@ End Sub
 '   BLC - 10/20/2016 - added ModWentworth retire date toggle
 '   BLC - 10/24/2016 - revised to use SetRecord()
 ' ---------------------------------
-Public Sub ToggleIsActive(Context As String, ID As Long, Optional IsActive As Byte)
+Public Sub ToggleIsActive(context As String, ID As Long, Optional IsActive As Byte)
 On Error GoTo Err_Handler
     
 '    Dim strSQL As String
@@ -632,7 +803,7 @@ On Error GoTo Err_Handler
     
     Dim Template As String
     
-    Select Case Context
+    Select Case context
         Case "Contact"
             Template = "u_contact_isactive_flag"
         Case "Site"
@@ -677,14 +848,14 @@ End Sub
 '   BLC - 7/30/2016 - initial version
 '   BLC - 9/28/2017 - revised template to lower case
 ' ---------------------------------
-Public Sub ToggleSensitive(Context As String, ID As Long, Sensitive As Byte)
+Public Sub ToggleSensitive(context As String, ID As Long, Sensitive As Byte)
 On Error GoTo Err_Handler
     
     Dim Template As String
     
     Template = IIf(Sensitive = 1, "i_", "d_")
     
-    Template = LCase(Template & "sensitive_" & Context)
+    Template = LCase(Template & "sensitive_" & context)
     
     If Right(Template, 1) <> "s" Then Template = Template & "s"
     
@@ -774,6 +945,47 @@ Err_Handler:
 End Function
 
 ' =================================
+'   Recordset Methods
+' =================================
+' ---------------------------------
+' Sub:          SetReportRecordset
+' Description:  Sets the global variable rpt_recordset for setting
+'               report record source
+' Assumptions:  1) rpt_recordset is a global public variable
+'                   defined w/in framework but accessible to referencing dbs
+'               2) rpt_recordset is set before the report is opened
+'                  (e.g. in ReportList's report name click action for Big Rivers)
+'                       rpt_recordset = GetRecords("s_tasks")
+'               3) Report recordsource is set in the Report_Open method via
+'                       Me.RecordSource = rpt_recordset.Name
+' Parameters:   -
+' Returns:      recordset for reports
+' Throws:       none
+' References:
+'   Andy Baron, unknown
+'   http://access.mvps.org/access/reports/rpt0014.htm
+' Source/date:  Bonnie Campbell, January 10, 2018 - for NCPN tools
+' Adapted:      -
+' Revisions:
+'   BLC - 1/10/2018 - initial version
+' ---------------------------------
+Public Sub SetReportRecordset(context As String)
+On Error GoTo Err_Handler
+    
+    Set rpt_recordset = GetRecords(context)
+
+Exit_Handler:
+    Exit Sub
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - SetReportRecordset[mod_App_Data])"
+    End Select
+    Resume Exit_Handler
+End Sub
+
+' =================================
 '   Record Methods
 ' =================================
 ' ---------------------------------
@@ -821,6 +1033,7 @@ End Function
 '   BLC - 12/5/2017 - updated s_feature_id, s_record_action_by_refID
 '   BLC - 12/12/2017 - add s_usys_temp_photo_list
 '   BLC - 12/13/2017 - add s_access_lvl
+'   BLC - 1/10/2018  - added s_comments, s_tasks
 ' ---------------------------------
 Public Function GetRecords(Template As String, _
                             Optional Params As Variant) As DAO.Recordset
@@ -867,6 +1080,9 @@ On Error GoTo Err_Handler
                 Case "s_app_enum_list"
                     '-- required parameters --
                     .Parameters("etype") = TempVars("EnumType")
+                
+                Case "s_comments"
+                     '-- required parameters --
                 
                 Case "s_contact_list"
                     '-- required parameters --
@@ -1017,7 +1233,10 @@ On Error GoTo Err_Handler
                 Case "s_species_by_park"
                     '-- required parameters --
                     .Parameters("pkcode") = TempVars("ParkCode")
-                    
+                
+                Case "s_tasks"
+                     '-- required parameters --
+                
                 Case "s_top_rooted_species_last_year_by_park"
                     '-- required parameters --
                     .Parameters("pkcode") = TempVars("ParkCode")
@@ -1227,7 +1446,7 @@ Exit_Handler:
 Err_Handler:
     Select Case Err.Number
       Case 3048 'Cannot open any more databases
-        Debug.Print "Error 3048: " & Err.Description & " " & Err.source
+        Debug.Print "Error 3048: " & Err.Description & " " & Err.Source
         'close & re-open forms (frm_Data_Entry & PlotCheck)
 '         DoCmd.Close acForm, "PlotCheck", acSaveNo
 '         DoCmd.SelectObject acForm, "frm_Data_Entry"
@@ -1292,6 +1511,7 @@ End Function
 '   BLC - 11/24/2017 - fix i_feature parameters
 '   BLC - 11/26/2017 - revise i_vegplot parameters (social trails)
 '   BLC - 12/5/2017 - add vegplot BeaverBrowse, update i_vegplot pctfa parameter
+'   BLC - 1/10/2018 - update i_photo case
 ' ---------------------------------
 Public Function SetRecord(Template As String, Params As Variant) As Long
 On Error GoTo Err_Handler
@@ -1450,23 +1670,28 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                                                         
                 Case "i_photo"
                     '-- required parameters --
-                    .Parameters("PhotoDate") = Params(1)
-                    .Parameters("PhotoType") = Params(2)
-                    .Parameters("PhotographerID") = Params(3)
-                    .Parameters("FileName") = Params(4)
-                    .Parameters("NCPNImageID") = Params(5)
-                    .Parameters("DirectionFacing") = Params(6)
-                    .Parameters("PhotogLocation") = Params(7)
-                    .Parameters("IsCloseup") = Params(8)
-                    .Parameters("IsInActive") = Params(9)
-                    .Parameters("IsSkipped") = Params(10)
-                    .Parameters("IsReplacement") = Params(11)
-                    .Parameters("LastPhotoUpdate") = Params(12)
+                    '-- required parameters --
+                    .Parameters("pdate") = Params(1)            'PhotoDate
+                    .Parameters("ptype") = Params(2)            'PhotoType
+                    .Parameters("photogid") = Params(3)         'PhotographerID
+                    .Parameters("digfname") = Params(4)         'FileName
+                    .Parameters("NID") = Params(5)              'NCPNImageID
+                    .Parameters("pfacing") = Params(6)          'DirectionFacing
+                    .Parameters("ploc") = Params(7)             'PhotogLocation
+                    .Parameters("plocdesc") = Params(13)         'PhotogLocationDesc
+                    .Parameters("porient") = Params(14)         'PhotogOrientation
+                    .Parameters("sptid") = Params(15)           'SurveyPointID
+                    .Parameters("sloc") = Params(16)            'SubjectLocation
+                    .Parameters("closeup") = Params(8)          'IsCloseup
+                    .Parameters("inact") = Params(9)            'IsInActive
+                    .Parameters("skip") = Params(10)            'IsSkipped
+                    .Parameters("replacemt") = Params(11)       'IsReplacement
+                    .Parameters("lpupdate") = Params(12)        'LastPhotoUpdate
                     
-                    .Parameters("CreateDate") = Now()
-                    .Parameters("CreatedByID") = TempVars("AppUserID") 'ContactID")
-                    .Parameters("LastModified") = Now()
-                    .Parameters("LastModifiedByID") = TempVars("AppUserID") 'ContactID")
+'                    .Parameters("") = Now()CreateDate
+                    .Parameters("CID") = TempVars("AppUserID")  'CreatedByID ContactID")
+'                    .Parameters("") = Now() 'LastModified
+                    .Parameters("LMID") = TempVars("AppUserID") 'LastModifiedByID ContactID")
                 
                 Case "i_record_action"
                     '-- required parameters --
@@ -2203,6 +2428,7 @@ End Function
 '   BLC - 12/5/2017 - added VegPlot BeaverBrowse, PctSocialTrails
 '   BLC - 12/8/2017 - update VegPlot EventID, VegTransectID
 '   BLC - 12/12/2017 - add TempPhoto
+'   BLC - 1/10/2018  - add PhotoBatchUpdate, Logger cases
 ' ---------------------------------
 Public Sub UpsertRecord(ByRef frm As Form)
 On Error GoTo Err_Handler
@@ -2244,7 +2470,7 @@ On Error GoTo Err_Handler
                 With cmt
                     'form values
                     .CommentType = frm!tbx
-                    .TypeID = Trim(Split(frm!Context, "-")(1))
+                    .TypeID = Trim(Split(frm!context, "-")(1))
                     .Comment = frm!tbxComment
                     .CommentorID = TempVars("")
                 
@@ -2384,6 +2610,14 @@ On Error GoTo Err_Handler
                     Set loc = Nothing
                 End With
                                         
+            Case "Logger"
+                'Dim lg As New Transducer
+                'With lg
+                
+                
+                'End With
+                
+                                                        
             Case "Photo"
                 Dim ph As New Photo
                 
@@ -2410,13 +2644,46 @@ On Error GoTo Err_Handler
                     'cleanup
                     Set ph = Nothing
                 End With
-                                        
+            
+            Case "PhotoBatchUpdate"
+                Dim pbu As New Photo
+                
+                With pbu
+                    Dim FilePath As String
+                    Dim aryFileInfo() As Variant
+                    
+                    .PhotoType = frm!cbxPhotoType
+                    Select Case .PhotoType
+                        Case "U" 'unclassified
+                        Case "F" 'feature
+                        Case "T" 'transect
+                        Case "O" 'overview
+                        Case "R" 'reference
+                        Case "OO" 'other
+                    End Select
+                    
+                    .PhotographerID = frm!cbxPhotographer
+                    .FileName = frm!lbxPhotos.Column(3)
+                    
+                    .ID = frm!lbxPhotos.Column(0)
+                    
+                    'set the generic object  -->  Photo
+                    Set obj = pbu
+                    
+                    'cleanup
+                    Set pbu = Nothing
+
+                End With
+                
+                'inserts only, no ID?
+                NoList = True
+            
             Case "PhotoOtherDetails"
                 Dim pho As New Photo
                 
                 With pho
-                    Dim FilePath As String
-                    Dim aryFileInfo() As Variant
+                    'Dim FilePath As String < already defined (PhotoBatchUpdate)
+                    'Dim aryFileInfo() As Variant < already defined (PhotoBatchUpdate)
                     Dim nodeinfo() As String
                     '0 - M, 1- C, 2-full file path, 3-file name w/o extension
                     nodeinfo = Split(frm.Parent!tvwTree.Object.SelectedItem.Tag, "|")
@@ -2831,7 +3098,7 @@ On Error GoTo Err_Handler
                 
                 With tpl
                     .IsSupported = 1
-                    .Context = ""
+                    .context = ""
                     .EffectiveDate = Date
                     .Remarks = ""
                     .TemplateName = ""
@@ -2852,7 +3119,7 @@ On Error GoTo Err_Handler
                 
                 With tpl
                     .TemplateName = frm!tbxTemplate
-                    .Context = .TemplateName
+                    .context = .TemplateName
                     .IsSupported = 1 '.IsSupported default = 1 (i.e. yes)
                     .Version = frm!tbxVersion
                     .Syntax = frm!cbxSyntax

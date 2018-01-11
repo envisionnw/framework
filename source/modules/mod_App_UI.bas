@@ -4,7 +4,8 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_UI
 ' Level:        Application module
-' Version:      1.37
+' Version:      1.39
+
 ' Description:  Application User Interface related functions & subroutines
 '
 ' Source/date:  Bonnie Campbell, April 2015
@@ -80,6 +81,8 @@ Option Explicit
 '               BLC, 12/8/2017 - 1.35 - added obs-photos ClickAction() case, VegPlot PopulateForm()
 '               BLC, 12/14/2017 - 1.36 - updated Loggers ClickAction() case
 '               BLC, 12/27/2017 - 1.37 - update PopulateForm VegPlot case to set combobox values
+'               BLC, 1/10/2018  - 1.38 - added DisplayFormats()
+'               BLC, 1/11/2018  - 1.39 - added ClearMsgIcon()
 ' =================================
 
 ' ---------------------------------
@@ -900,6 +903,86 @@ Err_Handler:
     End Select
     Resume Exit_Handler
 End Function
+
+' ---------------------------------
+' SUB:          DisplayFormats
+' Description:  Converts formats field to string of icons
+' Assumptions:  -
+' Parameters:   formats - document formats available (string) - uPDF, uDOC, etc.
+' Returns:      display - icons displayed via unicode (string)
+' Throws:       none
+' References:   none
+' Source/date:
+' Adapted:      Bonnie Campbell, January 10, 2018 - for NCPN tools
+' Revisions:
+'   BLC - 1/10/2018  - initial version
+' ---------------------------------
+Public Function DisplayFormats(formats As String) As String
+On Error GoTo Err_Handler
+
+    Dim ary As Variant
+    Dim i As Integer
+    Dim display As String
+    
+    ary = Split(formats, "|")
+    
+    For i = 0 To UBound(ary)
+    
+        If i > 0 Then display = display & " | "
+    
+        display = display & StringFromCodepoint(ary(i))
+    
+    Next
+    
+    DisplayFormats = display
+
+Exit_Handler:
+    Exit Function
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - DisplayFormats[mod_App_UI])"
+    End Select
+    Resume Exit_Handler
+End Function
+
+' ---------------------------------
+' SUB:          ClearMsgIcon
+' Description:  Clears the captions of msg and msgIcon labels on a form
+' Assumptions:  -
+' Parameters:   frm - form whose msg & msgIcon captions are to be cleared (form)
+' Returns:      -
+' Throws:       none
+' References:   none
+' Source/date:
+' Adapted:      Bonnie Campbell, January 11, 2018 - for NCPN tools
+' Revisions:
+'   BLC - 1/11/2018  - initial version
+' ---------------------------------
+Public Sub ClearMsgIcon(frm As Form)
+On Error GoTo Err_Handler
+
+    With frm
+        'clear msg & icon
+        frm.Controls("lblMsg").forecolor = lngRobinEgg
+        frm.Controls("lblMsgIcon").forecolor = lngRobinEgg
+        frm.Controls("lblMsg").Caption = ""
+        frm.Controls("lblMsgIcon").Caption = ""
+    End With
+
+Exit_Handler:
+    Exit Sub
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - ClearMsgIcon[mod_App_UI])"
+    End Select
+    Resume Exit_Handler
+End Sub
 
 ' *********************************
 '    Invasives

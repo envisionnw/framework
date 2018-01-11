@@ -203,11 +203,11 @@ On Error GoTo Err_Handler
                             If Not IsDuplicateKey(strKey, oTree) Then
                                     
                                 'check to see if node was static parent or child -> add only to parents
-                                If Len(oTree.SelectedItem.key) > 2 Then
-                                    strPhotoType = oTree.SelectedItem.Parent.key
+                                If Len(oTree.SelectedItem.Key) > 2 Then
+                                    strPhotoType = oTree.SelectedItem.Parent.Key
                                     Set nodeParent = oTree.SelectedItem.Parent
                                 Else
-                                    strPhotoType = oTree.SelectedItem.key
+                                    strPhotoType = oTree.SelectedItem.Key
                                     Set nodeParent = oTree.SelectedItem
                                 End If
                                     
@@ -447,7 +447,7 @@ On Error GoTo Err_Handler
 '    For Each tvwNode In tvwTree.Object.Nodes 'Me.TreeView.nodes
     For Each tvwNode In tvw.Nodes 'Me.TreeView.nodes
     
-        If tvwNode.key = strKey Then
+        If tvwNode.Key = strKey Then
            blnIsDupe = True
            Exit For
         End If
@@ -534,7 +534,7 @@ On Error GoTo Err_Handler
                 Node.backcolor = vbWindowBackground
                 Node.forecolor = vbWindowText
                 Node.Selected = False
-                colTreeNodes.Remove Node.key
+                colTreeNodes.Remove Node.Key
             End If
             Exit Sub
         End If
@@ -550,7 +550,7 @@ On Error GoTo Err_Handler
     If Not Node Is Nothing Then
         Node.backcolor = vbHighlight
         Node.forecolor = vbHighlightText
-        colTreeNodes.Add Node, Node.key
+        colTreeNodes.Add Node, Node.Key
     End If
     
 Exit_Handler:

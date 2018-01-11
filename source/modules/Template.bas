@@ -73,12 +73,12 @@ Public Property Get TemplateName() As String
     TemplateName = m_TemplateName
 End Property
 
-Public Property Let Context(Value As String)
+Public Property Let context(Value As String)
     m_Context = Value
 End Property
 
-Public Property Get Context() As String
-    Context = m_Context
+Public Property Get context() As String
+    context = m_Context
 End Property
 
 Public Property Let TemplateSQL(Value As String)
@@ -254,7 +254,7 @@ On Error GoTo Err_Handler
     With Me
         Params(0) = Template
         Params(1) = .TemplateName
-        Params(2) = .Context
+        Params(2) = .context
         Params(3) = .TemplateSQL
         Params(4) = .Remarks
         Params(5) = .EffectiveDate

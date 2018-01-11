@@ -345,13 +345,13 @@ End Function
 ' Revisions:
 '   BLC - 9/27/2017 - initial version
 ' ---------------------------------
-Private Sub CopyRange(source() As Variant, iBegin As Long, iEnd As Long, dest() As Variant)
+Private Sub CopyRange(Source() As Variant, iBegin As Long, iEnd As Long, dest() As Variant)
 On Error GoTo Err_Handler
 
     Dim k As Long
     
     For k = iBegin To iEnd Step 1
-        dest(k) = source(k)
+        dest(k) = Source(k)
     Next k
     
 Exit_Handler:

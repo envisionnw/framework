@@ -198,7 +198,7 @@ On Error GoTo Err_Handler
 
     Dim db As DAO.Database
     Dim rst As DAO.Recordset
-    Dim strSQL As String, strSQLWhere As String, key As String, Value As String
+    Dim strSQL As String, strSQLWhere As String, Key As String, Value As String
     
     'handle default
     strSQLWhere = " WHERE Is_Supported > 0"
@@ -236,14 +236,14 @@ On Error GoTo Err_Handler
     Do Until rst.EOF
         'populate the dictionary
         For i = 1 To UBound(ary)
-            key = ary(i)
+            Key = ary(i)
             If (ary(i) = "SQLstring") Then
                 Value = rst!Template
             Else
                 Value = rst.Fields(ary(i))
             End If
-            If Not dict.Exists(key) Then
-                dict.Add key, Value
+            If Not dict.Exists(Key) Then
+                dict.Add Key, Value
             End If
         Next
         rst.MoveNext

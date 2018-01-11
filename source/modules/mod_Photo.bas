@@ -41,7 +41,7 @@ Public Sub IngestPhotos(strPath As String, category As String)
 On Error GoTo Err_Handler
 
     Dim FSO As FileSystemObject
-    Dim ifile As File
+    Dim ifile As file
     Dim NumFiles As Integer, i As Integer, iProg As Integer
     Dim ListFiles As Files
     Dim aryExtensions() As String

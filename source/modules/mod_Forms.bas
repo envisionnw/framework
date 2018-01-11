@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Forms
 ' Level:        Framework module
-' Version:      1.14
+' Version:      1.15
 ' Description:  generic form functions & procedures
 '
 ' Source/date:  Bonnie Campbell, 2/19/2015
@@ -35,6 +35,7 @@ Option Explicit
 '               BLC - 11/10/2017 - 1.12 - add control existance checks
 '               BLC - 12/14/2017 - 1.13 - add checkbox and toggle button
 '               BLC - 12/27/2017 - 1.14 - update to avoid black box inside checkboxes (ClearForm)
+'               BLC - 1/10/2018  - 1.15 - added list control existance check (ClearForm)
 ' =================================
 
 '=================================================================
@@ -433,6 +434,7 @@ End Sub
 '   BLC - 11/10/2017 - add control existance checks
 '   BLC - 12/14/2017 - add checkbox and toggle button
 '   BLC - 12/27/2017 - update to avoid black box inside checkboxes
+'   BLC - 1/10/2018 - added list control existance check
 ' ---------------------------------
 Public Sub ClearForm(ByRef frm As Form)
 On Error GoTo Err_Handler
@@ -484,7 +486,7 @@ On Error GoTo Err_Handler
         
         If ControlExists("btnSave", frm) Then .Controls("btnSave").Enabled = False
                 
-        .list.Requery
+        If ControlExists("list", frm) Then .list.Requery
         
         .Requery
     

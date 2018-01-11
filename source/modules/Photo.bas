@@ -8,7 +8,7 @@ Option Explicit
 ' =================================
 ' CLASS:        Photo
 ' Level:        Framework class
-' Version:      1.08
+' Version:      1.09
 '
 ' Description:  Photo object related properties, events, functions & procedures
 '
@@ -32,6 +32,8 @@ Option Explicit
 '                                         VB_Exposed=True, added Property VarDescriptions, added GetClass() method
 '               BLC - 10/4/2017 - 1.07 - SaveToDb code cleanup
 '               BLC - 10/6/2017 - 1.08 - removed GetClass() after Factory class instatiation implemented
+'               BLC - 1/10/2018  - 1.09 - added properties: PhotogLocationDesc, PhotogOrient, SurveyPtID, SubjectLocation,
+'                                         updated SaveToDb()
 ' =================================
 
 '    [ID] [smallint] IDENTITY(1,1) NOT NULL,
@@ -68,9 +70,11 @@ Private m_Filename As String '10
 Private m_NCPNImageID As Long '50
 Private m_DirectionFacing As String '4
 Private m_PhotogLocation As String '10
-'Private m_PhotogLocationDescr As String '255
-'Private m_PhotogOrientation As String '4
-'Private m_SurveyPtID As Long
+'--- was commented out ---v
+Private m_PhotogLocationDescr As String '255
+Private m_PhotogOrientation As String '4
+Private m_SurveyPtID As Long
+'-------------------------^
 Private m_SubjectLocation As String '10
 Private m_IsCloseup As Boolean
 Private m_IsInActive As Boolean
@@ -100,7 +104,7 @@ Public Event InvalidPhotoNumber(Value As String)
 Public Event InvalidFilename(Value As String)
 Public Event InvalidDirectionFacing(Value As String)
 Public Event InvalidPhotographerID(Value As Long)
-Public Event Invalid(Value)
+'Public Event Invalid(Value)
 
 '---------------------
 ' Properties
@@ -187,29 +191,31 @@ Public Property Get PhotogLocation() As String
     PhotogLocation = m_PhotogLocation
 End Property
 
-'Public Property Let PhotogLocationDescr(Value As String)
-'    m_PhotogLocationDescr = Value
-'End Property
-'
-'Public Property Get PhotogLocationDescr() As String
-'    PhotogLocationDescr = m_PhotogLocationDescr
-'End Property
+'--- was commented out ---v
+Public Property Let PhotogLocationDescr(Value As String)
+    m_PhotogLocationDescr = Value
+End Property
 
-'Public Property Let PhotogOrientation(Value As String)
-'    m_PhotogOrientation = Value
-'End Property
-'
-'Public Property Get PhotogOrientation() As String
-'    PhotogOrientation = m_PhotogOrientation
-'End Property
-'
-'Public Property Let SurveyPtID(Value As Long)
-'    m_SurveyPtID = Value
-'End Property
-'
-'Public Property Get SurveyPtID() As Long
-'    SurveyPtID = m_SurveyPtID
-'End Property
+Public Property Get PhotogLocationDescr() As String
+    PhotogLocationDescr = m_PhotogLocationDescr
+End Property
+
+Public Property Let PhotogOrientation(Value As String)
+    m_PhotogOrientation = Value
+End Property
+
+Public Property Get PhotogOrientation() As String
+    PhotogOrientation = m_PhotogOrientation
+End Property
+
+Public Property Let SurveyPtID(Value As Long)
+    m_SurveyPtID = Value
+End Property
+
+Public Property Get SurveyPtID() As Long
+    SurveyPtID = m_SurveyPtID
+End Property
+' -------------------------^
 
 Public Property Let SubjectLocation(Value As String)
     m_SubjectLocation = Value
@@ -400,6 +406,7 @@ End Sub
 ' Revisions:
 '   BLC, 4/4/2016 - initial version
 '   BLC, 8/8/2016 - added update parameter to identify if this is an update vs. an insert
+'   BLC, 1/10/2018 - added properties: PhotogLocationDesc, PhotogOrient, SurveyPointID, SubjectLocation
 '---------------------------------------------------------------------------------------
 Public Sub SaveToDb(Optional IsUpdate As Boolean = False)
 On Error GoTo Err_Handler
@@ -408,7 +415,7 @@ On Error GoTo Err_Handler
     
     Template = "i_photo"
     
-    Dim Params(0 To 14) As Variant
+    Dim Params(0 To 17) As Variant
     
     With Me
         Params(0) = "Photo"
@@ -424,10 +431,14 @@ On Error GoTo Err_Handler
         Params(10) = .IsSkipped
         Params(11) = .IsReplacement
         Params(12) = .LastPhotoUpdate
+        Params(13) = .PhotogLocationDescr
+        Params(14) = .PhotogOrientation
+        Params(15) = .SurveyPtID
+        Params(16) = .SubjectLocation
               
         If IsUpdate Then
             Template = "u_photo"
-            Params(13) = .ID
+            Params(17) = .ID
         End If
         
         .ID = SetRecord(Template, Params)
