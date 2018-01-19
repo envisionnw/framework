@@ -55,14 +55,14 @@ Option Explicit
 ' Revisions:
 '   BLC - 4/20/2016 - initial version
 ' ---------------------------------
-Public Sub CreateMenu(context As String)
+Public Sub CreateMenu(Context As String)
 On Error GoTo Err_Handler
     
     Dim cbar As CommandBar
     Dim mnuItem As CommandBarControl
     Dim mnu As String
 
-    Select Case context
+    Select Case Context
         Case "park"
             mnu = "park"
         Case "river"
@@ -199,7 +199,7 @@ End Sub
 '   BLC - 10/4/2017 - switched CurrentDb to CurrDb property to avoid
 '                     multiple open connections
 ' ---------------------------------
-Public Sub CreateDynamicMenu(context As String)
+Public Sub CreateDynamicMenu(Context As String)
 On Error GoTo Err_Handler
     
     Dim cbar As CommandBar
@@ -207,7 +207,7 @@ On Error GoTo Err_Handler
     Dim mnu As String, action As String
     Dim rs As DAO.Recordset
 
-    Select Case context
+    Select Case Context
         Case "park"
             mnu = "park"
         Case "river"
@@ -368,7 +368,7 @@ Err_Handler:
         'duplicate template -- tsys_Db_Templates finds more than one w/ same name
         'Best option is to notify them to contact database manager
         MsgBox "Application cannot find the template." & vbCrLf & vbCrLf & _
-            "Context: " & context & vbCrLf & vbCrLf & _
+            "Context: " & Context & vbCrLf & vbCrLf & _
             "Please contact your data manager to resolve this issue." & vbCrLf & vbCrLf & _
             "Error #" & Err.Number & " - CreateDynamicMenu[mod_ContextMenu]:" & vbCrLf & _
             Err.Description, vbExclamation, "Db Template for Creating ContextMenu Not Found!"

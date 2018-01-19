@@ -62,6 +62,8 @@ Option Explicit
 ' Declarations
 '---------------------
 Private m_ID As Long
+Private m_PhotoFilename As String 'filename + extension
+Private m_PhotoPath As String 'directory location (no filename)
 Private m_PhotoDate As Date
 Private m_PhotoType As String '2
 Private m_PhotographerID As Long
@@ -105,6 +107,7 @@ Public Event InvalidFilename(Value As String)
 Public Event InvalidDirectionFacing(Value As String)
 Public Event InvalidPhotographerID(Value As Long)
 'Public Event Invalid(Value)
+Public Event InvalidPath(Value As String)
 
 '---------------------
 ' Properties
@@ -116,6 +119,27 @@ End Property
 Public Property Get ID() As Long
     ID = m_ID
 End Property
+
+Public Property Let PhotoFilename(Value As String)
+    m_PhotoFilename = Value
+End Property
+
+Public Property Get PhotoFilename() As String
+    PhotoFilename = m_PhotoFilename
+End Property
+
+Public Property Let PhotoPath(Value As String)
+    If FolderExists(Value) Then
+        m_PhotoPath = Value
+    Else
+        RaiseEvent InvalidPath(Value)
+    End If
+End Property
+
+Public Property Get PhotoPath() As String
+    PhotoPath = m_PhotoPath
+End Property
+
 
 Public Property Let PhotoDate(Value As Date)
     m_PhotoDate = Value
@@ -415,14 +439,14 @@ On Error GoTo Err_Handler
     
     Template = "i_photo"
     
-    Dim Params(0 To 17) As Variant
+    Dim Params(0 To 19) As Variant
     
     With Me
         Params(0) = "Photo"
         Params(1) = .PhotoDate
         Params(2) = .PhotoType
         Params(3) = .PhotographerID
-        Params(4) = .FileName
+        Params(4) = .FileName           'NCPN photo name system
         Params(5) = .NCPNImageID
         Params(6) = .DirectionFacing
         Params(7) = .PhotogLocation
@@ -435,10 +459,12 @@ On Error GoTo Err_Handler
         Params(14) = .PhotogOrientation
         Params(15) = .SurveyPtID
         Params(16) = .SubjectLocation
+        Params(17) = .PhotoFilename     'original filename (may or may not be = .FileName)
+        Params(18) = .PhotoPath         'photo's directory location
               
         If IsUpdate Then
             Template = "u_photo"
-            Params(17) = .ID
+            Params(19) = .ID
         End If
         
         .ID = SetRecord(Template, Params)

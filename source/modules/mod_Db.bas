@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_Db
 ' Level:        Framework module
-' Version:      1.27
+' Version:      1.28
 ' Description:  Database related functions & subroutines
 ' Requires:     Microsoft Scripting Runtime (scrrun.dll) for Scripting.Dictionary
 '
@@ -75,6 +75,7 @@ Option Explicit
 '               BLC, 12/13/2017 - 1.26 - add RefreshTemplates()
 '               BLC, 1/2/2018   - 1.27 - add ConvertObjectToPointer(), ConvertPointerToObject(),
 '                                        & related POINTERSIZE, ZEROPOINTER, RtlMoveMemory
+'               BLC, 1/12/2018  - 1.28 - update to eliminate ~TMP... tables, refresh TableDefs (ListTables)
 ' =================================
 
 ' ---------------------------------
@@ -1707,6 +1708,7 @@ End Function
 '               BLC, 10/20/2016 - revised to include linked tables, added Tsys, Usys parameters
 '               BLC, 10/4/2017 - switched CurrentDb to CurrDb property to avoid
 '                                multiple open connections
+'               BLC, 1/12/2018 - update to eliminate ~TMP... tables, refresh TableDefs
 ' ---------------------------------
 Public Function ListTables(ShowMSysTables As Boolean, _
                             ShowTSysTables As Boolean, _
@@ -1720,9 +1722,13 @@ On Error GoTo Err_Handler
     'default
     tbls = ""
     
+    'refresh tabledefs
+    CurrDb.TableDefs.Refresh
+    
     'fetch tables
     For Each tdf In CurrDb.TableDefs
 'Debug.Print tdf.Name
+
         'handle MSys tables
         If Len(tdf.Name) > Len(Replace(tdf.Name, "MSys", "")) And ShowMSysTables = False Then GoTo Continue
         
@@ -1734,6 +1740,9 @@ On Error GoTo Err_Handler
         
         'handle linked tables
         If Len(tdf.connect) > 0 And ShowLinkedTables = False Then GoTo Continue
+        
+        'handle temp tables beginning w/ ~  (e.g. ~TMPCLP535461)
+        If Left(tdf.Name, 1) = "~" Then GoTo Continue
         
         tbls = tbls & "|" & tdf.Name
         

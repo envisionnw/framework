@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_Data
 ' Level:        Application module
-' Version:      1.58
+' Version:      1.60
 ' Description:  data functions & procedures specific to this application
 '
 ' Source/date:  Bonnie Campbell, 2/9/2015
@@ -97,6 +97,8 @@ Option Explicit
 '                                        SetReportRecordset & rpt_recordset global variable,
 '                                        add PhotoBatchUpdate, Logger cases (UpsertRecord)
 '                                        update i_photo case (SetRecord), add GetPhotoTypes
+'               BLC, 1/16/2018  - 1.59 - add i_event_photo case (SetRecord), update i_photo (UpsertRecord) case
+'               BLC, 1/17/2018  - 1.60 - updated i_photo_event, i_photo, u_photo cases
 ' =================================
 
 ' =================================
@@ -777,7 +779,7 @@ End Sub
 '   BLC - 10/20/2016 - added ModWentworth retire date toggle
 '   BLC - 10/24/2016 - revised to use SetRecord()
 ' ---------------------------------
-Public Sub ToggleIsActive(context As String, ID As Long, Optional IsActive As Byte)
+Public Sub ToggleIsActive(Context As String, ID As Long, Optional IsActive As Byte)
 On Error GoTo Err_Handler
     
 '    Dim strSQL As String
@@ -803,7 +805,7 @@ On Error GoTo Err_Handler
     
     Dim Template As String
     
-    Select Case context
+    Select Case Context
         Case "Contact"
             Template = "u_contact_isactive_flag"
         Case "Site"
@@ -848,14 +850,14 @@ End Sub
 '   BLC - 7/30/2016 - initial version
 '   BLC - 9/28/2017 - revised template to lower case
 ' ---------------------------------
-Public Sub ToggleSensitive(context As String, ID As Long, Sensitive As Byte)
+Public Sub ToggleSensitive(Context As String, ID As Long, Sensitive As Byte)
 On Error GoTo Err_Handler
     
     Dim Template As String
     
     Template = IIf(Sensitive = 1, "i_", "d_")
     
-    Template = LCase(Template & "sensitive_" & context)
+    Template = LCase(Template & "sensitive_" & Context)
     
     If Right(Template, 1) <> "s" Then Template = Template & "s"
     
@@ -969,10 +971,10 @@ End Function
 ' Revisions:
 '   BLC - 1/10/2018 - initial version
 ' ---------------------------------
-Public Sub SetReportRecordset(context As String)
+Public Sub SetReportRecordset(Context As String)
 On Error GoTo Err_Handler
     
-    Set rpt_recordset = GetRecords(context)
+    Set rpt_recordset = GetRecords(Context)
 
 Exit_Handler:
     Exit Sub
@@ -1512,6 +1514,8 @@ End Function
 '   BLC - 11/26/2017 - revise i_vegplot parameters (social trails)
 '   BLC - 12/5/2017 - add vegplot BeaverBrowse, update i_vegplot pctfa parameter
 '   BLC - 1/10/2018 - update i_photo case
+'   BLC - 1/16/2018 - add i_photo_event case
+'   BLC - 1/17/2018 - updated i_photo_event, i_photo, u_photo cases
 ' ---------------------------------
 Public Function SetRecord(Template As String, Params As Variant) As Long
 On Error GoTo Err_Handler
@@ -1617,7 +1621,12 @@ On Error GoTo Err_Handler
                     .Parameters("LID") = Params(2)
                     .Parameters("PID") = Params(3)
                     .Parameters("Start") = Params(4)
-                                        
+     
+                Case "i_event_photo"
+                    '-- required parameters --
+                    .Parameters("eid") = Params(0)
+                    .Parameters("pid") = Params(1)
+     
                 Case "i_feature"
                     '-- required parameters --
                     .Parameters("LocID") = Params(1)            'FeatureID
@@ -1670,7 +1679,6 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                                                         
                 Case "i_photo"
                     '-- required parameters --
-                    '-- required parameters --
                     .Parameters("pdate") = Params(1)            'PhotoDate
                     .Parameters("ptype") = Params(2)            'PhotoType
                     .Parameters("photogid") = Params(3)         'PhotographerID
@@ -1678,7 +1686,7 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                     .Parameters("NID") = Params(5)              'NCPNImageID
                     .Parameters("pfacing") = Params(6)          'DirectionFacing
                     .Parameters("ploc") = Params(7)             'PhotogLocation
-                    .Parameters("plocdesc") = Params(13)         'PhotogLocationDesc
+                    .Parameters("plocdesc") = Params(13)        'PhotogLocationDesc
                     .Parameters("porient") = Params(14)         'PhotogOrientation
                     .Parameters("sptid") = Params(15)           'SurveyPointID
                     .Parameters("sloc") = Params(16)            'SubjectLocation
@@ -1687,6 +1695,8 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                     .Parameters("skip") = Params(10)            'IsSkipped
                     .Parameters("replacemt") = Params(11)       'IsReplacement
                     .Parameters("lpupdate") = Params(12)        'LastPhotoUpdate
+                    .Parameters("pfname") = Params(17)          'PhotoFilename
+                    .Parameters("path") = Params(18)            'PhotoPath
                     
 '                    .Parameters("") = Now()CreateDate
                     .Parameters("CID") = TempVars("AppUserID")  'CreatedByID ContactID")
@@ -2040,23 +2050,27 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
                         
                 Case "u_photo"
                     '-- required parameters --
-                    .Parameters("PhotoDate") = Params(1)
-                    .Parameters("PhotoType") = Params(2)
-                    .Parameters("PhotographerID") = Params(3)
-                    .Parameters("FileName") = Params(4)
-                    .Parameters("NCPNImageID") = Params(5)
-                    .Parameters("DirectionFacing") = Params(6)
-                    .Parameters("PhotogLocation") = Params(7)
-                    .Parameters("IsCloseup") = Params(8)
-                    .Parameters("IsInActive") = Params(9)
-                    .Parameters("IsSkipped") = Params(10)
-                    .Parameters("IsReplacement") = Params(11)
-                    .Parameters("LastPhotoUpdate") = Params(12)
+                    .Parameters("pdate") = Params(1)            'PhotoDate
+                    .Parameters("ptype") = Params(2)            'PhotoType
+                    .Parameters("photogid") = Params(3)         'PhotographerID
+                    .Parameters("digfname") = Params(4)         'FileName
+                    .Parameters("NID") = Params(5)              'NCPNImageID
+                    .Parameters("pfacing") = Params(6)          'DirectionFacing
+                    .Parameters("ploc") = Params(7)             'PhotogLocation
+                    .Parameters("plocdesc") = Params(13)        'PhotogLocationDesc
+                    .Parameters("porient") = Params(14)         'PhotogOrientation
+                    .Parameters("sptid") = Params(15)           'SurveyPointID
+                    .Parameters("sloc") = Params(16)            'SubjectLocation
+                    .Parameters("closeup") = Params(8)          'IsCloseup
+                    .Parameters("inact") = Params(9)            'IsInActive
+                    .Parameters("skip") = Params(10)            'IsSkipped
+                    .Parameters("replacemt") = Params(11)       'IsReplacement
+                    .Parameters("lpupdate") = Params(12)        'LastPhotoUpdate
+                    .Parameters("pfname") = Params(17)          'PhotoFilename
+                    .Parameters("path") = Params(18)            'PhotoPath
                     
-                    .Parameters("CreateDate") = Now()
-                    .Parameters("CreatedByID") = TempVars("AppUserID") 'ContactID")
-                    .Parameters("LastModified") = Now()
-                    .Parameters("LastModifiedByID") = TempVars("AppUserID") 'ContactID")
+                    .Parameters("CID") = TempVars("AppUserID")  'CreatedByID ContactID")
+                    .Parameters("LMID") = TempVars("AppUserID") 'LastModifiedByID ContactID")
                 
                 Case "u_site"
                     '-- required parameters --
@@ -2365,6 +2379,8 @@ Debug.Print "uname: " & Params(1) & " activity: " & Params(2) & _
     End With
                 
 Exit_Handler:
+    'add temp var to capture cases when object is no longer available (e.g. photo batch update)
+    SetTempVar "NewRecordID", ID
     SetRecord = ID
     
     'cleanup
@@ -2429,6 +2445,7 @@ End Function
 '   BLC - 12/8/2017 - update VegPlot EventID, VegTransectID
 '   BLC - 12/12/2017 - add TempPhoto
 '   BLC - 1/10/2018  - add PhotoBatchUpdate, Logger cases
+'   BLC - 1/16/2018  - update PhotoBatchUpdate case
 ' ---------------------------------
 Public Sub UpsertRecord(ByRef frm As Form)
 On Error GoTo Err_Handler
@@ -2470,7 +2487,7 @@ On Error GoTo Err_Handler
                 With cmt
                     'form values
                     .CommentType = frm!tbx
-                    .TypeID = Trim(Split(frm!context, "-")(1))
+                    .TypeID = Trim(Split(frm!Context, "-")(1))
                     .Comment = frm!tbxComment
                     .CommentorID = TempVars("")
                 
@@ -2637,6 +2654,8 @@ On Error GoTo Err_Handler
                     .IsReplacement = frm!chkIsReplacement
                     .IsSkipped = frm!chkIsSkipped
                     .NCPNImageID = frm!tbxNCPNImageID
+                    .PhotoFilename = frm!tbxFilename
+                    .PhotoPath = frm!lblPath.Caption
                     
                     'set the generic object --> Photo
                     Set obj = ph
@@ -2664,6 +2683,9 @@ On Error GoTo Err_Handler
                     
                     .PhotographerID = frm!cbxPhotographer
                     .FileName = frm!lbxPhotos.Column(3)
+                    .PhotoDate = frm!lbxPhotos.Column(4)
+                    .PhotoFilename = frm!lbxPhotos.Column(3)
+                    .PhotoPath = frm!lbxPhotos.Column(2)
                     
                     .ID = frm!lbxPhotos.Column(0)
                     
@@ -3098,7 +3120,7 @@ On Error GoTo Err_Handler
                 
                 With tpl
                     .IsSupported = 1
-                    .context = ""
+                    .Context = ""
                     .EffectiveDate = Date
                     .Remarks = ""
                     .TemplateName = ""
@@ -3119,7 +3141,7 @@ On Error GoTo Err_Handler
                 
                 With tpl
                     .TemplateName = frm!tbxTemplate
-                    .context = .TemplateName
+                    .Context = .TemplateName
                     .IsSupported = 1 '.IsSupported default = 1 (i.e. yes)
                     .Version = frm!tbxVersion
                     .Syntax = frm!cbxSyntax

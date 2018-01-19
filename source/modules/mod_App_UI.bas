@@ -4,7 +4,7 @@ Option Explicit
 ' =================================
 ' MODULE:       mod_App_UI
 ' Level:        Application module
-' Version:      1.39
+' Version:      1.41
 
 ' Description:  Application User Interface related functions & subroutines
 '
@@ -83,6 +83,8 @@ Option Explicit
 '               BLC, 12/27/2017 - 1.37 - update PopulateForm VegPlot case to set combobox values
 '               BLC, 1/10/2018  - 1.38 - added DisplayFormats()
 '               BLC, 1/11/2018  - 1.39 - added ClearMsgIcon()
+'               BLC, 1/17/2018  - 1.40 - added Task list case (SortListForm)
+'               BLC, 1/19/2018  - 1.41 - added SetMsgIcon()
 ' =================================
 
 ' ---------------------------------
@@ -446,6 +448,7 @@ End Sub
 '   BLC - 2/21/2017 - adjusted to accommodate Contact list
 '   BLC - 10/18/2017 - added cases for Comment list
 '   BLC - 12/7/2017 - added cases for VegPlot, Event lists
+'   BLC - 1/17/2018 - added cases for Task list
 ' ---------------------------------
 Public Sub SortListForm(frm As Form, ctrl As Control)
 On Error GoTo Err_Handler
@@ -470,6 +473,8 @@ On Error GoTo Err_Handler
             Select Case frm.Name
                 Case "ContactList"
                     strSort = "c.ID"
+                Case "TaskList"
+                    strSort = "t.ID"
             End Select
         Case "Location"
             strSort = "Location"
@@ -481,6 +486,8 @@ On Error GoTo Err_Handler
             strSort = "PctModalSedimentSize"
         Case "PlotNumDist"
             strSort = IIf(TempVars("ParkCode") = "DINO", "PlotNumber", "PlotDistance_m")
+        Case "Priority"
+            strSort = "Priority"
         Case "Site"
             strSort = "Site"
         Case "SOP"
@@ -491,8 +498,14 @@ On Error GoTo Err_Handler
             strSort = "StartDate"
         Case "Syntax"
             strSort = "Syntax"
+        Case "Task"
+            strSort = "Task"
+        Case "TaskType"
+            strSort = "TaskType"
         Case "Template"
             strSort = "TemplateName"
+        Case "Status"
+            strSort = "Status"
         Case "Version"
             strSort = "Version"
         Case "LastModifiedDate"
@@ -980,6 +993,51 @@ Err_Handler:
       Case Else
         MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
             "Error encountered (#" & Err.Number & " - ClearMsgIcon[mod_App_UI])"
+    End Select
+    Resume Exit_Handler
+End Sub
+
+' ---------------------------------
+' SUB:          SetMsgIcon
+' Description:  Sets the captions of msg and msgIcon labels on a form
+' Assumptions:  Assumes both icon & message are the same forecolor
+'               Default optionals = uDoubleTriangleBlk icon & yellow color
+' Parameters:   frm - form whose msg & msgIcon captions are to be set (form)
+'               msg - message to set (string)
+'               icon - icon to set (string)
+'               color - fore color (long)
+' Returns:      -
+' Throws:       none
+' References:   none
+' Source/date:
+' Adapted:      Bonnie Campbell, January 19, 2018 - for NCPN tools
+' Revisions:
+'   BLC - 1/19/2018  - initial version
+' ---------------------------------
+Public Sub SetMsgIcon(frm As Form, msg As String, _
+            Optional icon As String = "default", _
+            Optional color As Long = lngYellow)
+On Error GoTo Err_Handler
+
+    If icon = "default" Then _
+        icon = StringFromCodepoint(uDoubleTriangleBlkR)
+
+    With frm
+        'set msg & icon
+        frm.Controls("lblMsg").forecolor = color
+        frm.Controls("lblMsgIcon").forecolor = color
+        frm.Controls("lblMsg").Caption = msg
+        frm.Controls("lblMsgIcon").Caption = icon
+    End With
+
+Exit_Handler:
+    Exit Sub
+    
+Err_Handler:
+    Select Case Err.Number
+      Case Else
+        MsgBox "Error #" & Err.Number & ": " & Err.Description, vbCritical, _
+            "Error encountered (#" & Err.Number & " - SetMsgIcon[mod_App_UI])"
     End Select
     Resume Exit_Handler
 End Sub
